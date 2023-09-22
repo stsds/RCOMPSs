@@ -22,8 +22,11 @@ void start_runtime(){
   GS_On();
 }
 
-
-//' Start a COMPSs-Runtime instance
+//' stop_runtime
+//' 
+//' Stop a COMPSs-Runtime instance
+//' 
+//' @param code The code to exit
 //' @export
 // [[Rcpp::export]]
 void stop_runtime(int code){
@@ -31,8 +34,20 @@ void stop_runtime(int code){
   GS_Off(code);
 }
 
-
+//' register_core_element
+//' 
 //' Register a core element
+//'
+//' @param CESignature String with the core element signature. Usually: module_file.module_name.task_name
+//' @param ImplSignature String with the implementation signature. Usually: module_file.module_name.task_name
+//' @param ImplConstraints String with the task constraints. Usually empty, but for example: computingUnits=1
+//' @param ImplType String with the implementation type. Usually METHOD although there are others supported for binaries, etc.
+//' @param ImplLocal String boolean indicating if the implementation has to be executed locally. Usually False.
+//' @param ImplIO String boolean indicating if the implementation  has IO requirements. Usually False.
+//' @param prolog String indicating any prolog action. Usually empty.
+//' @param epilog String indicating any epilog action. Usually empty.
+//' @param container String indicating if the task has to be executed within a container. Usually empty.
+//' @param typeArgs String with all arguments (task parameters).
 //' @export
 // [[Rcpp::export]]
 void register_core_element(std::string CESignature, std::string ImplSignature, 

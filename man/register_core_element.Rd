@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{register_core_element}
 \alias{register_core_element}
-\title{Register a core element}
+\title{register_core_element}
 \usage{
 register_core_element(
   CESignature,
@@ -16,6 +16,27 @@ register_core_element(
   container,
   typeArgs
 )
+}
+\arguments{
+\item{CESignature}{String with the core element signature. Usually: module_file.module_name.task_name}
+
+\item{ImplSignature}{String with the implementation signature. Usually: module_file.module_name.task_name}
+
+\item{ImplConstraints}{String with the task constraints. Usually empty, but for example: computingUnits=1}
+
+\item{ImplType}{String with the implementation type. Usually METHOD although there are others supported for binaries, etc.}
+
+\item{ImplLocal}{String boolean indicating if the implementation has to be executed locally. Usually False.}
+
+\item{ImplIO}{String boolean indicating if the implementation  has IO requirements. Usually False.}
+
+\item{prolog}{String indicating any prolog action. Usually empty.}
+
+\item{epilog}{String indicating any epilog action. Usually empty.}
+
+\item{container}{String indicating if the task has to be executed within a container. Usually empty.}
+
+\item{typeArgs}{String with all arguments (task parameters).}
 }
 \description{
 Register a core element

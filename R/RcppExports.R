@@ -12,13 +12,30 @@ start_runtime <- function() {
     invisible(.Call(`_RCOMPSs_start_runtime`))
 }
 
-#' Start a COMPSs-Runtime instance
+#' stop_runtime
+#' 
+#' Stop a COMPSs-Runtime instance
+#' 
+#' @param code The code to exit
 #' @export
 stop_runtime <- function(code) {
     invisible(.Call(`_RCOMPSs_stop_runtime`, code))
 }
 
+#' register_core_element
+#' 
 #' Register a core element
+#'
+#' @param CESignature String with the core element signature. Usually: module_file.module_name.task_name
+#' @param ImplSignature String with the implementation signature. Usually: module_file.module_name.task_name
+#' @param ImplConstraints String with the task constraints. Usually empty, but for example: computingUnits=1
+#' @param ImplType String with the implementation type. Usually METHOD although there are others supported for binaries, etc.
+#' @param ImplLocal String boolean indicating if the implementation has to be executed locally. Usually False.
+#' @param ImplIO String boolean indicating if the implementation  has IO requirements. Usually False.
+#' @param prolog String indicating any prolog action. Usually empty.
+#' @param epilog String indicating any epilog action. Usually empty.
+#' @param container String indicating if the task has to be executed within a container. Usually empty.
+#' @param typeArgs String with all arguments (task parameters).
 #' @export
 register_core_element <- function(CESignature, ImplSignature, ImplConstraints, ImplType, ImplLocal, ImplIO, prolog, epilog, container, typeArgs) {
     invisible(.Call(`_RCOMPSs_register_core_element`, CESignature, ImplSignature, ImplConstraints, ImplType, ImplLocal, ImplIO, prolog, epilog, container, typeArgs))

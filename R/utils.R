@@ -8,7 +8,7 @@
 #' @export
 task <- function(f, ...){
   metadata <- list(...)
-  f_name <- as.list(match.call())$f
+  f_name <- as.character(as.list(match.call())$f)
   function(...){
     arguments <- as.list(match.call(definition = f, expand.dots = FALSE))
     cat("The name of f is:", f_name, "\n")
@@ -23,8 +23,21 @@ task <- function(f, ...){
       cat("Metadata:\n")
       print(metadata)
     }
+    
     # Do not execute function f, invoke instead the runtime with the arg and the information
+    
     # Call register function here
+    register_core_element(CESignature = f_name,
+                          ImplSignature = f_name,
+                          ImplConstraints = "",
+                          ImplType = "METHOD",
+                          ImplLocal = "False",
+                          ImplIO = "False",
+                          prolog = c("", "", "False"),
+                          epilog = c("", "", "False"),
+                          container = c("", "", ""),
+                          typeArgs = c("filename", f_name))
+    
     # Call execute_task here
   }
 }
