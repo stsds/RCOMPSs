@@ -4,7 +4,7 @@
 \alias{task}
 \title{task}
 \usage{
-task(f, ...)
+task(f, info_only = FALSE, ...)
 }
 \arguments{
 \item{f}{The function to be executed.}

@@ -10,16 +10,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// rcpp_hello_world
-List rcpp_hello_world();
-RcppExport SEXP _RCOMPSs_rcpp_hello_world() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(rcpp_hello_world());
-    return rcpp_result_gen;
-END_RCPP
-}
 // start_runtime
 void start_runtime();
 RcppExport SEXP _RCOMPSs_start_runtime() {
@@ -58,12 +48,54 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// process_task
+void process_task(long int app_id, std::string signature, std::string on_failure, int time_out, int priority, int num_nodes, int reduce, int chunk_size, int replicated, int distributed, int has_target, int num_returns, List values, CharacterVector names, IntegerVector compss_types, IntegerVector compss_directions, IntegerVector compss_streams, CharacterVector compss_prefixes, CharacterVector content_types, CharacterVector weights, IntegerVector keep_renames);
+RcppExport SEXP _RCOMPSs_process_task(SEXP app_idSEXP, SEXP signatureSEXP, SEXP on_failureSEXP, SEXP time_outSEXP, SEXP prioritySEXP, SEXP num_nodesSEXP, SEXP reduceSEXP, SEXP chunk_sizeSEXP, SEXP replicatedSEXP, SEXP distributedSEXP, SEXP has_targetSEXP, SEXP num_returnsSEXP, SEXP valuesSEXP, SEXP namesSEXP, SEXP compss_typesSEXP, SEXP compss_directionsSEXP, SEXP compss_streamsSEXP, SEXP compss_prefixesSEXP, SEXP content_typesSEXP, SEXP weightsSEXP, SEXP keep_renamesSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< long int >::type app_id(app_idSEXP);
+    Rcpp::traits::input_parameter< std::string >::type signature(signatureSEXP);
+    Rcpp::traits::input_parameter< std::string >::type on_failure(on_failureSEXP);
+    Rcpp::traits::input_parameter< int >::type time_out(time_outSEXP);
+    Rcpp::traits::input_parameter< int >::type priority(prioritySEXP);
+    Rcpp::traits::input_parameter< int >::type num_nodes(num_nodesSEXP);
+    Rcpp::traits::input_parameter< int >::type reduce(reduceSEXP);
+    Rcpp::traits::input_parameter< int >::type chunk_size(chunk_sizeSEXP);
+    Rcpp::traits::input_parameter< int >::type replicated(replicatedSEXP);
+    Rcpp::traits::input_parameter< int >::type distributed(distributedSEXP);
+    Rcpp::traits::input_parameter< int >::type has_target(has_targetSEXP);
+    Rcpp::traits::input_parameter< int >::type num_returns(num_returnsSEXP);
+    Rcpp::traits::input_parameter< List >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type names(namesSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type compss_types(compss_typesSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type compss_directions(compss_directionsSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type compss_streams(compss_streamsSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type compss_prefixes(compss_prefixesSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type content_types(content_typesSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type keep_renames(keep_renamesSEXP);
+    process_task(app_id, signature, on_failure, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames);
+    return R_NilValue;
+END_RCPP
+}
+// barrier
+void barrier(long int app_id, bool no_more_tasks);
+RcppExport SEXP _RCOMPSs_barrier(SEXP app_idSEXP, SEXP no_more_tasksSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< long int >::type app_id(app_idSEXP);
+    Rcpp::traits::input_parameter< bool >::type no_more_tasks(no_more_tasksSEXP);
+    barrier(app_id, no_more_tasks);
+    return R_NilValue;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_RCOMPSs_rcpp_hello_world", (DL_FUNC) &_RCOMPSs_rcpp_hello_world, 0},
     {"_RCOMPSs_start_runtime", (DL_FUNC) &_RCOMPSs_start_runtime, 0},
     {"_RCOMPSs_stop_runtime", (DL_FUNC) &_RCOMPSs_stop_runtime, 1},
     {"_RCOMPSs_register_core_element", (DL_FUNC) &_RCOMPSs_register_core_element, 10},
+    {"_RCOMPSs_process_task", (DL_FUNC) &_RCOMPSs_process_task, 21},
+    {"_RCOMPSs_barrier", (DL_FUNC) &_RCOMPSs_barrier, 2},
     {NULL, NULL, 0}
 };
 

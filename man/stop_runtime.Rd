@@ -2,10 +2,13 @@
 % Please edit documentation in R/RcppExports.R
 \name{stop_runtime}
 \alias{stop_runtime}
-\title{Start a COMPSs-Runtime instance}
+\title{stop_runtime}
 \usage{
 stop_runtime(code)
 }
+\arguments{
+\item{code}{The code to exit}
+}
 \description{
-Start a COMPSs-Runtime instance
+Stop a COMPSs-Runtime instance
 }
