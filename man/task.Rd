@@ -4,10 +4,14 @@
 \alias{task}
 \title{task}
 \usage{
-task(f, info_only = FALSE, ...)
+task(f, f_dir, info_only = FALSE, ...)
 }
 \arguments{
 \item{f}{The function to be executed.}
+
+\item{f_dir}{Absolute directory of the file where f is defined.}
+
+\item{info_only}{Boolean. Whether the run is to print the information only.}
 
 \item{...}{Metadata.}
 }

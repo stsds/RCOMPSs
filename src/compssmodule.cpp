@@ -324,3 +324,6 @@ void barrier(long int app_id, bool no_more_tasks){
   debug("Barrier end\n");
 }
 
+// TODO
+// extern "C" void GS_Get_File(long appId, char* fileName);
+// Serialization in R and syncronize the results with the master
