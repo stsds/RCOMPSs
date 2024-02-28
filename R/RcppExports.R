@@ -6,7 +6,6 @@
 NULL
 
 #' Start a COMPSs-Runtime instance
-#' @export
 start_runtime <- function() {
     invisible(.Call(`_RCOMPSs_start_runtime`))
 }
@@ -16,7 +15,6 @@ start_runtime <- function() {
 #' Stop a COMPSs-Runtime instance
 #' 
 #' @param code The code to exit
-#' @export
 stop_runtime <- function(code) {
     invisible(.Call(`_RCOMPSs_stop_runtime`, code))
 }
@@ -35,7 +33,6 @@ stop_runtime <- function(code) {
 #' @param epilog String indicating any epilog action. Usually empty.
 #' @param container String indicating if the task has to be executed within a container. Usually empty.
 #' @param typeArgs String with all arguments (task parameters).
-#' @export
 register_core_element <- function(CESignature, ImplSignature, ImplConstraints, ImplType, ImplLocal, ImplIO, prolog, epilog, container, typeArgs) {
     invisible(.Call(`_RCOMPSs_register_core_element`, CESignature, ImplSignature, ImplConstraints, ImplType, ImplLocal, ImplIO, prolog, epilog, container, typeArgs))
 }
@@ -44,7 +41,6 @@ register_core_element <- function(CESignature, ImplSignature, ImplConstraints, I
 #' 
 #' Define the Rcpp function
 #' 
-#' @export
 process_task <- function(app_id, signature, on_failure, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames) {
     invisible(.Call(`_RCOMPSs_process_task`, app_id, signature, on_failure, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames))
 }
@@ -53,8 +49,23 @@ process_task <- function(app_id, signature, on_failure, time_out, priority, num_
 #' 
 #' Halt all the tasks: Notify the runtime that our current application wants to "execute" a barrier. Program will be blocked in GS_BarrierNew until all running tasks have ended. Notifies the 'no more tasks' boolean value.
 #' 
-#' @export
 barrier <- function(app_id, no_more_tasks) {
     invisible(.Call(`_RCOMPSs_barrier`, app_id, no_more_tasks))
+}
+
+#' Get_File
+#' 
+#' Serialization in R and synchronize the results with the master.
+#' 
+Get_File <- function(app_id, outputfileName) {
+    invisible(.Call(`_RCOMPSs_Get_File`, app_id, outputfileName))
+}
+
+#' Get_MasterWorkingDir
+#' 
+#' Obtain the master working direction
+#' 
+Get_MasterWorkingDir <- function() {
+    .Call(`_RCOMPSs_Get_MasterWorkingDir`)
 }
 

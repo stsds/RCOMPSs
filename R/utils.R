@@ -3,41 +3,84 @@
 #' This function is the decorator for tasks.
 #'
 #' @param f The function to be executed.
+#' @param filename Character. The file where the function is defined.
+#' @param return_value Boolean. Default value is FALSE. Whether there is a return value.
 #' @param f_dir Absolute directory of the file where f is defined.
 #' @param info_only Boolean. Whether the run is to print the information only.
 #' @param ... Metadata.
 #' @return The decorated function
 #' @export
 task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
+  
+  # Convert all the metadata into a list
   metadata <- list(...)
+  
+  # Obtain the name of the function we are decorating
   f_name <- as.character(as.list(match.call())$f)
+  
+  # If we have NOT already got <MASTER_WORKING_DIR>, assign <MASTER_WORKING_DIR> to current working directory
+  if( !( "MASTER_WORKING_DIR" %in% ls(envir = globalenv()) ) ){
+    MASTER_WORKING_DIR <- get_wd()
+  }
+  
+  # This function will be returned as the decorated version of <f>
   function(...){
-    app_id <- 0L # TODO: generate automatically
+    
+    # The application id is always 0L
+    app_id <- 0L
+    
+    # Obtain the arguments that have been passed to <f>
     arguments <- as.list(match.call(definition = f, expand.dots = FALSE))
-    print(arguments)
+    
+    # Obtain the original name of <f> and then delete it from the list <arguments>
     decor_f_name <- arguments[[1]]
     arguments[[1]] <- NULL
     cat("The information that the decorated function <", decor_f_name, "> has is:\n", sep = "")
     arguments_length <- length(arguments)
     cat("Length of received arguments:", arguments_length, "\n")
+    
+    # Obtain the real values of the arguments if they are symbols
+    for(ind in 1:arguments_length){
+      if(typeof(arguments[[ind]]) == "symbol"){
+        arguments[[ind]] <- get(arguments[[ind]])
+      }
+    }
+    
+    # Initialize the integer vector <arguments_type> according to the length of the list <arguments>
     arguments_type <- integer(arguments_length)
+    
+    # Initialize content_types
+    content_types <-  rep("", length = arguments_length)
+    
+    # If there are arguments from <f>, we process them
+    # If not, <argument> will be an empty list and <arguments_names> will be an empty character vector
     if(arguments_length > 0){
       cat("Function <", f_name, "> has <", arguments_length, "> arguments:\n", sep = "")
+      print(arguments)
+      # Grep the names of the arguments
       arguments_names <- names(arguments)
+      
+      # For all the arguments, we check whether the type of the argument is basic (not object)
+      # - If the type is basic, we assign the corresponding number in <arguments_type>
+      # - If the type is not basic, we assign the type as 10L - FILE and serialize the object
       for(i in 1:arguments_length){
-        # cat("arguments[[", i, "]] is ", arguments[[i]], "\n", sep = "")
         arguments_type[i] <- parType_mapping(arguments[[i]])
-        # type - FILE. Serialize them. in the value, we put the name of the file.
+        # If the type is 10L - FILE. we serialize the argument and we put the name of the file in the value
         if(arguments_type[i] == 10L){
-          arg_ser_filename <- paste0("UID_", app_id, "_arg[", i, "]_", arguments_names[i])
-          serialize(object = arguments[[i]],
-                    connection = file(description = arg_ser_filename,
-                                      open = "w"))
-          close(arg_ser_filename)
-          arguments[[i]] <- arg_ser_filename
-          cat("Argument <", arguments_names[i], "> is serialized to file: <", arg_ser_filename, ">; ",
-              "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
-              "\n", sep = "")
+          if(class(arguments[[i]]) == "future_object"){
+            arguments[[i]] <- arguments[[i]]$outputfile
+            content_types[i] <- "future_object"
+          }else{
+            arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
+            serialize(object = arguments[[i]],
+                      connection = file(description = arg_ser_filename,
+                                        open = "w"))
+            close(arg_ser_filename)
+            arguments[[i]] <- arg_ser_filename
+            cat("Argument <", arguments_names[i], "> is serialized to file: <", arg_ser_filename, ">; ",
+                "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
+                "\n", sep = "")
+          }
         }else{
           cat("Argument <", arguments_names[i], "> is: <", arguments[[i]], ">; ",
               "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
@@ -49,18 +92,21 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       arguments_names <- character(0)
       cat("Function <", f_name, "> does not take arguments.\n", sep = "")
     }
+    
+    # If there are metadata, print them
     if(length(metadata) > 0){
       cat("Metadata:\n")
       print(metadata)
     }
-    # If there is a return we need to add another argument for it.
-    # compss_types; compss_directions; compss_streams; compss_prefixes; content_types; weights; keep_renames
+    
+    # If there is a return value, we need to add another element in <arguments> for it.
+    # Also, compss_types; compss_directions; compss_streams; compss_prefixes; content_types; weights; keep_renames
     # File name: return_file_UID
     if(return_value){
       num_of_returns <- 1L
       # Create an object for the return value
       # RETURN_VALUE <- list()
-      outputfile <- paste0("UID_", app_id, "_outputfile")
+      outputfile <- paste0(MASTER_WORKING_DIR, "ReturnValue_", UID())
       # values 
       arguments[[length(arguments) + 1]] <- outputfile
       # arguments_names
@@ -74,7 +120,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       # compss_prefixes: "null"
       compss_prefixes <- rep("null", length = arguments_length + 1)
       # content_types: "null"
-      content_types <-  rep("", length = arguments_length + 1)
+      content_types <-  c(content_types, "")
       # weights:
       weights <- rep("1", length = arguments_length + 1)
       # keep_renames: If the compss_type is FILE: 1; The rest: 0. eg: c(0,1,0,1,1,1)
@@ -84,12 +130,11 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       compss_directions <- rep(0L, length = arguments_length)
       compss_streams <- rep(3L, length = arguments_length)
       compss_prefixes <- rep("null", length = arguments_length)
-      content_types <- rep("", length = arguments_length)
+      # content_types <- rep("", length = arguments_length)
       weights <- rep("1", length = arguments_length)
       keep_renames <- rep(0L, length = arguments_length)
     }
 
-    cat("Current working directory is:", getwd(), "\n")
     # Do not execute function f, invoke instead the runtime with the arg and the information
     if(!info_only){
       # Call register function here
@@ -133,6 +178,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       # If there is a return value, return the future_object which should contain outputfile as the argument
       if(return_value){
         FO <- list(outputfile)
+        names(FO)[1] <- "outputfile"
         class(FO) <- "future_object"
         return(FO)
       }
@@ -140,6 +186,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
   }
 }
 
+#' Return the type of <arg> in the COMPSs numbering system
 parType_mapping <- function(arg){
   switch (typeof(arg),
     "logical" = 0L,
@@ -151,4 +198,67 @@ parType_mapping <- function(arg){
     "character" = 8L,
     10L # FILE
   )
+}
+
+#' Generate a unique random string based on the current time
+UID <- function() {
+  # Get the current time
+  current_time <- Sys.time()
+  
+  # Convert the time to a string representation
+  time_string <- format(current_time, "%Y%m%d%H%M%S")
+  
+  # Generate a random string using the time string
+  random_string <- paste0(time_string, paste0(sample(letters, 10, replace = TRUE), collapse = ""))
+  
+  return(random_string)
+}
+
+
+#' compss_start
+#'
+#' Start the COMPSs runtime system
+#'
+#' @export
+compss_start <- function(){
+  start_runtime()
+  MASTER_WORKING_DIR <- Get_MasterWorkingDir()
+  assign("MASTER_WORKING_DIR", MASTER_WORKING_DIR, envir = .GlobalEnv)
+}
+
+#' compss_stop
+#'
+#' Stop the COMPSs runtime system
+#'
+#' @export
+compss_stop <- function(){
+  stop_runtime(0L)
+}
+
+#' compss_barrier
+#'
+#' Barrier for the COMPSs runtime system
+#'
+#' @param no_more_tasks Boolean.
+#' @export
+compss_barrier <- function(no_more_tasks = FALSE){
+  barrier(0L, no_more_tasks)
+}
+
+#' compss_wait_on
+#'
+#' Serialization in R and synchronize the results with the master
+#'
+#' @param future_obj 
+#' @export
+compss_wait_on <- function(future_obj){
+  if(class(future_obj) != "future_object"){
+    return(future_obj)
+  }else{
+    Get_File(0L, future_obj$outputfile)
+    return_file <- file(description = future_obj$outputfile, open = "r")
+    return_value <- unserialize(connection = return_file)
+    close(return_file)
+    return(return_value)
+  }
 }

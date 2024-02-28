@@ -7,10 +7,9 @@ Author: Xiran Zhang
 Maintainer: Xiran Zhang <xiran.zhang@kaust.edu.sa>
 Description: One paragraph description of what the package does as one or more full sentences.
 License: GPL (>= 2)
-Imports: 
-    Rcpp
+Imports: Rcpp
 LinkingTo: Rcpp
 RoxygenNote: 7.2.3
-Suggests: 
-    testthat (>= 3.0.0)
+Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Encoding: UTF-8

@@ -14,7 +14,6 @@ void debug(std::string str_to_print) {
 }
 
 //' Start a COMPSs-Runtime instance
-//' @export
 // [[Rcpp::export]]
 void start_runtime(){
   debug("Start runtime");
@@ -26,7 +25,6 @@ void start_runtime(){
 //' Stop a COMPSs-Runtime instance
 //' 
 //' @param code The code to exit
-//' @export
 // [[Rcpp::export]]
 void stop_runtime(int code){
   debug("Stop runtime with code: " + std::to_string(code));
@@ -47,7 +45,6 @@ void stop_runtime(int code){
 //' @param epilog String indicating any epilog action. Usually empty.
 //' @param container String indicating if the task has to be executed within a container. Usually empty.
 //' @param typeArgs String with all arguments (task parameters).
-//' @export
 // [[Rcpp::export]]
 void register_core_element(std::string CESignature, std::string ImplSignature, 
                            std::string ImplConstraints, std::string ImplType,
@@ -153,9 +150,6 @@ int _get_type_size(int type){
   case 7:
     debug("- Type: double");
     return sizeof(double);
-  case 8:
-    debug("- Type: string");
-    return sizeof(char*);
   }
   debug("Type not implemented yet");
   exit(3);
@@ -166,7 +160,6 @@ int _get_type_size(int type){
 //' 
 //' Define the Rcpp function
 //' 
-//' @export
 // [[Rcpp::export]]
 void process_task(long int app_id, std::string signature, std::string on_failure,
                   int time_out, int priority, int num_nodes,
@@ -213,11 +206,23 @@ void process_task(long int app_id, std::string signature, std::string on_failure
   std::vector<std::string> weight_str_vec; // Store the type arguments to ensure their lifetime
   weight_str_vec.reserve(num_pars);
   std::vector<char*> weight_charp(num_pars); // Conversion to C-friendly formats
+  // values
+  std::vector<std::string> values_str_vec; // Store the type arguments to ensure their lifetime
+  values_str_vec.reserve(num_pars);
+  std::vector<char*> values_charp(num_pars); // Conversion to C-friendly formats
+  
   
   std::string temp_string; // temporary storage
+  char *temp_cptr = NULL;
+  int num_of_string_args = 0;
   for(int i = 0; i < num_pars; i++){
     debug("Processing parameter " + std::to_string(i));
-    int size_i = _get_type_size(compss_types[i]);
+    int size_i;
+    if(compss_types[i] == 0 || compss_types[i] == 4 || compss_types[i] == 7){
+      size_i = _get_type_size(compss_types[i]);
+    }else if(compss_types[i] == 8 || compss_types[i] == 10){ // Strings
+      size_i = (strlen(values[i]) + 1) * sizeof(char);
+    }
     
     p_value[i] = new std::uint8_t[size_i];
     switch(compss_types[i]){
@@ -230,8 +235,23 @@ void process_task(long int app_id, std::string signature, std::string on_failure
     case 7:
       *(double*)(p_value[i]) = double(values[i]);
       break;
-    // case 8:
-    //   *(char**)(p_value[i]) = (char*) (values[i]);
+    case 8:
+      // strcpy((char*)p_value[i], values[i]);
+      temp_string = Rcpp::as<std::string>(values[i]);
+      values_str_vec.push_back( temp_string );
+      values_charp[i] = (char*) values_str_vec[num_of_string_args].c_str();
+      p_value[i] = &values_charp[i];
+      num_of_string_args ++;
+      break;
+    case 10:
+      temp_string = Rcpp::as<std::string>(values[i]);
+      values_str_vec.push_back( temp_string );
+      values_charp[i] = (char*) values_str_vec[num_of_string_args].c_str();
+      p_value[i] = &values_charp[i];
+      num_of_string_args ++;
+      break;
+    default:
+      debug("Non-supported type!");
     }
     
     // Format the values in unrolled_parameters
@@ -265,18 +285,37 @@ void process_task(long int app_id, std::string signature, std::string on_failure
     unrolled_parameters[num_fields * i + 7] = (void*) &weight_charp[i];
     // rename: int    
     unrolled_parameters[num_fields * i + 8] = (void*) &keep_renames[i];
-    
+  }
+  
+  for(int i = 0; i < num_pars; i++){
 #if DEBUG_MODE
     fprintf(stderr, "----> Value is at %p\n", (void*) p_value[i]);
     fprintf(stderr, "----> Type: %d\n", compss_types[i]);
+    switch(compss_types[i]){
+    case 0:
+      fprintf(stderr, "----> The value is: %d\n", *(int*)(p_value[i]));
+      break;
+    case 4:
+      fprintf(stderr, "----> The value is: %d\n", *(int*)(p_value[i]));
+      break;
+    case 7:
+      fprintf(stderr, "----> The value is: %lf\n", *(double*)(p_value[i]));
+      break;
+    case 8:
+      fprintf(stderr, "----> The value is: %s\n", *(char**)(p_value[i]));
+      break;
+    case 10:
+      fprintf(stderr, "----> The value is: %s\n", *(char**)(p_value[i]));
+      break;
+    }
     fprintf(stderr, "----> Direction: %d\n", compss_directions[i]);
     fprintf(stderr, "----> Stream: %d\n", compss_streams[i]);
     fprintf(stderr, "----> Prefix: %s\n", prefix_charp[i]);
-    fprintf(stderr, "----> Size: %d\n", size_i);
+    //fprintf(stderr, "----> Size: %d\n", _get_type_size(compss_types[i]));
     fprintf(stderr, "----> Name: %s\n", name_charp[i]);
     fprintf(stderr, "----> Content: %s\n", content_charp[i]);
     fprintf(stderr, "----> Weight: %s\n", weight_charp[i]);
-    fprintf(stderr, "----> Keep rename: %d\n", keep_renames[i]);
+    fprintf(stderr, "----> Keep rename: %d\n\n", keep_renames[i]);
 #endif
   }
   
@@ -310,7 +349,6 @@ void process_task(long int app_id, std::string signature, std::string on_failure
 //' 
 //' Halt all the tasks: Notify the runtime that our current application wants to "execute" a barrier. Program will be blocked in GS_BarrierNew until all running tasks have ended. Notifies the 'no more tasks' boolean value.
 //' 
-//' @export
 // [[Rcpp::export]]
 void barrier(long int app_id, bool no_more_tasks){
   debug("Barrier\n");
@@ -324,6 +362,33 @@ void barrier(long int app_id, bool no_more_tasks){
   debug("Barrier end\n");
 }
 
-// TODO
-// extern "C" void GS_Get_File(long appId, char* fileName);
-// Serialization in R and syncronize the results with the master
+
+//' Get_File
+//' 
+//' Serialization in R and synchronize the results with the master.
+//' 
+// [[Rcpp::export]]
+void Get_File(long int app_id, std::string outputfileName){
+  debug("\nGet_File");
+  debug("- App id: " + std::to_string(app_id));
+  debug("- Output filename: " + outputfileName);
+  char* outputfileName_char;
+  outputfileName_char = &outputfileName[0];
+  GS_Get_File(app_id, outputfileName_char);
+  debug("Get_File end\n");
+}
+
+
+//' Get_MasterWorkingDir
+//' 
+//' Obtain the master working direction
+//' 
+// [[Rcpp::export]]
+Rcpp::CharacterVector Get_MasterWorkingDir() {
+  debug("Get_MasterWorkingDir\n");
+  char* master_working_path;
+  GS_Get_MasterWorkingDir(&master_working_path);
+  Rcpp::CharacterVector result = Rcpp::CharacterVector::create(master_working_path);
+  debug("Get_MasterWorkingDir end\n");
+  return result;
+}

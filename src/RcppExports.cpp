@@ -89,6 +89,27 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// Get_File
+void Get_File(long int app_id, std::string outputfileName);
+RcppExport SEXP _RCOMPSs_Get_File(SEXP app_idSEXP, SEXP outputfileNameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< long int >::type app_id(app_idSEXP);
+    Rcpp::traits::input_parameter< std::string >::type outputfileName(outputfileNameSEXP);
+    Get_File(app_id, outputfileName);
+    return R_NilValue;
+END_RCPP
+}
+// Get_MasterWorkingDir
+Rcpp::CharacterVector Get_MasterWorkingDir();
+RcppExport SEXP _RCOMPSs_Get_MasterWorkingDir() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(Get_MasterWorkingDir());
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RCOMPSs_start_runtime", (DL_FUNC) &_RCOMPSs_start_runtime, 0},
@@ -96,6 +117,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RCOMPSs_register_core_element", (DL_FUNC) &_RCOMPSs_register_core_element, 10},
     {"_RCOMPSs_process_task", (DL_FUNC) &_RCOMPSs_process_task, 21},
     {"_RCOMPSs_barrier", (DL_FUNC) &_RCOMPSs_barrier, 2},
+    {"_RCOMPSs_Get_File", (DL_FUNC) &_RCOMPSs_Get_File, 2},
+    {"_RCOMPSs_Get_MasterWorkingDir", (DL_FUNC) &_RCOMPSs_Get_MasterWorkingDir, 0},
     {NULL, NULL, 0}
 };
 
