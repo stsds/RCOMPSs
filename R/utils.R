@@ -56,7 +56,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
     # If not, <argument> will be an empty list and <arguments_names> will be an empty character vector
     if(arguments_length > 0){
       cat("Function <", f_name, "> has <", arguments_length, "> arguments:\n", sep = "")
-      print(arguments)
+      # print(arguments)
       # Grep the names of the arguments
       arguments_names <- names(arguments)
       
@@ -64,18 +64,22 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       # - If the type is basic, we assign the corresponding number in <arguments_type>
       # - If the type is not basic, we assign the type as 10L - FILE and serialize the object
       for(i in 1:arguments_length){
-        arguments_type[i] <- parType_mapping(arguments[[i]])
+        if(length(class(arguments[[i]])) == 1 && (class(arguments[[i]]) == "numeric" || class(arguments[[i]]) == "character")){
+          arguments_type[i] <- parType_mapping(arguments[[i]])
+        }else{
+          arguments_type[i] <- 10L
+        }
         # If the type is 10L - FILE. we serialize the argument and we put the name of the file in the value
         if(arguments_type[i] == 10L){
-          if(class(arguments[[i]]) == "future_object"){
+          if(length(class(arguments[[i]])) == 1 && class(arguments[[i]]) == "future_object"){
             arguments[[i]] <- arguments[[i]]$outputfile
             content_types[i] <- "future_object"
           }else{
+            content_types[i] <- "object"
             arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
-            serialize(object = arguments[[i]],
-                      connection = file(description = arg_ser_filename,
-                                        open = "w"))
-            close(arg_ser_filename)
+            con <- file(description = arg_ser_filename, open = "w")
+            serialize(object = arguments[[i]], connection = con)
+            close(con)
             arguments[[i]] <- arg_ser_filename
             cat("Argument <", arguments_names[i], "> is serialized to file: <", arg_ser_filename, ">; ",
                 "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
@@ -147,7 +151,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
                             prolog = c("", "", "False"),
                             epilog = c("", "", "False"),
                             container = c("", "", ""),
-                            typeArgs = c(paste0(getwd(), "/", filename, ".R"), f_name)
+                            typeArgs = c(paste0(getwd(), "/", filename), f_name)
                             # typeArgs = c("/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/temp_add3.R", f_name)
                             )
 
