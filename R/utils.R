@@ -12,6 +12,8 @@
 #' @export
 task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
   
+  TIME1 <- proc.time()
+  
   # Convert all the metadata into a list
   metadata <- list(...)
   
@@ -76,13 +78,18 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
             content_types[i] <- "future_object"
           }else{
             content_types[i] <- "object"
+            SER.TIME <- proc.time()
             arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
-            con <- file(description = arg_ser_filename, open = "w")
-            serialize(object = arguments[[i]], connection = con)
+            arg_ser <- serialize(object = arguments[[i]], connection = NULL)
+            con <- file(description = arg_ser_filename, open = "wb")
+            writeBin(object = arg_ser, con = con)
             close(con)
+            # compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
+            SER.TIME <- proc.time() - SER.TIME
             arguments[[i]] <- arg_ser_filename
             cat("Argument <", arguments_names[i], "> is serialized to file: <", arg_ser_filename, ">; ",
-                "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
+                "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">; ",
+                "Time for serialization: ", SER.TIME[3], " seconds.",
                 "\n", sep = "")
           }
         }else{
@@ -139,6 +146,8 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       keep_renames <- rep(0L, length = arguments_length)
     }
 
+    TIME2 <- proc.time()
+    cat("Time before register:", TIME2[3] - TIME1[3], "\n")
     # Do not execute function f, invoke instead the runtime with the arg and the information
     if(!info_only){
       # Call register function here
@@ -179,6 +188,8 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
                    keep_renames = keep_renames # If the compss_type is FILE: 1; The rest: 0. c(0,1,0,1,1,1)
       )
      
+      TIME3 <- proc.time()
+      cat("Time after register:", TIME3[3] - TIME2[3], "\n")
       # If there is a return value, return the future_object which should contain outputfile as the argument
       if(return_value){
         FO <- list(outputfile)
@@ -218,6 +229,37 @@ UID <- function() {
   return(random_string)
 }
 
+# compss_serialize
+# 
+# Internal serialization function
+# 
+# @export
+# compss_serialize <- function(object, filepath){
+#   if(is.data.frame(object)){
+#     fst::write_fst(object, path = filepath, compress = 0)
+#   }else if(is.matrix(object)){
+#     fst::write_fst(as.data.frame(object), path = filepath, compress = 0)
+#   }else{
+#     saveRDS(object = object, file = filepath)  
+#   }
+# }
+
+# compss_unserialize
+# 
+# Internal unserialization function
+# 
+# @export
+# compss_unserialize <- function(filepath){
+#   ext <- strsplit(filepath, "[.]")[[1]]
+#   ext <- ext[length(ext)]
+#   if(ext == "fstmatrix"){
+#     return(as.matrix(fst::read.fst(path = filepath)))
+#   }else if(ext == "fst"){
+#     return(fst::read.fst(path = filepath))
+#   }else{
+#     return(readRDS(filepath))
+#   }
+# }
 
 #' compss_start
 #'
@@ -260,9 +302,12 @@ compss_wait_on <- function(future_obj){
     return(future_obj)
   }else{
     Get_File(0L, future_obj$outputfile)
-    return_file <- file(description = future_obj$outputfile, open = "r")
-    return_value <- unserialize(connection = return_file)
-    close(return_file)
+    ext <- strsplit(future_obj$outputfile, "[.]")[[1]]
+    ext <- ext[length(ext)]
+    con <- file(description = future_obj$outputfile, open = "rb")
+    res <- readBin(con, what = raw(), n = file.info(future_obj$outputfile)$size)
+    return_value <- unserialize(connection = res)
+    close(con)
     return(return_value)
   }
 }
