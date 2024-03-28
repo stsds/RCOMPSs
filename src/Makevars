@@ -1,2 +1,2 @@
-PKG_CPPFLAGS=-I/opt/COMPSs/Bindings/bindings-common/include -I/usr/lib/jvm/java-8-openjdk-amd64/include -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux
-PKG_LIBS=-L/opt/COMPSs/Bindings/bindings-common/lib -lbindings_common
+PKG_CPPFLAGS=-I/home/zhanx0q/RCOMPSs/COMPSs_installation/Bindings/bindings-common/include -I/usr/lib/jvm/java-8-openjdk-amd64/include -I/usr/lib/jvm/java-8-openjdk-amd64/include/linux
+PKG_LIBS=-L/home/zhanx0q/RCOMPSs/COMPSs_installation/Bindings/bindings-common/lib -lbindings_common

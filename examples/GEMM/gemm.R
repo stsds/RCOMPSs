@@ -1,12 +1,12 @@
 library(RCOMPSs)
 source("blkmm.R")
 
-m1 <- 2000
-m2 <- 2000
-m3 <- 2000
-n1 <- 6000
-n2 <- 6000
-n3 <- 6000
+m1 <- 100
+m2 <- 100
+m3 <- 100
+n1 <- 300
+n2 <- 300
+n3 <- 300
 
 nb1 <- n1 %/% m1
 nb2 <- n2 %/% m2
@@ -26,9 +26,11 @@ set.seed(1)
 A <- matrix(runif(n = n1*n2), nrow = n1, ncol = n2)
 B <- matrix(runif(n = n2*n3), nrow = n2, ncol = n3)
 
+cat("R multiplication ... ")
 TIME.R <- proc.time()
 D1 <- A %*% B
 TIME.R <- proc.time() - TIME.R
+cat("Done.")
 
 TIME.RCOMPSs <- proc.time()
 D2 <- matrix(0, nrow = n1, ncol = n3)
