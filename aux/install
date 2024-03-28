@@ -1,0 +1,239 @@
+#!/bin/bash -e
+
+  ####################################################################################################
+  # Name:        install
+  # Description: Script to install COMPSs
+  # Parameters:  <targetFolder> Folder where to install COMPSs
+  #              ATTENTION: The target Folder will be completely removed and created again to avoid
+  #                         conflicts between installations. Please save any configuration files.
+  # Support:     support-compss@bsc.es
+  ####################################################################################################
+
+  ####################
+  # FUNCTIONS
+  ####################
+usage() {
+    exitValue=$1
+    echo " "
+    echo " Usage:  install [options] <targetFolder> [<queues_cfg>]"
+    echo " "
+    echo " Options:"
+    echo " --help, -h                  Print this help message"
+    echo " --no-bindings, -B           Disable bindings installation"
+    echo " --no-tracing, -T            Disable tracing system installation"
+    echo " --no-c-binding, -C          Disable C++ binding installation"
+    echo " --nothing, -N               Disable all previous options"
+    echo " "
+    echo " Parameters:"
+    echo "   - targetFolder : Target folder of the COMPSs installation."
+    echo "   - queues_cfg :   Queue configuration file to be copied as default into targetFolder/Runtime/scripts/queues/cfgs/"
+    echo " "
+    echo "ATTENTION: The COMPSs folder inside the target folder will be completely removed to avoid"
+    echo "           conflicts between installations. Please save any configuration files."
+    echo " "
+    echo "SUPPORT:   support-compss@bsc.es"
+    echo " "
+    exit "$exitValue"
+}
+
+  # Displays parsing arguments errors
+display_error() {
+  local error_msg=$1
+  echo "$error_msg"
+
+  echo " "
+  usage 1
+}
+
+get_args() {
+  # Parse COMPSs Options
+  while getopts hvBTACP-: flag; do
+    # Treat the argument
+    case "$flag" in
+      h)
+        # Display help
+        usage 0
+        ;;
+      B)
+        # Custom bindings value
+        bindings=false
+        ;;
+      T)
+        # Custom tracing value
+        tracing=false
+        ;;
+      C)
+        # Custom C++ binding value
+        c_binding=false
+        ;;
+      P)
+	# Custom Python binding value
+        python_binding=false
+        ;;
+      N)
+        # Disables all flags
+        tracing=false
+        bindings=false
+        c_binding=false
+	python_binding=false
+        ;;
+      -)
+        # Check more complex arguments
+        case "$OPTARG" in
+          help)
+            # Display help
+            usage 0
+            ;;
+          no-bindings)
+            # Custom bindings value
+            bindings=false
+            ;;
+          no-tracing)
+            # Custom tracing value
+            tracing=false
+            ;;
+          no-c-binding)
+            c_binding=false
+            ;;
+	  no-python-binding)
+            python_binding=false
+	    ;;
+          nothing)
+            # Disables all flags
+            tracing=false
+            bindings=false
+            c_binding=false
+	    python_binding=false
+            ;;
+          *)
+            # Flag didn't match any patern. End of COMPSs flags
+            display_error "${INCORRECT_PARAMETER}"
+            break
+            ;;
+        esac
+        ;;
+      *)
+        # Flag didn't match any patern. End of COMPSs flags
+        display_error "${INCORRECT_PARAMETER}"
+        break
+        ;;
+    esac
+  done
+  # Shift option arguments
+  shift $((OPTIND-1))
+
+  # Get parameters
+  if [ $# -lt 1 ] || [ $# -gt 2 ]; then
+    echo "Incorrect number of parameters ($#)"
+    usage 1
+  fi
+  targetDir=$1
+  queues_cfg=$2
+}
+
+  ####################
+  # MAIN
+  ####################
+  tracing=true
+  bindings=true
+  c_binding=true
+  python_binding=true
+
+  system_os=$(uname)
+  if [[ "$system_os" == "Darwin" ]]; then
+    tracing=false
+    autoparallel=false
+  fi
+
+  get_args "$@"
+
+  # WARN MESSAGE and log parameters
+  echo " "
+  echo "Options:"
+  echo "  - Tracing: $tracing"
+  echo "  - Bindings: $bindings"
+  echo "  - C_Binding: $c_binding"
+  echo "  - Python Binding: $python_binding"
+  echo " "
+  echo "Parameters:"
+  echo "  - Target Installation Folder = $targetDir"
+  echo "  - SC CFG file = $queues_cfg"
+  echo " "
+  echo "ATTENTION: The target folder will be completely removed to avoid"
+  echo "           conflicts between installations. Please save any configuration files."
+  echo " "
+  echo "  You can abort the installation within 5s..."
+  #sleep 5
+
+  # Begin installation
+  echo " "
+  echo "Beginning COMPSs installation..."
+  echo " "
+
+  # Define script variables
+  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+  # Deploy COMPSs
+  echo "- Deploy COMPSs files"
+  rm -rf "${targetDir}"
+  mkdir -p "${targetDir}"
+  cp -r "${SCRIPT_DIR}"/* "${targetDir}"
+  sed -i -e 's#/opt/COMPSs/#'"${targetDir}"'#g' "${targetDir}"/Runtime/configuration/xml/projects/default_project.xml
+  rm -rf "${targetDir}"/Bindings/*
+  echo "   Success"
+  if [ "${bindings}" == "true" ]; then
+    # Install bindings-common
+    echo "- Install bindings-common"
+    cd "${SCRIPT_DIR}"/Bindings/bindings-common/
+    ./install_common "${targetDir}"/Bindings/bindings-common
+    cd "${SCRIPT_DIR}"
+    echo "   Success"
+
+    # Install C-binding
+    if [ "${c_binding}" == "true" ]; then
+      echo "- Install C-binding"
+      cd "${SCRIPT_DIR}"/Bindings/c
+      ./install "${targetDir}"/Bindings/c true
+      mkdir -p "${targetDir}"/Runtime/scripts/system/c/
+      cp "${targetDir}"/Bindings/c/bin/* "${targetDir}"/Runtime/scripts/system/c
+      cp ./compss_build_app "${targetDir}"/Runtime/scripts/user/
+      cd "${SCRIPT_DIR}"
+      echo "   Success"
+    fi
+
+    # Install Python-binding
+    if [ "${python_binding}" == "true" ]; then
+      echo "- Install Python binding"
+      cd "${SCRIPT_DIR}"/Bindings/python
+      ./install "${targetDir}"/Bindings/python false python3
+      cd "${SCRIPT_DIR}"
+      echo "   Success"
+    fi
+  fi
+  if [ "${tracing}" == "true" ]; then
+    # Install extrae
+    echo "- Install extrae"
+    cd "${SCRIPT_DIR}"/Dependencies
+    ./install_extrae.sh "${SCRIPT_DIR}"/Dependencies/extrae "${targetDir}"/Dependencies/extrae true
+    cd "${SCRIPT_DIR}"
+    echo "   Success"
+  fi
+  # Set permissions
+  echo "- Set COMPSs permissions"
+  chmod -R 755 "${targetDir}"
+  chmod -R 777 "${targetDir}"/Runtime/configuration/
+
+  # Copy the queue.cfg as default.cfg if it is defined
+  if [ -n "${queues_cfg}" ]; then
+    cp "${targetDir}"/Runtime/scripts/queues/supercomputers/"${queues_cfg}" "${targetDir}"/Runtime/scripts/queues/supercomputers/default.cfg
+  fi
+
+  # End
+  echo " "
+  echo "Congratulations!"
+  echo "COMPSs Successfully installed!"
+  echo " "
+  echo "To use COMPSs please source the ${targetDir}/compssenv file into the users .bashrc"
+  echo " "
+
+  exit 0

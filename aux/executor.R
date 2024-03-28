@@ -103,8 +103,13 @@ while (TRUE) {
                      path_value <- path_value[length(path_value)]
                      if(content_type != "null"){
                        # print(paste0("The path value is: ", path_value, "\n"))
-                       con <- file(description = path_value, open = "r")
-                       params_func_list[[i+1]] <- unserialize(connection = con)
+                       #params_func_list[[i+1]] <- compss_unserialize(filepath = path_value)
+                       #params_func_list[[i+1]] <- readRDS(file = path_value)
+                       ext <- strsplit(path_value, "[.]")[[1]]
+                       ext <- ext[length(ext)]
+                       con <- file(description = path_value, open = "rb")
+                       par_raw <- readBin(con, what = raw(), n = file.info(path_value)$size)
+                       params_func_list[[i+1]] <- unserialize(connection = par_raw)
                        close(con)
                        # print("params_func_list\n")
                        # print(params_func_list[i+1])
@@ -121,14 +126,17 @@ while (TRUE) {
                  # print("params_func_list:\n")
                  # print(params_func_list)
                  result <- do.call(func, params_func_list)
+                 cat("num_of_returns:", num_of_returns, "\n")
                  if(num_of_returns > 0){
                    path_return_value <- as.character(params[first_arg_ind + 5])
                    path_return_value <- strsplit(path_return_value, ":")[[1]]
                    path_return_value <- path_return_value[length(path_return_value)]
-                   cat("The path is: ", path_return_value)
-                   con <- file(description = path_return_value, open = "w")
-                   serialize(object = result, connection = con)
+                   # compss_serialize(object = result, filepath = path_return_value)
+                   con <- file(description = path_return_value, open = "wb")
+                   x <- serialize(object = result, connection = NULL)
+                   writeBin(x, con)
                    close(con)
+                   cat("The path is: ", path_return_value)
                  }
                  # print("The results is:\n")
                  # print(result)
@@ -154,4 +162,4 @@ while (TRUE) {
 # Close the FIFOs
 close(input_fifo)
 close(output_fifo)
-
+#
