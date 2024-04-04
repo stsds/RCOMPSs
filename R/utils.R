@@ -224,7 +224,7 @@ UID <- function() {
   time_string <- format(current_time, "%Y%m%d%H%M%S")
   
   # Generate a random string using the time string
-  random_string <- paste0(time_string, paste0(sample(letters, 10, replace = TRUE), collapse = ""))
+  random_string <- paste0(time_string, paste0(sample(letters, 50, replace = TRUE), collapse = ""))
   
   return(random_string)
 }
