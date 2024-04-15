@@ -2,7 +2,7 @@ library(RCOMPSs)
 source("blkmm.R")
 compss_start()
 
-dimension.range <- seq(1000, 1000, 2000)
+dimension.range <- seq(1000, 9000, 2000)
 res <- as.data.frame(matrix(nrow = 0, ncol = 4))
 colnames(res) <- c("time(s)", "method", "dimension", "tile_size")
 
@@ -22,7 +22,6 @@ set.seed(1)
 
 for(dimension in dimension.range){
 
-  dimension <- 3000
   n1 <- dimension
   n2 <- dimension
   n3 <- dimension
@@ -40,9 +39,14 @@ for(dimension in dimension.range){
   flush.console()
 
   res <- rbind(res, c(TIME.R[3], "R", dimension, NA))
+  write.table(data.frame(TIME.R[3], "R", dimension, NA), append = TRUE,
+                "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
 
-  #ts.range <- seq(100, dimension/2, 100)
-  ts.range <- c(500, 500)
+  if(dimension == 1000){
+    ts.range <- c(100, seq(100, dimension/2, 100))
+  }else{
+    ts.range <- c(4200, 4300, 4400, 4500) # seq(dimension/10, dimension/2, 100)
+  }
 
   for(ts in ts.range){
 
@@ -87,13 +91,16 @@ for(dimension in dimension.range){
     flush.console()
 
     res <- rbind(res, c(TIME.RCOMPSs[3], "RCOMPSs", dimension, ts))
+
+    write.table(data.frame(TIME.RCOMPSs[3], "RCOMPSs", dimension, ts), append = TRUE,
+                "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
   }
 }
 
-res[,1] <- as.numeric(res[,1])
-res[,3] <- as.numeric(res[,3])
-res[,4] <- as.numeric(res[,4])
+#res[,1] <- as.numeric(res[,1])
+#res[,3] <- as.numeric(res[,3])
+#res[,4] <- as.numeric(res[,4])
 
-write.table(res, "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
+#write.table(res, "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
 
 compss_stop()
