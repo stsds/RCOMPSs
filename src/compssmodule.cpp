@@ -29,6 +29,7 @@ void start_runtime(){
 void stop_runtime(int code){
   debug("Stop runtime with code: " + std::to_string(code));
   GS_Off(code);
+  debug("RCOMPSs stopped");
 }
 
 //' register_core_element

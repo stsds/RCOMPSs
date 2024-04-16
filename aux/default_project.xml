@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Project>
-    <MasterNode/>
-    <ComputeNode Name="localhost">
-        <InstallDir>/home/zhanx0q/RCOMPSs/COMPSs_installation</InstallDir>
-        <WorkingDir>/tmp/COMPSsWorker/</WorkingDir>
-        <Application>
-          <EnvironmentScript>/home/zhanx0q/RCOMPSs/RCOMPSs/config.sh</EnvironmentScript>
-        </Application>
-    </ComputeNode>
+  <MasterNode>
+    <SharedDisks>
+      <AttachedDisk Name="sharedDisk0">
+        <MountPoint>/</MountPoint>
+      </AttachedDisk>
+    </SharedDisks>
+  </MasterNode>
+  <ComputeNode Name="localhost">
+    <InstallDir>/home/zhanx0q/RCOMPSs/COMPSs_installation</InstallDir>
+    <WorkingDir>/tmp/COMPSsWorker/</WorkingDir>
+    <Application>
+      <EnvironmentScript>/home/zhanx0q/RCOMPSs/RCOMPSs/config.sh</EnvironmentScript>
+    </Application>
+  </ComputeNode>
 </Project>

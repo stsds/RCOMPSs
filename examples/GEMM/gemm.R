@@ -1,10 +1,21 @@
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly = TRUE)
+type = args[1]
+if(type != "--single-run" && type != "--multiple-run"){
+  q("Wrong parameter!")
+}
+
 library(RCOMPSs)
 source("blkmm.R")
 compss_start()
 
-dimension.range <- seq(1000, 9000, 2000)
-res <- as.data.frame(matrix(nrow = 0, ncol = 4))
-colnames(res) <- c("time(s)", "method", "dimension", "tile_size")
+if(type == "--single-run"){
+  dimension.range <- 1000
+}else if(type == "--multiple-run"){
+  dimension.range <- seq(1000, 9000, 2000)
+  res <- as.data.frame(matrix(nrow = 0, ncol = 4))
+  colnames(res) <- c("time(s)", "method", "dimension", "tile_size")
+}
 
 mm <- task(multiplication, "blkmm.R", info_only = FALSE, return_value = TRUE)
 add <- task(addition, "blkmm.R", info_only = FALSE, return_value = TRUE)
@@ -38,14 +49,20 @@ for(dimension in dimension.range){
   cat("Done.\n")
   flush.console()
 
-  res <- rbind(res, c(TIME.R[3], "R", dimension, NA))
-  write.table(data.frame(TIME.R[3], "R", dimension, NA), append = TRUE,
+  if(type == "--multiple-run"){
+    res <- rbind(res, c(TIME.R[3], "R", dimension, NA))
+    write.table(data.frame(TIME.R[3], "R", dimension, NA), append = TRUE,
                 "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
+  }
 
-  if(dimension == 1000){
-    ts.range <- c(100, seq(100, dimension/2, 100))
-  }else{
-    ts.range <- c(4200, 4300, 4400, 4500) # seq(dimension/10, dimension/2, 100)
+  if(type == "--single-run"){
+    ts.range <- c(100, 100)
+  }else if(type == "--multiple-run"){
+    if(dimension == 1000){
+      ts.range <- c(100, seq(100, dimension/2, 100))
+    }else{
+      ts.range <- c(4200, 4300, 4400, 4500) # seq(dimension/10, dimension/2, 100)
+    }
   }
 
   for(ts in ts.range){
@@ -90,10 +107,11 @@ for(dimension in dimension.range){
     cat("****************************************\n")
     flush.console()
 
-    res <- rbind(res, c(TIME.RCOMPSs[3], "RCOMPSs", dimension, ts))
-
-    write.table(data.frame(TIME.RCOMPSs[3], "RCOMPSs", dimension, ts), append = TRUE,
-                "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
+    if(type == "--multiple-run"){
+      res <- rbind(res, c(TIME.RCOMPSs[3], "RCOMPSs", dimension, ts))
+      write.table(data.frame(TIME.RCOMPSs[3], "RCOMPSs", dimension, ts), append = TRUE,
+                  "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
+    }
   }
 }
 
