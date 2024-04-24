@@ -1,7 +1,24 @@
 #!/usr/bin/env Rscript
-args = commandArgs(trailingOnly = TRUE)
-type = args[1]
-if(type != "--single-run" && type != "--multiple-run"){
+
+Sys.setenv(OPENBLAS_NUM_THREADS = "1",
+           MKL_NUM_THREADS = "1",
+           OMP_NUM_THREADS = "1") # For OpenMP in other packages/libraries
+
+args <- commandArgs(trailingOnly = TRUE)
+base.R <- TRUE
+for(i in 1:length(args)){
+  arg <- strsplit(args[i], split = "=")[[1]]
+  if(arg[1] == "--type"){
+    type <- arg[2]
+  }else if(arg[1] == "--dimension"){
+    dimension.range <- as.numeric(arg[2])
+  }else if(arg[1] == "--tilesize"){
+    ts.range <- c(as.numeric(arg[2]), as.numeric(arg[2]))
+  }else if(arg[1] == "--no-base-R"){
+    base.R <- FALSE
+  }
+}
+if(type != "single-run" && type != "multiple-run"){
   q("Wrong parameter!")
 }
 
@@ -9,16 +26,13 @@ library(RCOMPSs)
 source("blkmm.R")
 compss_start()
 
-if(type == "--single-run"){
-  dimension.range <- 1000
-}else if(type == "--multiple-run"){
-  dimension.range <- seq(1000, 9000, 2000)
+if(type == "multiple-run"){
+  dimension.range <- rep(seq(1000, 9000, 2000), 3)
   res <- as.data.frame(matrix(nrow = 0, ncol = 4))
   colnames(res) <- c("time(s)", "method", "dimension", "tile_size")
 }
 
-mm <- task(multiplication, "blkmm.R", info_only = FALSE, return_value = TRUE)
-add <- task(addition, "blkmm.R", info_only = FALSE, return_value = TRUE)
+mm_add <- task(mult_addition, "blkmm.R", info_only = FALSE, return_value = TRUE)
 
 get_index <- function(k, tile_size, dimension){
   if(k * tile_size <= dimension){
@@ -42,26 +56,26 @@ for(dimension in dimension.range){
   A <- matrix(runif(n = n1*n2), nrow = n1, ncol = n2)
   B <- matrix(runif(n = n2*n3), nrow = n2, ncol = n3)
 
-  cat("R multiplication ... ")
-  TIME.R <- proc.time()
-  D1 <- A %*% B
-  TIME.R <- proc.time() - TIME.R
-  cat("Done.\n")
-  flush.console()
+  if(base.R){
+    cat("R multiplication ... ")
+    TIME.R <- proc.time()
+    D1 <- A %*% B
+    TIME.R <- proc.time() - TIME.R
+    cat("Done.\n")
+    flush.console()
+  }
 
-  if(type == "--multiple-run"){
+  if(type == "multiple-run"){
     res <- rbind(res, c(TIME.R[3], "R", dimension, NA))
     write.table(data.frame(TIME.R[3], "R", dimension, NA), append = TRUE,
                 "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
   }
 
-  if(type == "--single-run"){
-    ts.range <- c(100, 100)
-  }else if(type == "--multiple-run"){
+  if(type == "multiple-run"){
     if(dimension == 1000){
       ts.range <- c(100, seq(100, dimension/2, 100))
     }else{
-      ts.range <- c(4200, 4300, 4400, 4500) # seq(dimension/10, dimension/2, 100)
+      ts.range <- seq(dimension/10, dimension/2, 100)
     }
   }
 
@@ -85,12 +99,15 @@ for(dimension in dimension.range){
         for(j in 1:nb2){
           K1 <-  A[get_index(i, m1, n1), get_index(j, m2, n2)]
           K2 <-  B[get_index(j, m2, n2), get_index(k, m3, n3)]
-          T2 <- mm(K1, K2)
+          # T2 <- mm(K1, K2)
           T3 <- T1[[(i-1) + (k-1) * nb1 + 1]]
-          T1[[(i-1) + (k-1) * nb1 + 1]] <- add(T3, T2)
+          # T1[[(i-1) + (k-1) * nb1 + 1]] <- add(T3, T2)
+          T1[[(i-1) + (k-1) * nb1 + 1]] <- mm_add(K1, K2, T3)
         }
       }
     }
+    compss_barrier()
+
     for(i in 1:nb1){
       for(k in 1:nb3){
         t1 <- compss_wait_on(T1[[(i-1) + (k-1) * nb1 + 1]])
@@ -100,8 +117,10 @@ for(dimension in dimension.range){
     TIME.RCOMPSs <- proc.time() - TIME.RCOMPSs
 
     cat("****************************************\n")
-    cat("The norm of the difference matrix is:", norm(D1 - D2, "F"), "\n")
-    cat("Time for R is", TIME.R[3], "seconds\n")
+    if(base.R){
+      cat("The norm of the difference matrix is:", norm(D1 - D2, "F"), "\n")
+      cat("Time for R is", TIME.R[3], "seconds\n")
+    }
     cat("Time for RCOMPSs is", TIME.RCOMPSs[3], "seconds\n")
     cat("Tile size is", ts, "\n")
     cat("****************************************\n")
@@ -114,11 +133,5 @@ for(dimension in dimension.range){
     }
   }
 }
-
-#res[,1] <- as.numeric(res[,1])
-#res[,3] <- as.numeric(res[,3])
-#res[,4] <- as.numeric(res[,4])
-
-#write.table(res, "time.csv", sep = ",", row.names = FALSE, col.names = FALSE)
 
 compss_stop()
