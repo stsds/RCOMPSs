@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 
-Sys.setenv(OPENBLAS_NUM_THREADS = "1",
-           MKL_NUM_THREADS = "1",
-           OMP_NUM_THREADS = "1") # For OpenMP in other packages/libraries
+#Sys.setenv(OPENBLAS_NUM_THREADS = "1",
+#           MKL_NUM_THREADS = "1",
+#           OMP_NUM_THREADS = "1") # For OpenMP in other packages/libraries
 
 args <- commandArgs(trailingOnly = TRUE)
 base.R <- TRUE
@@ -122,7 +122,11 @@ for(dimension in dimension.range){
       cat("Time for R is", TIME.R[3], "seconds\n")
     }
     cat("Time for RCOMPSs is", TIME.RCOMPSs[3], "seconds\n")
-    cat("Tile size is", ts, "\n")
+    cat(paste0("Dimension: ", dimension, "; Tile size: ", ts, "\n"))
+    SI <- sessionInfo()
+    cat("The R version is:", paste0(SI$R.version$major, ".", SI$R.version$minor), "\n")
+    cat("BLAS:", SI$BLAS, "\n")
+    cat("LAPACK:", SI$LAPACK, "\n")
     cat("****************************************\n")
     flush.console()
 

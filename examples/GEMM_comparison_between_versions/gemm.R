@@ -1,7 +1,7 @@
 a <- sessionInfo()
 
 #for( m in rep(seq(1000, 10000, 2000), each = 5) ){
-for(m in 8000){
+for(m in c(2e4, 3e4)){
   n <- m^2
   cat("Generating matrices ... ")
   A <- matrix(runif(n), ncol = m)
