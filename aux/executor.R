@@ -1,4 +1,7 @@
 # Check if the correct number of command-line arguments is provided
+
+a <- sessionInfo()
+cat("The version of R being used is:", paste0(a$R.version$major, ".", a$R.version$minor))
 if (length(commandArgs(trailingOnly = TRUE)) != 2) {
   cat("Usage: Rscript script.R input_fifo output_fifo\n")
   q("no")
@@ -105,12 +108,13 @@ while (TRUE) {
                        # print(paste0("The path value is: ", path_value, "\n"))
                        #params_func_list[[i+1]] <- compss_unserialize(filepath = path_value)
                        #params_func_list[[i+1]] <- readRDS(file = path_value)
-                       ext <- strsplit(path_value, "[.]")[[1]]
-                       ext <- ext[length(ext)]
-                       con <- file(description = path_value, open = "rb")
-                       par_raw <- readBin(con, what = raw(), n = file.info(path_value)$size)
-                       params_func_list[[i+1]] <- unserialize(connection = par_raw)
-                       close(con)
+                       # ext <- strsplit(path_value, "[.]")[[1]]
+                       # ext <- ext[length(ext)]
+                       # con <- file(description = path_value, open = "rb")
+                       # par_raw <- readBin(con, what = raw(), n = file.info(path_value)$size)
+                       # params_func_list[[i+1]] <- unserialize(connection = par_raw)
+                       # close(con)
+                       params_func_list[[i+1]] <- RCOMPSs::compss_unserialize(path_value)
                        # print("params_func_list\n")
                        # print(params_func_list[i+1])
                      }else{
@@ -132,10 +136,11 @@ while (TRUE) {
                    path_return_value <- strsplit(path_return_value, ":")[[1]]
                    path_return_value <- path_return_value[length(path_return_value)]
                    # compss_serialize(object = result, filepath = path_return_value)
-                   con <- file(description = path_return_value, open = "wb")
-                   x <- serialize(object = result, connection = NULL)
-                   writeBin(x, con)
-                   close(con)
+                   # con <- file(description = path_return_value, open = "wb")
+                   # x <- serialize(object = result, connection = NULL)
+                   # writeBin(x, con)
+                   # close(con)
+                   RCOMPSs::compss_serialize(result, path_return_value)
                    cat("The path is: ", path_return_value)
                  }
                  # print("The results is:\n")

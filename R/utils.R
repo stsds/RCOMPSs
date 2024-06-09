@@ -80,10 +80,11 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
             content_types[i] <- "object"
             SER.TIME <- proc.time()
             arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
-            arg_ser <- serialize(object = arguments[[i]], connection = NULL)
-            con <- file(description = arg_ser_filename, open = "wb")
-            writeBin(object = arg_ser, con = con)
-            close(con)
+            compss_serialize(object = arguments[[i]], arg_ser_filename)
+            # arg_ser <- serialize(object = arguments[[i]], connection = NULL)
+            # con <- file(description = arg_ser_filename, open = "wb")
+            # writeBin(object = arg_ser, con = con)
+            # close(con)
             # compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
             SER.TIME <- proc.time() - SER.TIME
             arguments[[i]] <- arg_ser_filename
@@ -229,37 +230,28 @@ UID <- function() {
   return(random_string)
 }
 
-# compss_serialize
-# 
-# Internal serialization function
-# 
-# @export
-# compss_serialize <- function(object, filepath){
-#   if(is.data.frame(object)){
-#     fst::write_fst(object, path = filepath, compress = 0)
-#   }else if(is.matrix(object)){
-#     fst::write_fst(as.data.frame(object), path = filepath, compress = 0)
-#   }else{
-#     saveRDS(object = object, file = filepath)  
-#   }
-# }
+#' compss_serialize
+#' 
+#' Internal serialization function
+#' 
+#' @export
+compss_serialize <- function(object, filepath){
+  con <- RMVL::mvl_open(filepath, append = TRUE, create = TRUE)
+  RMVL::mvl_write_object(con, object, name = "obj")
+  RMVL::mvl_close(con)
+}
 
-# compss_unserialize
-# 
-# Internal unserialization function
-# 
-# @export
-# compss_unserialize <- function(filepath){
-#   ext <- strsplit(filepath, "[.]")[[1]]
-#   ext <- ext[length(ext)]
-#   if(ext == "fstmatrix"){
-#     return(as.matrix(fst::read.fst(path = filepath)))
-#   }else if(ext == "fst"){
-#     return(fst::read.fst(path = filepath))
-#   }else{
-#     return(readRDS(filepath))
-#   }
-# }
+#' compss_unserialize
+#'  
+#' Internal unserialization function
+#' 
+#' @export
+compss_unserialize <- function(filepath){
+  con <- RMVL::mvl_open(filepath)
+  object <- RMVL::mvl2R(con$obj)
+  RMVL::mvl_close(con)
+  return(object)
+}
 
 #' compss_start
 #'
@@ -302,12 +294,13 @@ compss_wait_on <- function(future_obj){
     return(future_obj)
   }else{
     Get_File(0L, future_obj$outputfile)
-    ext <- strsplit(future_obj$outputfile, "[.]")[[1]]
-    ext <- ext[length(ext)]
-    con <- file(description = future_obj$outputfile, open = "rb")
-    res <- readBin(con, what = raw(), n = file.info(future_obj$outputfile)$size)
-    return_value <- unserialize(connection = res)
-    close(con)
+    # ext <- strsplit(future_obj$outputfile, "[.]")[[1]]
+    # ext <- ext[length(ext)]
+    # con <- file(description = future_obj$outputfile, open = "rb")
+    # res <- readBin(con, what = raw(), n = file.info(future_obj$outputfile)$size)
+    # return_value <- unserialize(connection = res)
+    # close(con)
+    return_value <- compss_unserialize(future_obj$outputfile)
     return(return_value)
   }
 }
