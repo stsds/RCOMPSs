@@ -1,3 +1,12 @@
+accessed_objects_map <- new.env()
+
+
+check_key_in_hashmap <- function(key, env) {
+  exists(key, envir = env, inherits = FALSE)
+}
+
+
+
 #' task
 #'
 #' This function is the decorator for tasks.
@@ -27,7 +36,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
   
   # This function will be returned as the decorated version of <f>
   function(...){
-    
+    library(pryr)    
     # The application id is always 0L
     app_id <- 0L
     
@@ -78,20 +87,38 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
             content_types[i] <- "future_object"
           }else{
             content_types[i] <- "object"
-            SER.TIME <- proc.time()
-            arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
-            compss_serialize(object = arguments[[i]], arg_ser_filename)
-            # arg_ser <- serialize(object = arguments[[i]], connection = NULL)
-            # con <- file(description = arg_ser_filename, open = "wb")
-            # writeBin(object = arg_ser, con = con)
-            # close(con)
-            # compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
-            SER.TIME <- proc.time() - SER.TIME
-            arguments[[i]] <- arg_ser_filename
-            cat("Argument <", arguments_names[i], "> is serialized to file: <", arg_ser_filename, ">; ",
-                "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">; ",
-                "Time for serialization: ", SER.TIME[3], " seconds.",
-                "\n", sep = "")
+	    obj <- arguments[[i]]
+	    addr <- address(obj)
+	    cat("Checking argument " , i , " with address ", addr)
+	    # Check if object has been accessed before. No need to serialize again
+	    if(check_key_in_hashmap(addr, accessed_objects_map)){
+            	cat("Address already in the hasmap.") 
+		arguments[[i]] <- accessed_objects_map[[addr]]
+	    }else{
+            	INI.TIME <- proc.time()
+	        arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
+                compss_serialize(object = arguments[[i]], arg_ser_filename)
+                # arg_ser <- serialize(object = arguments[[i]], connection = NULL)
+                # con <- file(description = arg_ser_filename, open = "wb")
+                # writeBin(object = arg_ser, con = con)
+                # close(con)
+                # compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
+            	SER_END.TIME <- proc.time()
+            	SER.TIME <- SER_END.TIME - INI.TIME
+	    	con <- file(description = arg_ser_filename, open = "wb")
+            	writeBin(object = arg_ser, con = con)
+            	close(con)
+            	# compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
+            	WRITE.TIME <- proc.time() - SER_END.TIME
+		cat("Adding address ", addr, " in the hasmap.")
+		accessed_objects_map[[addr]] <- arg_ser_filename
+                arguments[[i]] <- arg_ser_filename
+                cat("Argument <", arguments_names[i], "> is serialized to file: <", 
+		    arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]), 
+		    ">-<", arguments_type[i], ">;\n", 
+		    "Time for serialization: ", SER.TIME[3], " seconds.",
+		    "Time for writing: ", WRITE.TIME[3], " seconds.", "\n", sep = "")
+	    }
           }
         }else{
           cat("Argument <", arguments_names[i], "> is: <", arguments[[i]], ">; ",
