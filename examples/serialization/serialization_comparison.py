@@ -1,6 +1,6 @@
 import numpy as np
 import time
-N = 20000
+N = 2000
 start_time = time.time()
 A = np.random.rand(N,N)
 end_generate = time.time()

@@ -1,11 +1,8 @@
 accessed_objects_map <- new.env()
 
-
 check_key_in_hashmap <- function(key, env) {
   exists(key, envir = env, inherits = FALSE)
 }
-
-
 
 #' task
 #'
@@ -19,50 +16,167 @@ check_key_in_hashmap <- function(key, env) {
 #' @param ... Metadata.
 #' @return The decorated function
 #' @export
-task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
-  
+task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = FALSE, ...){
+
   TIME1 <- proc.time()
-  
+
   # Convert all the metadata into a list
   metadata <- list(...)
-  
+
   # Obtain the name of the function we are decorating
   f_name <- as.character(as.list(match.call())$f)
-  
+
   # If we have NOT already got <MASTER_WORKING_DIR>, assign <MASTER_WORKING_DIR> to current working directory
   if( !( "MASTER_WORKING_DIR" %in% ls(envir = globalenv()) ) ){
     MASTER_WORKING_DIR <- get_wd()
   }
-  
+
   # This function will be returned as the decorated version of <f>
   function(...){
-    library(pryr)    
+
     # The application id is always 0L
     app_id <- 0L
-    
-    # Obtain the arguments that have been passed to <f>
-    arguments <- as.list(match.call(definition = f, expand.dots = FALSE))
-    
-    # Obtain the original name of <f> and then delete it from the list <arguments>
-    decor_f_name <- arguments[[1]]
-    arguments[[1]] <- NULL
-    cat("The information that the decorated function <", decor_f_name, "> has is:\n", sep = "")
-    arguments_length <- length(arguments)
-    cat("Length of received arguments:", arguments_length, "\n")
-    
-    # Obtain the real values of the arguments if they are symbols
-    for(ind in 1:arguments_length){
-      if(typeof(arguments[[ind]]) == "symbol"){
-        arguments[[ind]] <- get(arguments[[ind]])
+
+    #################################################
+    # Process the arguments
+    #################################################
+
+    ## The argument list of f with the names of the parameters and the default values
+    ## TODO: Support ... input in f
+    arguments <- formals(f)
+    if(DEBUG){
+      cat("arg list:\n")
+      print(arguments)
+    }
+    if( identical(names(arguments), "...") ){
+      if(DEBUG){
+        cat("The decorated function only has variable `...` inputs\n")
+      }
+      arguments <- list(...)
+      names(arguments) <- paste0(paste0(f_name, "___"), 1:length(arguments))
+    }else if("..." %in% names(arguments)){
+      print(list(...))
+      stop("Variable argument `...` with other inputs is not supported yet!")
+    }else{
+      ## Obtain the received values:
+      values <- list(...)
+      if(DEBUG){
+        cat("Received:\n")
+        cat("-----------------------------------------------------------------\n")
+        #print(values)
+        cat("\n-----------------------------------------------------------------\n")
+        #print(values[[1]])
+        cat("\n-----------------------------------------------------------------\n")
+        cat("names(values):\n")
+        print(names(values))
+      }
+
+      ## Assign the values to the correct arguments
+      arguments.names <- names(arguments)
+      if(is.null(names(values))){
+        for(arg_ind in 1:length(arguments)){
+          arguments[[arg_ind]] <- values[[arg_ind]]
+        }
+      }else{
+        unnamed.values.ind <- which(names(values) == "")
+        k <- 1
+        for(arg_ind in 1:length(arguments)){
+          if(arguments.names[arg_ind] %in% names(values)){
+            arguments[[arg_ind]] <- values[[arg_ind]]
+          }else{
+            arguments[[arg_ind]] <- values[[unnamed.values.ind[k]]]
+            k <- k + 1
+          }
+        }
       }
     }
-    
+
+    if(DEBUG){
+      cat("Processed arguments:\n")
+      # print(arguments)
+    }
+
+    # The parent environment
+    # pf <- parent.frame()
+    # cat("The parent frame:\n")
+    # print(pf)
+    # cat("args_names:\n")
+    # my.names <- ls(envir = pf, all.names = TRUE, sorted = FALSE);
+    # print(my.names)
+    # if("..." %in% my.names) {
+    #   dots <- eval(quote(list(...)), envir = pf)
+    # }  else {
+    #   dots <- list()
+    # }
+    # dots.idx <- ( names(dots) != "" );
+    # remaining <- sapply( setdiff(my.names, "..."), as.name)
+    # if(length(remaining)) {
+    #   not.dots <- lapply(remaining, eval, envir = pf)
+    # } else {
+    #   not.dots <- list()
+    # }
+    # res = list();
+
+    # res$.fn.            = as.character( sys.call(1L)[[1L]] );
+    # res$.scope.         = pf;
+    # res$.keys.          = names( not.dots );
+    # res$.vals.          = not.dots;                             # unname(not_dots);  # I want keys on "vals"
+    # res$.dots.keys.     = names( dots[dots.idx] );
+    # res$.dots.vals.     = dots[dots.idx];                       # unname(dots[dots.idx]);
+    # cat("==============================================\n")
+    # print(res)
+    # q()
+
+    # Obtain the arguments that have been passed to <f>
+    # arguments <- as.list(match.call(definition = f, expand.dots = FALSE))
+    # cat("The call:\n")
+    # print(arguments)
+
+    # Obtain the original name of <f> and then delete it from the list <arguments>
+    # decor_f_name <- arguments[[1]]
+    #decor_f_name <- as.list(match.call(definition = f, expand.dots = FALSE))[[1]]
+    # arguments[[1]] <- NULL
+    cat("The information that the decorated function <", f_name, "> has is:\n", sep = "")
+    arguments_length <- length(arguments)
+    cat("Length of received arguments:", arguments_length, "\n")
+
+    # Obtain the real values of the arguments if they are symbols
+    # for(ind in 1:arguments_length){
+    #if(typeof(arguments[[ind]]) == "symbol"){
+    #  # arguments[[ind]] <- get(arguments[[ind]])
+    #  # arguments[[ind]] <- eval(parse(text = names(arguments)[[ind]]))
+    #  print(arguments[[ind]])
+    #  n <- 1
+    #  cat("class:\n")
+    #  print(class(arguments[[ind]]))
+    #  cat("typeof:\n")
+    #  print(typeof(arguments[[ind]]))
+    #  while(class(arguments[[ind]]) == "call"){
+    #    cat("n =", n, "\n")
+    #    arguments[[ind]] <- eval.parent(arguments[[ind]], n = n)
+    #    n <- n + 1
+    #  }
+    #  # arguments[[ind]] <- eval.parent(arguments[[ind]])
+    #}
+    #   cat("ind = ", ind, "; arguments[[", ind, "]] = ", sep = "")
+    #   print(arguments[[ind]])
+    #   cat("typeof(arguments[[ind]]) = ", typeof(arguments[[ind]]), "\n", sep = "")
+    #   n <- 1
+    #   while(typeof(arguments[[ind]]) == "symbol"){
+    #     cat("n =", n, "\n")
+    #     print(eval.parent(arguments[[ind]], n = n))
+    #     arguments[[ind]] <- eval.parent(arguments[[ind]], n = n)
+    #     n <- n + 1
+    #   }
+    # }
+    # q()
+
     # Initialize the integer vector <arguments_type> according to the length of the list <arguments>
     arguments_type <- integer(arguments_length)
-    
+
     # Initialize content_types
     content_types <-  rep("", length = arguments_length)
-    
+
     # If there are arguments from <f>, we process them
     # If not, <argument> will be an empty list and <arguments_names> will be an empty character vector
     if(arguments_length > 0){
@@ -70,7 +184,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       # print(arguments)
       # Grep the names of the arguments
       arguments_names <- names(arguments)
-      
+
       # For all the arguments, we check whether the type of the argument is basic (not object)
       # - If the type is basic, we assign the corresponding number in <arguments_type>
       # - If the type is not basic, we assign the type as 10L - FILE and serialize the object
@@ -87,38 +201,27 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
             content_types[i] <- "future_object"
           }else{
             content_types[i] <- "object"
-	    obj <- arguments[[i]]
-	    addr <- address(obj)
-	    cat("Checking argument " , i , " with address ", addr)
-	    # Check if object has been accessed before. No need to serialize again
-	    if(check_key_in_hashmap(addr, accessed_objects_map)){
-            	cat("Address already in the hasmap.") 
-		arguments[[i]] <- accessed_objects_map[[addr]]
-	    }else{
-            	INI.TIME <- proc.time()
-	        arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
-                compss_serialize(object = arguments[[i]], arg_ser_filename)
-                # arg_ser <- serialize(object = arguments[[i]], connection = NULL)
-                # con <- file(description = arg_ser_filename, open = "wb")
-                # writeBin(object = arg_ser, con = con)
-                # close(con)
-                # compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
-            	SER_END.TIME <- proc.time()
-            	SER.TIME <- SER_END.TIME - INI.TIME
-	    	con <- file(description = arg_ser_filename, open = "wb")
-            	writeBin(object = arg_ser, con = con)
-            	close(con)
-            	# compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
-            	WRITE.TIME <- proc.time() - SER_END.TIME
-		cat("Adding address ", addr, " in the hasmap.")
-		accessed_objects_map[[addr]] <- arg_ser_filename
-                arguments[[i]] <- arg_ser_filename
-                cat("Argument <", arguments_names[i], "> is serialized to file: <", 
-		    arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]), 
-		    ">-<", arguments_type[i], ">;\n", 
-		    "Time for serialization: ", SER.TIME[3], " seconds.",
-		    "Time for writing: ", WRITE.TIME[3], " seconds.", "\n", sep = "")
-	    }
+            obj <- arguments[[i]]
+            addr <- pryr::address(obj)
+            cat("Checking argument " , i , " with address ", addr, "\n")
+            # Check if object has been accessed before. No need to serialize again
+            if(check_key_in_hashmap(addr, accessed_objects_map)){
+              cat("Address already in the hashmap.\n") 
+              arguments[[i]] <- accessed_objects_map[[addr]]
+            }else{
+              INI.TIME <- proc.time()
+              arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
+              compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
+              SER_END.TIME <- proc.time()
+              SER.TIME <- SER_END.TIME - INI.TIME
+              cat("Adding address ", addr, " in the hasmap.")
+              accessed_objects_map[[addr]] <- arg_ser_filename
+              arguments[[i]] <- arg_ser_filename
+              cat("Argument <", arguments_names[i], "> is serialized to file: <", 
+                  arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]), 
+                  ">-<", arguments_type[i], ">;\n", 
+                  "Time for serialization: ", SER.TIME[3], " seconds.", "\n", sep = "")
+            }
           }
         }else{
           cat("Argument <", arguments_names[i], "> is: <", arguments[[i]], ">; ",
@@ -131,13 +234,13 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
       arguments_names <- character(0)
       cat("Function <", f_name, "> does not take arguments.\n", sep = "")
     }
-    
+
     # If there are metadata, print them
     if(length(metadata) > 0){
       cat("Metadata:\n")
       print(metadata)
     }
-    
+
     # If there is a return value, we need to add another element in <arguments> for it.
     # Also, compss_types; compss_directions; compss_streams; compss_prefixes; content_types; weights; keep_renames
     # File name: return_file_UID
@@ -214,8 +317,8 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
                    content_types = content_types, # Empty string
                    weights = weights, # Empty string or "[unassigned]"
                    keep_renames = keep_renames # If the compss_type is FILE: 1; The rest: 0. c(0,1,0,1,1,1)
-      )
-     
+                   )
+
       TIME3 <- proc.time()
       cat("Time after register:", TIME3[3] - TIME2[3], "\n")
       # If there is a return value, return the future_object which should contain outputfile as the argument
@@ -232,28 +335,28 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, ...){
 #' Return the type of <arg> in the COMPSs numbering system
 parType_mapping <- function(arg){
   switch (typeof(arg),
-    "logical" = 0L,
-    "CHAR" = 1L,
-    "BYTE" = 2L,
-    "SHORT" = 3L,
-    "integer" = 4L,
-    "double" = 7L,
-    "character" = 8L,
-    10L # FILE
-  )
+          "logical" = 0L,
+          "CHAR" = 1L,
+          "BYTE" = 2L,
+          "SHORT" = 3L,
+          "integer" = 4L,
+          "double" = 7L,
+          "character" = 8L,
+          10L # FILE
+          )
 }
 
 #' Generate a unique random string based on the current time
 UID <- function() {
   # Get the current time
   current_time <- Sys.time()
-  
+
   # Convert the time to a string representation
   time_string <- format(current_time, "%Y%m%d%H%M%S")
-  
+
   # Generate a random string using the time string
   random_string <- paste0(time_string, paste0(sample(letters, 50, replace = TRUE), collapse = ""))
-  
+
   return(random_string)
 }
 

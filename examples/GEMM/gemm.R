@@ -93,6 +93,7 @@ for(dimension in dimension.range){
     D2 <- matrix(0, nrow = n1, ncol = n3)
     T1 <- list()
 
+    num_of_tasks <- 0
     for(i in 1:nb1){
       for(k in 1:nb3){
         T1[[(i-1) + (k-1) * nb1 + 1]] <- D2[get_index(i, m1, n1), get_index(k, m3, n3)]
@@ -103,10 +104,13 @@ for(dimension in dimension.range){
           T3 <- T1[[(i-1) + (k-1) * nb1 + 1]]
           # T1[[(i-1) + (k-1) * nb1 + 1]] <- add(T3, T2)
           T1[[(i-1) + (k-1) * nb1 + 1]] <- mm_add(K1, K2, T3)
+          num_of_tasks <- num_of_tasks + 1
         }
       }
     }
+    TIME.TASK <- proc.time() - TIME.RCOMPSs
     compss_barrier()
+    TIME.COMP <- proc.time() - TIME.RCOMPSs
 
     for(i in 1:nb1){
       for(k in 1:nb3){
@@ -121,6 +125,9 @@ for(dimension in dimension.range){
       cat("The norm of the difference matrix is:", norm(D1 - D2, "F"), "\n")
       cat("Time for R is", TIME.R[3], "seconds\n")
     }
+    cat("Number of tasks is:", num_of_tasks, "\n")
+    cat("Time for submitting the tasks is", TIME.TASK[3], "seconds\n")
+    cat("Time for computations is", TIME.COMP[3], "seconds\n")
     cat("Time for RCOMPSs is", TIME.RCOMPSs[3], "seconds\n")
     cat(paste0("Dimension: ", dimension, "; Tile size: ", ts, "\n"))
     SI <- sessionInfo()
