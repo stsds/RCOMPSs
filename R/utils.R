@@ -63,9 +63,9 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
       if(DEBUG){
         cat("Received:\n")
         cat("-----------------------------------------------------------------\n")
-        #print(values)
+        print(values)
         cat("\n-----------------------------------------------------------------\n")
-        #print(values[[1]])
+        print(values[[1]])
         cat("\n-----------------------------------------------------------------\n")
         cat("names(values):\n")
         print(names(values))
@@ -93,7 +93,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
 
     if(DEBUG){
       cat("Processed arguments:\n")
-      # print(arguments)
+      print(arguments)
     }
 
     # The parent environment
@@ -136,9 +136,13 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
     # decor_f_name <- arguments[[1]]
     #decor_f_name <- as.list(match.call(definition = f, expand.dots = FALSE))[[1]]
     # arguments[[1]] <- NULL
+    if(DEBUG){
     cat("The information that the decorated function <", f_name, "> has is:\n", sep = "")
+    }
     arguments_length <- length(arguments)
+    if(DEBUG){
     cat("Length of received arguments:", arguments_length, "\n")
+    }
 
     # Obtain the real values of the arguments if they are symbols
     # for(ind in 1:arguments_length){
@@ -180,7 +184,9 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
     # If there are arguments from <f>, we process them
     # If not, <argument> will be an empty list and <arguments_names> will be an empty character vector
     if(arguments_length > 0){
+      if(DEBUG){
       cat("Function <", f_name, "> has <", arguments_length, "> arguments:\n", sep = "")
+      }
       # print(arguments)
       # Grep the names of the arguments
       arguments_names <- names(arguments)
@@ -203,10 +209,14 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
             content_types[i] <- "object"
             obj <- arguments[[i]]
             addr <- pryr::address(obj)
+            if(DEBUG){
             cat("Checking argument " , i , " with address ", addr, "\n")
+            }
             # Check if object has been accessed before. No need to serialize again
             if(check_key_in_hashmap(addr, accessed_objects_map)){
+              if(DEBUG){
               cat("Address already in the hashmap.\n") 
+              }
               arguments[[i]] <- accessed_objects_map[[addr]]
             }else{
               INI.TIME <- proc.time()
@@ -214,29 +224,37 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
               compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
               SER_END.TIME <- proc.time()
               SER.TIME <- SER_END.TIME - INI.TIME
+              if(DEBUG){
               cat("Adding address ", addr, " in the hasmap.")
+              }
               accessed_objects_map[[addr]] <- arg_ser_filename
               arguments[[i]] <- arg_ser_filename
+              if(DEBUG){
               cat("Argument <", arguments_names[i], "> is serialized to file: <", 
                   arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]), 
                   ">-<", arguments_type[i], ">;\n", 
                   "Time for serialization: ", SER.TIME[3], " seconds.", "\n", sep = "")
+              }
             }
           }
         }else{
+          if(DEBUG){
           cat("Argument <", arguments_names[i], "> is: <", arguments[[i]], ">; ",
               "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
               "\n", sep = "")
+          }
         }
       }
     }else{
       argument <- list()
       arguments_names <- character(0)
+      if(DEBUG){
       cat("Function <", f_name, "> does not take arguments.\n", sep = "")
+      }
     }
 
     # If there are metadata, print them
-    if(length(metadata) > 0){
+    if(length(metadata) > 0 && DEBUG){
       cat("Metadata:\n")
       print(metadata)
     }
@@ -278,7 +296,9 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
     }
 
     TIME2 <- proc.time()
+          if(DEBUG){
     cat("Time before register:", TIME2[3] - TIME1[3], "\n")
+          }
     # Do not execute function f, invoke instead the runtime with the arg and the information
     if(!info_only){
       # Call register function here
@@ -320,7 +340,9 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
                    )
 
       TIME3 <- proc.time()
+            if(DEBUG){
       cat("Time after register:", TIME3[3] - TIME2[3], "\n")
+            }
       # If there is a return value, return the future_object which should contain outputfile as the argument
       if(return_value){
         FO <- list(outputfile)

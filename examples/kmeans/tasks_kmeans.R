@@ -2,7 +2,7 @@ DEBUG <- list(
   partial_sum = FALSE,
   merge = FALSE,
   converged = FALSE,
-  recompute_centres = 2,
+  recompute_centres = FALSE,
   kmeans_frag = FALSE
 )
 

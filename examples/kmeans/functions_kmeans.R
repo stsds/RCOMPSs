@@ -123,6 +123,10 @@ kmeans_frag <- function(fragment_list, dimensions, num_centres = 10, iterations 
         for(i in 1:length(fragment_list)){
           partials[[i]] <- partial_sum(fragment = fragment_list[[i]], old_centres)
         }
+        if(DEBUG$kmeans_frag){
+          cat("partials:\n")
+          print(partials)
+        }
       }
       centres <- recompute_centres(partials, old_centres, arity)
     }
@@ -206,6 +210,9 @@ parse_arguments <- function(Minimize) {
   # Execution using RCOMPSs
   use_RCOMPSs <- FALSE
 
+  # Execution using default R function
+  use_R_default <- FALSE
+
   # asking for help
   is.asking_for_help <- FALSE
 
@@ -259,6 +266,10 @@ parse_arguments <- function(Minimize) {
         use_RCOMPSs <- TRUE
       } else if (args[i] == "--RCOMPSs") {
         use_RCOMPSs <- TRUE
+      } else if (args[i] == "-R") {
+        use_R_default <- TRUE
+      } else if (args[i] == "--R-default") {
+        use_R_default <- FALSE
       } else if (args[i] == "-h") {
         is.asking_for_help <- TRUE
       } else if (args[i] == "--help") {
@@ -286,6 +297,14 @@ parse_arguments <- function(Minimize) {
     q(status = 0)
   }
 
+  if(numpoints %% fragments){
+    stop("Number of fragment is not a factor of number of points!\n")
+  }
+
+  if(use_RCOMPSs && use_R_default){
+    stop("Default R function `kmeans` cannot run with RCOMPSs\n")
+  }
+
   return(list(
               seed = seed,
               numpoints = numpoints,
@@ -297,7 +316,8 @@ parse_arguments <- function(Minimize) {
               epsilon = epsilon,
               arity = arity,
               needs_plot = needs_plot,
-              use_RCOMPSs = use_RCOMPSs
+              use_RCOMPSs = use_RCOMPSs,
+              use_R_default = use_R_default
               ))
 }
 
@@ -313,4 +333,6 @@ print_parameters <- function(params) {
   cat(sprintf("  Epsilon: %.e\n", params$epsilon))
   cat(sprintf("  Arity: %d\n", params$arity))
   cat("  needs_plot:", params$needs_plot, "\n")
+  cat("  use_RCOMPSs:", params$use_RCOMPSs, "\n")
+  cat("  use_R_default:", params$use_R_default, "\n")
 }

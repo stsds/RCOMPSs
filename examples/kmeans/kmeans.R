@@ -1,6 +1,6 @@
 args <- commandArgs(trailingOnly = TRUE)
 
-use_merge2 <- TRUE
+use_merge2 <- FALSE
 
 Minimize <- FALSE
 # Parse arguments
@@ -52,9 +52,9 @@ if(use_RCOMPSs){
   if(!Minimize){
     cat("Defining the tasks ... ")
   }
-  task.partial_sum <- task(partial_sum, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = TRUE)
-  task.merge <- task(merge, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = TRUE)
-  task.merge2 <- task(merge2, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = TRUE)
+  task.partial_sum <- task(partial_sum, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.merge <- task(merge, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.merge2 <- task(merge2, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   if(!Minimize){
     cat("Done.\n")
   }
@@ -69,7 +69,7 @@ if(use_RCOMPSs){
 # I.e it generates random data from some parameters that determine the size,
 # dimensionality and etc and returns the elapsed time.
 
-for(replicate in 1){
+for(replicate in 1:2){
 
   start_time <- proc.time()
 
@@ -88,7 +88,7 @@ for(replicate in 1){
     # This is done to avoid having repeated data.
     # r <- min(numpoints, l + points_per_fragment)
     # fragment_list[[length(fragment_list) + 1]] <- generate_fragment(r - l, dimensions, mode, seed + l)
-    fragment_list[[length(fragment_list) + 1]] <- points[sample_idx[(l + 1):(l + points_per_fragment)], 1:2]
+    fragment_list[[length(fragment_list) + 1]] <- points[sample_idx[(l + 1):(l + points_per_fragment)], 1:dimensions]
   }
   initialization_time <- proc.time()
   if(!Minimize){
@@ -96,15 +96,19 @@ for(replicate in 1){
   }
 
   # Run kmeans
-  centres <- kmeans_frag(
-                         fragment_list = fragment_list,
-                         dimensions = dimensions,
-                         num_centres = num_centres,
-                         iterations = iterations,
-                         seed = seed,
-                         epsilon = epsilon,
-                         arity = arity
-                         )
+  if(use_R_default){
+    centres <- kmeans(points, num_centres, iterations)
+  }else{
+    centres <- kmeans_frag(
+                           fragment_list = fragment_list,
+                           dimensions = dimensions,
+                           num_centres = num_centres,
+                           iterations = iterations,
+                           seed = seed,
+                           epsilon = epsilon,
+                           arity = arity
+                           )
+  }
 
   kmeans_time <- proc.time()
 
@@ -125,6 +129,13 @@ for(replicate in 1){
     cat("-----------------------------------------\n")
   }
 
+  if(use_R_default){
+    type <- "R_default"
+  }else if(use_RCOMPSs){
+    type <- "RCOMPSs"
+  }else{
+    type <- "R_sequential"
+  }
   cat("KMEANS_RESULTS,",
       seed, ",",
       numpoints, ",",
@@ -135,7 +146,7 @@ for(replicate in 1){
       iterations, ",",
       epsilon, ",",
       arity, ",",
-      use_RCOMPSs, ",",
+      type, ",",
       paste(R.version$major, R.version$minor, sep="."), ",",
       Initialization_time, ",",
       Kmeans_time, ",",
