@@ -292,7 +292,7 @@ parse_arguments <- function(Minimize) {
     cat("  -a, --arity <arity>              Reduction arity\n")
     cat("  -p, --plot <needs_plot>          Boolean: Plot?\n")
     cat("  -C, --RCOMPSs <use_RCOMPSs>      Boolean: Use RCOMPSs parallelization?\n")
-    cat("  -M, --Minimize <Minimize>        Boolean: Minimize printout?")
+    cat("  -M, --Minimize <Minimize>        Boolean: Minimize printout?\n")
     cat("  -h, --help                       Show this help message\n")
     q(status = 0)
   }

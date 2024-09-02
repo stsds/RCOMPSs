@@ -74,8 +74,7 @@ while (TRUE) {
                  num_of_args <- as.integer(params[1+num_of_nodes+5])
                  cat("num_of_args is", num_of_args)
                  #result <- get(func)(3, 4)
-                 #leng_params_func <- length(formalArgs(func))
-                 leng_params_func <- num_of_args - num_of_returns - has_target
+                 leng_params_func <- length(formalArgs(func))
                  # print(formalArgs(func))
                  cat("leng_params_func is", leng_params_func)
                  params_func_list <- list(leng_params_func)
@@ -115,10 +114,7 @@ while (TRUE) {
                        # par_raw <- readBin(con, what = raw(), n = file.info(path_value)$size)
                        # params_func_list[[i+1]] <- unserialize(connection = par_raw)
                        # close(con)
-                       TIME_UNSER <- proc.time()
                        params_func_list[[i+1]] <- RCOMPSs::compss_unserialize(path_value)
-                       TIME_UNSER <- proc.time() - TIME_UNSER
-                       cat("RCOMPSs::compss_unserialize TIME:", TIME_UNSER[3], "seconds\n")
                        # print("params_func_list\n")
                        # print(params_func_list[i+1])
                      }else{
@@ -131,12 +127,9 @@ while (TRUE) {
                      cat("Non-supported type: ", params[first_arg_ind + 6*i])
                    }
                  }
-                 # print("params_func_list:\n") 
+                 # print("params_func_list:\n")
                  # print(params_func_list)
-                 TIME_CALL <- proc.time()
                  result <- do.call(func, params_func_list)
-                 TIME_CALL <- proc.time() - TIME_CALL
-                 cat("do.call TIME:", TIME_CALL[3], "seconds\n")
                  cat("num_of_returns:", num_of_returns, "\n")
                  if(num_of_returns > 0){
                    path_return_value <- as.character(params[first_arg_ind + 5])
@@ -147,10 +140,7 @@ while (TRUE) {
                    # x <- serialize(object = result, connection = NULL)
                    # writeBin(x, con)
                    # close(con)
-                   TIME_SER <- proc.time()
                    RCOMPSs::compss_serialize(result, path_return_value)
-                   TIME_SER <- proc.time() - TIME_SER
-                   cat("RCOMPSs::compss_serialize TIME:", TIME_SER[3], "seconds\n")
                    cat("The path is: ", path_return_value)
                  }
                  # print("The results is:\n")
