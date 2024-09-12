@@ -8,10 +8,10 @@
     </SharedDisks>
   </MasterNode>
   <ComputeNode Name="localhost">
-    <InstallDir>/home/zhanx0q/RCOMPSs/COMPSs_installation</InstallDir>
-    <WorkingDir>/tmp/COMPSsWorker/</WorkingDir>
+    <InstallDir>/home/zhanx0q/RCOMPSs/dependencies/COMPSs_installation</InstallDir>
+    <WorkingDir>/tmp/COMPSsWorker-zhanx0q/</WorkingDir>
     <Application>
-      <EnvironmentScript>/home/zhanx0q/RCOMPSs/RCOMPSs/config.sh</EnvironmentScript>
+      <EnvironmentScript>/home/zhanx0q/RCOMPSs/config.sh</EnvironmentScript>
     </Application>
   </ComputeNode>
 </Project>
