@@ -70,6 +70,8 @@ fi
 echo -e "${YELLOW}*********************************************${RESET}"
 echo -e "${YELLOW}************START TO INSTALL RCOMPSs*********${RESET}"
 echo -e "${YELLOW}*********************************************${RESET}"
+mkdir RCOMPSs
+cd RCOMPSs
 echo -e "${YELLOW}PATH: $PWD${RESET}"
 
 cat <<EOT
