@@ -28,7 +28,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
 
   # If we have NOT already got <MASTER_WORKING_DIR>, assign <MASTER_WORKING_DIR> to current working directory
   if( !( "MASTER_WORKING_DIR" %in% ls(envir = globalenv()) ) ){
-    MASTER_WORKING_DIR <- get_wd()
+    MASTER_WORKING_DIR <- getwd()
   }
 
   # This function will be returned as the decorated version of <f>
