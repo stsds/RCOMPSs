@@ -4,10 +4,6 @@ fit_linear_regression <- function(x, y, fit_intercept = TRUE, numrows = 2, arity
   n_targets <- ncol(y)
   ztz <- compute_ztz(x, fit_intercept, numrows, arity, use_RCOMPSs)
   zty <- compute_zty(x, y, fit_intercept, numrows, arity, use_RCOMPSs)
-  cat("ztzzzzzz:\n")
-  print(ztz)
-  cat("ztyyyyyy:\n")
-  print(zty)
   if(use_RCOMPSs){
     ztz <- compss_wait_on(ztz)
     zty <- compss_wait_on(zty)
@@ -18,8 +14,6 @@ fit_linear_regression <- function(x, y, fit_intercept = TRUE, numrows = 2, arity
 }
 
 predict_linear_regression <- function(model, x) {
-  cat("mdoelll:\n")
-  print(model)
   return(as.numeric(as.matrix(x) %*% model$coef + model$intercept))
 }
 
@@ -153,8 +147,8 @@ parse_arguments <- function(Minimize) {
     cat("  -s, --seed <seed>                Seed for random number generator\n")
     cat("  -n, --numpoints <numpoints>      Number of points\n")
     cat("  -d, --dimensions <dimensions>    Number of dimensions\n")
-    cat("  -r, --numrows <numrows>)         Number of rows to create the submatrix\n")
-    cat("  -r, --arity <arity>)         Integer: Arity of the merge\n")
+    cat("  -r, --numrows <numrows>          Number of rows to create the submatrix\n")
+    cat("  -r, --arity <arity>              Integer: Arity of the merge\n")
     cat("  -C, --RCOMPSs <use_RCOMPSs>      Boolean: Use RCOMPSs parallelization?\n")
     cat("  -M, --Minimize <Minimize>        Boolean: Minimize printout?\n")
     cat("  -h, --help                       Show this help message\n")

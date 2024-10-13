@@ -39,15 +39,12 @@ if(!Minimize){
 if (use_RCOMPSs){
   require(RCOMPSs)
 
+  compss_start()
   task.partial_ztz <- task(partial_ztz, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.partial_zty <- task(partial_zty, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   #task.compute_model_parameters <- task(compute_model_parameters, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.merge <- task(merge, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   #task.merge3 <- task(merge3, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-}
-
-if (use_RCOMPSs){
-  compss_start()
 }
 
 # Example usage:
