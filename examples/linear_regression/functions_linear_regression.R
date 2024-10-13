@@ -8,6 +8,10 @@ fit_linear_regression <- function(x, y, fit_intercept = TRUE, numrows = 2, arity
   print(ztz)
   cat("ztyyyyyy:\n")
   print(zty)
+  if(use_RCOMPSs){
+    ztz <- compss_wait_on(ztz)
+    zty <- compss_wait_on(zty)
+  }
   params <- compute_model_parameters(ztz, zty, fit_intercept)
 
   list(intercept = params[[1]], coef = params[[2]], n_features = n_features, n_targets = n_targets)
@@ -41,7 +45,8 @@ compute_ztz <- function(x, fit_intercept, numrows, arity, use_RCOMPSs) {
   total_rows <- nrow(x)
   if(use_RCOMPSs){
     while( (i-1)*numrows < total_rows ) {
-      partials[[i]] <- task.partial_ztz(x[row_range(i, numrows, total_rows), , drop = FALSE], fit_intercept)
+      block_x <- x[row_range(i, numrows, total_rows), , drop = FALSE]
+      partials[[i]] <- task.partial_ztz(block_x, fit_intercept)
       i <- i + 1
     }
   }else{
@@ -52,7 +57,6 @@ compute_ztz <- function(x, fit_intercept, numrows, arity, use_RCOMPSs) {
   }
   if(use_RCOMPSs){
     partials <- do.call(task.merge, partials)
-    #partials <- compss_wait_on(partials)
     return(partials)
   }else{
     return(Reduce("+", partials))
@@ -65,32 +69,21 @@ compute_zty <- function(x, y, fit_intercept, numrows, arity, use_RCOMPSs) {
   total_rows <- nrow(x)
   if(use_RCOMPSs){
     while( (i-1)*numrows < total_rows ) {
-      partials[[i]] <- task.partial_zty(x[row_range(i, numrows, total_rows), , drop = FALSE],
-                                        y[row_range(i, numrows, total_rows), , drop = FALSE], fit_intercept
-      )
+      block_x <- x[row_range(i, numrows, total_rows), , drop = FALSE]
+      block_y <- y[row_range(i, numrows, total_rows), , drop = FALSE]
+      partials[[i]] <- task.partial_zty(block_x, block_y, fit_intercept)
       i <- i + 1
     }
   }else{
     while( (i-1)*numrows < total_rows ) {
       partials[[i]] <- partial_zty(x[row_range(i, numrows, total_rows), , drop = FALSE], 
-                                   y[row_range(i, numrows, total_rows), , drop = FALSE], fit_intercept
-      )
+                                   y[row_range(i, numrows, total_rows), , drop = FALSE], 
+                                   fit_intercept)
       i <- i + 1
     }
   }
-  cat("numrows =", numrows, "\n")
-  cat("i =", i, "\n")
   if(use_RCOMPSs){
-    cat("partials in compute_zty:\n")
-    print(partials)
-    #partials <- do.call(task.merge, partials)
-    #for(j in 1:length(partials)){
-    #  cat("j =", j, "\n")
-    #          partials[[j]] <- compss_wait_on(partials[[j]])
-    #}
-    #    return(Reduce("+", partials))
     partials <- do.call(task.merge, partials)
-    #partials <- compss_wait_on(partials)
     return(partials)
   }else{
     return(Reduce("+", partials))
@@ -110,7 +103,7 @@ parse_arguments <- function(Minimize) {
   seed <- 1
   numpoints <- 9000
   dimensions <- 2
-  numrows <- 2
+  numrows <- 1000
   arity <- 2
 
   # Execution using RCOMPSs

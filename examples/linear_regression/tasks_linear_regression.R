@@ -2,7 +2,7 @@ DEBUG <- list(
   partial_ztz = FALSE,
   partial_zty = FALSE,
   compute_model_parameters = FALSE,
-  merge = FALSE
+  merge = TRUE
 )
 
 partial_ztz <- function(x, fit_intercept) {
@@ -39,6 +39,9 @@ merge <- function(...){
       cat("Input", i, "\n")
       print(input[[i]])
     }
+    for(i in 1:input_len){
+      cat("Input dimensionnnnnnnnn", i, dim(input[[i]]), "\n")
+    }
   }
   if(input_len == 1){
     return(input[[1]])
@@ -56,8 +59,4 @@ merge <- function(...){
     stop("Wrong input in `merge`!\n")
   }
   # [COR1 COR2 COR3] NUM_POINTS
-}
-
-merge3 <- function(l){
-  Reduce("+", l)
 }

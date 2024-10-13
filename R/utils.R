@@ -28,7 +28,9 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
 
   # If we have NOT already got <MASTER_WORKING_DIR>, assign <MASTER_WORKING_DIR> to current working directory
   if( !( "MASTER_WORKING_DIR" %in% ls(envir = globalenv()) ) ){
-    MASTER_WORKING_DIR <- getwd()
+    #MASTER_WORKING_DIR <- getwd()
+    cat("\033[0;31mHave you started COMPSs by calling `compss_start()`?\033[0m\n")
+    stop("\033[0;31mMASTER_WORKING_DIR NOT FOUND!\033[0m")
   }
 
   # This function will be returned as the decorated version of <f>
@@ -210,17 +212,26 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
             obj <- arguments[[i]]
             addr <- pryr::address(obj)
             if(DEBUG){
-            cat("Checking argument " , i , " with address ", addr, "\n")
+              cat("Checking argument " , i , " with address ", addr, "\n")
             }
             # Check if object has been accessed before. No need to serialize again
+            need_serialization <- TRUE
             if(check_key_in_hashmap(addr, accessed_objects_map)){
               if(DEBUG){
-              cat("Address already in the hashmap.\n") 
+                cat("Address already in the hashmap with file:", accessed_objects_map[[addr]], "\n") 
               }
-              arguments[[i]] <- accessed_objects_map[[addr]]
-            }else{
+              stored_val <- compss_unserialize(accessed_objects_map[[addr]])
+              if(identical(arguments[[i]], stored_val)){
+                if(DEBUG){
+                  cat("Address is really already in the hashmap with file:", accessed_objects_map[[addr]], "\n")
+                }
+                arguments[[i]] <- accessed_objects_map[[addr]]
+                need_serialization <- FALSE
+              }
+            }
+            if(need_serialization){
               INI.TIME <- proc.time()
-              arg_ser_filename <- paste0(MASTER_WORKING_DIR, arguments_names[i], "_arg[", i, "]_",  UID())
+              arg_ser_filename <- paste0(MASTER_WORKING_DIR, "/", arguments_names[i], "_arg[", i, "]_",  UID())
               compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
               SER_END.TIME <- proc.time()
               SER.TIME <- SER_END.TIME - INI.TIME
@@ -266,7 +277,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
       num_of_returns <- 1L
       # Create an object for the return value
       # RETURN_VALUE <- list()
-      outputfile <- paste0(MASTER_WORKING_DIR, "ReturnValue_", UID())
+      outputfile <- paste0(MASTER_WORKING_DIR, "/ReturnValue_", UID())
       # values 
       arguments[[length(arguments) + 1]] <- outputfile
       # arguments_names
@@ -442,17 +453,24 @@ compss_barrier <- function(no_more_tasks = FALSE){
 #' @param future_obj 
 #' @export
 compss_wait_on <- function(future_obj){
-  if(class(future_obj) != "future_object"){
-    return(future_obj)
-  }else{
+  if(class(future_obj) == "future_object"){
     Get_File(0L, future_obj$outputfile)
-    # ext <- strsplit(future_obj$outputfile, "[.]")[[1]]
-    # ext <- ext[length(ext)]
-    # con <- file(description = future_obj$outputfile, open = "rb")
-    # res <- readBin(con, what = raw(), n = file.info(future_obj$outputfile)$size)
-    # return_value <- unserialize(connection = res)
-    # close(con)
     return_value <- compss_unserialize(future_obj$outputfile)
     return(return_value)
+  }else if(class(future_obj) == "list"){
+    list_len <-length(future_obj)
+    return_list <- list()
+    for(i in 1:list_len){
+      if(class(future_obj[[i]]) == "future_object"){
+
+            Get_File(0L, future_obj[[i]]$outputfile)
+        return_list[[i]] <- compss_unserialize(future_obj[[i]]$outputfile)
+      }else{
+        return_list[[i]] <- future_obj[[i]]
+      }
+    }
+    return(return_list)
+  }else{
+    return(future_obj)
   }
 }

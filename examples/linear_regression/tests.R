@@ -5,59 +5,51 @@ library(RCOMPSs)
 source("tasks_linear_regression.R")
 source("functions_linear_regression.R")
 
-task.partial_ztz <- task(partial_ztz, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-task.partial_zty <- task(partial_zty, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-task.merge <- task(merge, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-task.merge3 <- task(merge3, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+if(use_RCOMPSs){
+  compss_start()
+  task.partial_ztz <- task(partial_ztz, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = TRUE)
+  task.partial_zty <- task(partial_zty, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = TRUE)
+  task.merge <- task(merge, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = TRUE)
+  task.merge3 <- task(merge3, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+}
 
 n <- 100 
+n2 <- 70
 d <- 3
+d2 <- 2
 
 set.seed(2)
 x0 <- x <- matrix(runif(n*d), nrow = n, ncol = d)
 y0 <- y <- matrix(rnorm(n), nrow = n, ncol = 1)
+x2 <- matrix(runif(n2*d2), nrow = n2, ncol = d2)
+y2 <- matrix(rnorm(n2), nrow = n2, ncol = 1)
 
 fit_intercept <- TRUE
-numrows <- 20
+numrows <- 10
 arity <- 2
+
+A1 <- compute_ztz(x,    fit_intercept, numrows, arity, use_RCOMPSs)
+B1 <- compute_zty(x0, y0, TRUE, numrows, arity, use_RCOMPSs)
+#A2 <- compute_ztz(x,    fit_intercept, numrows, arity, use_RCOMPSs)
+B2 <- compute_zty(x0, y0, TRUE, numrows, arity, use_RCOMPSs)
+A3 <- compute_ztz(x,    fit_intercept, numrows, arity, use_RCOMPSs)
+B3 <- compute_zty(x0, y0, TRUE, numrows, arity, use_RCOMPSs)
+#A4 <- compute_ztz(x,    fit_intercept, numrows, arity, use_RCOMPSs)
 if(use_RCOMPSs){
-  compss_start()
-}
-#zty <- compute_zty(x, y, fit_intercept, numrows, arity, use_RCOMPSs)
-#zty <- compss_wait_on(zty)
-#cat("zty111\n")
-#print(zty)
-ztz1 <- compute_ztz(x,    fit_intercept, numrows, arity, use_RCOMPSs)
-#cat("ztz111\n")
-#print(ztz)
-if(use_RCOMPSs){
-  #compss_barrier()
-}
-cat("DIFFERENCE x:", sum((x0-x)^2), "\n")
-cat("DIFFERENCE y:", sum((y0-y)^2), "\n")
-cat("fit_interceptttttttt", fit_intercept, "\n")
-if(use_RCOMPSs){
-  #compss_barrier()
-  #Sys.sleep(200)
-}
-zty1 <- compute_zty(x0, y0, TRUE, numrows, arity, use_RCOMPSs)
-#ztz2 <- compute_ztz(x,    fit_intercept, numrows, arity, use_RCOMPSs)
-#zty2 <- compute_zty(x0, y0, fit_intercept, numrows, arity, use_RCOMPSs)
-#cat("zty222\n")
-#print(zty)
-if(use_RCOMPSs){
-  ztz1_res <- compss_wait_on(ztz1)
-  #ztz2 <- compss_wait_on(ztz2)
-  zty1_res <- compss_wait_on(zty1)
-  #zty2 <- compss_wait_on(zty2)
+  A1 <- compss_wait_on(A1)
+  B1 <- compss_wait_on(B1)
+  #A2 <- compss_wait_on(A2)
+  B2 <- compss_wait_on(B2)
+  A3 <- compss_wait_on(A3)
+  B3 <- compss_wait_on(B3)
+  #A4 <- compss_wait_on(A4)
+  #B4 <- compss_wait_on(B4)
   compss_stop()
 }
-cat("ztz1\n")
-print(ztz1_res)
-#cat("ztz2\n")
-#print(ztz2)
-cat("zty1\n")
-print(zty1_res)
-#cat("zty2\n")
-#print(zty2)
-
+cat("A1\n"); print(A1)
+cat("B1\n"); print(B1)
+#cat("A2\n"); print(A2)
+cat("B2\n"); print(B2)
+cat("A3\n"); print(A3)
+cat("B3\n"); print(B3)
+#cat("A4\n"); print(A4)
