@@ -21,7 +21,7 @@ output_fifo <- fifo(output_fifo_path, open = "w+", blocking=TRUE)
 while (TRUE) {
   # Read data from input FIFO
   data <- readLines(input_fifo, n = 1)
-  cat("Received:", data, "\n")  
+  cat("Received:", data, "\n")
   # Check if data is empty (end of stream)
   if (length(data) == 0) {
     break
@@ -41,7 +41,7 @@ while (TRUE) {
     job_out <- split_data[4]
     job_err <- split_data[5]
     tracing <- split_data[6] #bool
-    #task_id <- split_data[7] 
+    #task_id <- split_data[7]
     debug <- split_data[8] #bool
     #storage_conf <- split_data[9]
     #task_type <- split_data[10]
@@ -49,9 +49,9 @@ while (TRUE) {
     func <- split_data[12]
     #time_out = split_data[13] #int
     params <- split_data[14:length(split_data)]
-    #other params [ number_nodes [node_names] num_threads(int) has_target(bool) return_type(type|null) num_returns num_args [args: type(int) stdio_stream prefix name value] [target: same as before] [returns]    
+    #other params [ number_nodes [node_names] num_threads(int) has_target(bool) return_type(type|null) num_returns num_args [args: type(int) stdio_stream prefix name value] [target: same as before] [returns]
 
-    cat("Received task execution with id: ", task_id, ", module: ", module, ", function: ", func, " params: ", params, "\n")  
+    cat("Received task execution with id: ", task_id, ", module: ", module, ", function: ", func, " params: ", params, "\n")
     # TODO: Add here the process of the task and write end_task message
     # Writing "END_TASK" message at this m  failed task
     # Load the module
@@ -67,11 +67,13 @@ while (TRUE) {
 
                  num_of_nodes <- as.integer(params[1])
                  cat("num_of_nodes is: ", num_of_nodes)
-                 num_of_threads <- as.integer(params[1+num_of_nodes+1])
-                 has_target <- as.logical(params[1+num_of_nodes+2]) #!!!
-                 return_type <- params[1+num_of_nodes+3]
-                 num_of_returns <- as.integer(params[1+num_of_nodes+4])
-                 num_of_args <- as.integer(params[1+num_of_nodes+5])
+                 num_of_threads <- as.integer(params[2])
+                 # node_name <- params[3]
+                 # cus <- as.integer(params[1+num_of_nodes+2)
+                 has_target <- as.logical(params[1+num_of_nodes+3])
+                 return_type <- params[1+num_of_nodes+4]
+                 num_of_returns <- as.integer(params[1+num_of_nodes+5])
+                 num_of_args <- as.integer(params[1+num_of_nodes+6])
                  cat("num_of_args is", num_of_args)
                  #result <- get(func)(3, 4)
                  #leng_params_func <- length(formalArgs(func))
@@ -80,7 +82,7 @@ while (TRUE) {
                  cat("leng_params_func is", leng_params_func)
                  params_func_list <- list(leng_params_func)
 
-                 first_arg_ind <- num_of_nodes + 7 
+                 first_arg_ind <- num_of_nodes + 8
                  for(i in 0:(leng_params_func-1)){
                    if(params[first_arg_ind] == "0"){
                      params_func_list[[i+1]] <- as.integer(params[first_arg_ind + 5])
@@ -131,7 +133,7 @@ while (TRUE) {
                      cat("Non-supported type: ", params[first_arg_ind + 6*i])
                    }
                  }
-                 # print("params_func_list:\n") 
+                 # print("params_func_list:\n")
                  # print(params_func_list)
                  TIME_CALL <- proc.time()
                  result <- do.call(func, params_func_list)
@@ -164,7 +166,7 @@ while (TRUE) {
                # Handle the error
                cat("Error:", e$message, file = job_err)
                print(paste("Error:", e$message))
-               traceback()	
+               traceback()
                cat("END_TASK", task_id, 1, file = output_fifo, "\n")
              })
 
