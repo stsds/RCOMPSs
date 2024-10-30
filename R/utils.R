@@ -218,7 +218,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
             need_serialization <- TRUE
             if(check_key_in_hashmap(addr, accessed_objects_map)){
               if(DEBUG){
-                cat("Address already in the hashmap with file:", accessed_objects_map[[addr]], "\n") 
+                cat("Address already in the hashmap with file:", accessed_objects_map[[addr]], "\n")
               }
               stored_val <- compss_unserialize(accessed_objects_map[[addr]])
               if(identical(arguments[[i]], stored_val)){
@@ -241,9 +241,9 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
               accessed_objects_map[[addr]] <- arg_ser_filename
               arguments[[i]] <- arg_ser_filename
               if(DEBUG){
-              cat("Argument <", arguments_names[i], "> is serialized to file: <", 
-                  arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]), 
-                  ">-<", arguments_type[i], ">;\n", 
+              cat("Argument <", arguments_names[i], "> is serialized to file: <",
+                  arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]),
+                  ">-<", arguments_type[i], ">;\n",
                   "Time for serialization: ", SER.TIME[3], " seconds.", "\n", sep = "")
               }
             }
@@ -278,7 +278,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
       # Create an object for the return value
       # RETURN_VALUE <- list()
       outputfile <- paste0(MASTER_WORKING_DIR, "/ReturnValue_", UID())
-      # values 
+      # values
       arguments[[length(arguments) + 1]] <- outputfile
       # arguments_names
       arguments_names[length(arguments)] <- "RETURN_VALUE"
@@ -394,9 +394,9 @@ UID <- function() {
 }
 
 #' compss_serialize
-#' 
+#'
 #' Internal serialization function
-#' 
+#'
 #' @export
 compss_serialize <- function(object, filepath){
   con <- RMVL::mvl_open(filepath, append = TRUE, create = TRUE)
@@ -405,9 +405,9 @@ compss_serialize <- function(object, filepath){
 }
 
 #' compss_unserialize
-#'  
+#'
 #' Internal unserialization function
-#' 
+#'
 #' @export
 compss_unserialize <- function(filepath){
   con <- RMVL::mvl_open(filepath)
@@ -450,7 +450,7 @@ compss_barrier <- function(no_more_tasks = FALSE){
 #'
 #' Serialization in R and synchronize the results with the master
 #'
-#' @param future_obj 
+#' @param future_obj
 #' @export
 compss_wait_on <- function(future_obj){
   if(class(future_obj) == "future_object"){
@@ -473,4 +473,42 @@ compss_wait_on <- function(future_obj){
   }else{
     return(future_obj)
   }
+}
+
+#' extrae_emit_event
+#'
+#' Emit EXTRAE event
+#'
+#' @param group Integer defining the event group.
+#' @param id Integer defining the event identifier.
+#' @export
+extrae_emit_event <- function(group, id){
+  Extrae_event_and_counters(group, id)
+}
+
+#' extrae_ini
+#'
+#' Initialize EXTRAE
+#'
+#' @export
+extrae_ini <- function(){
+  Extrae_ini()
+}
+
+#' extrae_flu
+#'
+#' Flush EXTRAE
+#'
+#' @export
+extrae_flu <- function(){
+  Extrae_flu()
+}
+
+#' extrae_fin
+#'
+#' Finalize EXTRAE
+#'
+#' @export
+extrae_fin <- function(){
+  Extrae_fin()
 }

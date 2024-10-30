@@ -11,16 +11,16 @@ start_runtime <- function() {
 }
 
 #' stop_runtime
-#' 
+#'
 #' Stop a COMPSs-Runtime instance
-#' 
+#'
 #' @param code The code to exit
 stop_runtime <- function(code) {
     invisible(.Call(`_RCOMPSs_stop_runtime`, code))
 }
 
 #' register_core_element
-#' 
+#'
 #' Register a core element
 #'
 #' @param CESignature String with the core element signature. Usually: module_file.module_name.task_name
@@ -38,34 +38,65 @@ register_core_element <- function(CESignature, ImplSignature, ImplConstraints, I
 }
 
 #' process_task
-#' 
+#'
 #' Define the Rcpp function
-#' 
+#'
 process_task <- function(app_id, signature, on_failure, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames) {
     invisible(.Call(`_RCOMPSs_process_task`, app_id, signature, on_failure, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames))
 }
 
 #' barrier
-#' 
+#'
 #' Halt all the tasks: Notify the runtime that our current application wants to "execute" a barrier. Program will be blocked in GS_BarrierNew until all running tasks have ended. Notifies the 'no more tasks' boolean value.
-#' 
+#'
 barrier <- function(app_id, no_more_tasks) {
     invisible(.Call(`_RCOMPSs_barrier`, app_id, no_more_tasks))
 }
 
 #' Get_File
-#' 
+#'
 #' Serialization in R and synchronize the results with the master.
-#' 
+#'
 Get_File <- function(app_id, outputfileName) {
     invisible(.Call(`_RCOMPSs_Get_File`, app_id, outputfileName))
 }
 
 #' Get_MasterWorkingDir
-#' 
+#'
 #' Obtain the master working direction
-#' 
+#'
 Get_MasterWorkingDir <- function() {
     .Call(`_RCOMPSs_Get_MasterWorkingDir`)
 }
 
+#' Extrae_event_and_counters
+#'
+#' Emit an EXTRAE event
+#'
+Extrae_event_and_counters <- function(group, id) {
+    invisible(.Call(`_RCOMPSs_Extrae_event_and_counters`, group, id))
+}
+
+#' Extrae_ini
+#'
+#' Initialize EXTRAE
+#'
+Extrae_ini <- function() {
+    invisible(.Call(`_RCOMPSs_Extrae_ini`))
+}
+
+#' Extrae_flu
+#'
+#' Flush EXTRAE
+#'
+Extrae_flu <- function() {
+    invisible(.Call(`_RCOMPSs_Extrae_flu`))
+}
+
+#' Extrae_fin
+#'
+#' Finalize EXTRAE
+#'
+Extrae_fin <- function() {
+    invisible(.Call(`_RCOMPSs_Extrae_fin`))
+}

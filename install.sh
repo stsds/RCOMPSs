@@ -5,6 +5,7 @@
 # Description:  COMPSs' R binding building script.
 # Parameters:
 #		target_dir  Target directory where to install the R binding
+#   tracing     Boolean to compile with Extrae
 ######################################################################
 
 
@@ -36,6 +37,7 @@ show_opts() {
 
 * Parameters:
     target_dir                  COMPSs' R Binding installation directory
+    tracing                     If compile with Extrae (true|false)
 
 EOT
 }
@@ -104,8 +106,9 @@ get_args() {
   shift $((OPTIND-1))
 
   # Parse target directory location
-  if [ $# -gt 0 ]; then
+  if [ $# -gt 1 ]; then
     target_dir=$1
+    tracing=$2
   else
     display_error "${INCORRECT_TARGET_DIR}"
     exit 1
@@ -116,6 +119,7 @@ get_args() {
 log_parameters() {
   echo "PARAMETERS:"
   echo "- Target directory = ${target_dir}"
+  echo "- Tracing = ${tracing}"
   sleep 5
 }
 
@@ -133,18 +137,38 @@ clean() {
 
 install () {
   local target_directory=$1
+  local tracing=$2
 
   echo "INFO: Installation parameters:"
   echo "      - Current script directory: ${SCRIPT_DIR}"
   echo "      - JAVA_HOME: ${JAVA_HOME}"
   echo "      - COMPSS_HOME: ${COMPSS_HOME}"
   echo "      - Target directory: ${target_directory}"
+  echo "      - Tracing: ${tracing}"
 
   # Do the installation
   echo "INFO: Starting the installation... Please wait..."
 
-  echo "PKG_CPPFLAGS=-I${COMPSS_HOME}/Bindings/bindings-common/include -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -I${JAVA_HOME}/jre/include -I${JAVA_HOME}/jre/include/linux" > ${SCRIPT_DIR}/src/Makevars
-  echo "PKG_LIBS=-L${COMPSS_HOME}/Bindings/bindings-common/lib -lbindings_common" >> ${SCRIPT_DIR}/src/Makevars
+  # Deploy dummy extrae
+  mkdir -p ${COMPSS_HOME}/Bindings/RCOMPSs
+  cp -r ${SCRIPT_DIR}/aux/dummy_extrae/ ${COMPSS_HOME}/Bindings/RCOMPSs/.
+  # Compile dummy extrae
+  ${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae/./compile.sh
+
+  pkg_cppflags="-I${COMPSS_HOME}/Bindings/bindings-common/include -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -I${JAVA_HOME}/jre/include -I${JAVA_HOME}/jre/include/linux"
+  pkg_libs="-L${COMPSS_HOME}/Bindings/bindings-common/lib -lbindings_common"
+  if [ "${tracing}" == "true" ]; then
+    # Add extrae path
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${COMPSS_HOME}/Dependencies/extrae/include -pthread" > ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${COMPSS_HOME}/Dependencies/extrae/lib -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    export LD_LIBRARY_PATH=${COMPSS_HOME}/Dependencies/extrae/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=${COMPSS_HOME}/Dependencies/extrae/include:$LD_LIBRARY_PATH
+  else
+    # Add dummy extrae path
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae -pthread" > ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    export LD_LIBRARY_PATH=${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae:$LD_LIBRARY_PATH
+  fi
 
   export LD_LIBRARY_PATH=${COMPSS_HOME}/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
   export LD_LIBRARY_PATH=${COMPSS_HOME}/Bindings/bindings-common/include:$LD_LIBRARY_PATH
@@ -158,10 +182,10 @@ install () {
   mkdir -p ${target_r_directory}
 
   # Install Rcpp, RMVL, pryr, proxy packages on R if not installed
-  Rscript -e "list.of.packages <- c(\"Rcpp\", \"RMVL\", \"pryr\", \"proxy\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
+  Rscript -e "list.of.packages <- c(\"Rcpp\", \"RMVL\", \"pryr\", \"proxy\", \"lubridate\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
 
   # Install RCOMPSs
-  R CMD INSTALL -l ${target_r_directory} RCOMPSs_1.0.tar.gz
+  R CMD INSTALL -l ${target_r_directory} --no-test-load RCOMPSs_1.0.tar.gz
   exitCode=$?
   if [ $exitCode -ne 0 ]; then
     echo "ERROR: Cannot install RCOMPSs"
@@ -191,7 +215,7 @@ install_r_binding () {
   echo "INFO: Starting R binding installation"
 
   # Install
-  install "${target_dir}"
+  install "${target_dir}" "${tracing}"
 
   echo "INFO: Finished R binding installation"
 }

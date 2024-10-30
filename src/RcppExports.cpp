@@ -2,6 +2,7 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <Rcpp.h>
+#include <extrae.h>
 
 using namespace Rcpp;
 
@@ -110,6 +111,44 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// Extrae_eventandcounters
+void Extrae_event_and_counters(extrae_type_t group, extrae_value_t id);
+RcppExport SEXP _RCOMPSs_Extrae_event_and_counters(SEXP groupSEXP, SEXP idSEXP) {
+BEGIN_RCPP
+   Rcpp::RNGScope rcpp_rngScope_gen;
+   Rcpp::traits::input_parameter< extrae_type_t >::type group(groupSEXP);
+   Rcpp::traits::input_parameter< extrae_value_t >::type id(idSEXP);
+   Extrae_eventandcounters(group, id);
+   return R_NilValue;
+END_RCPP
+}
+// Extrae_ini
+void Extrae_ini();
+RcppExport SEXP _RCOMPSs_Extrae_ini() {
+BEGIN_RCPP
+   Rcpp::RNGScope rcpp_rngScope_gen;
+   Extrae_init();
+   return R_NilValue;
+END_RCPP
+}
+// Extrae_flu
+void Extrae_flu();
+RcppExport SEXP _RCOMPSs_Extrae_flu() {
+BEGIN_RCPP
+   Rcpp::RNGScope rcpp_rngScope_gen;
+   Extrae_flush();
+   return R_NilValue;
+END_RCPP
+}
+// Extrae_ini
+void Extrae_fin();
+RcppExport SEXP _RCOMPSs_Extrae_fin() {
+BEGIN_RCPP
+   Rcpp::RNGScope rcpp_rngScope_gen;
+   Extrae_fini();
+   return R_NilValue;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_RCOMPSs_start_runtime", (DL_FUNC) &_RCOMPSs_start_runtime, 0},
@@ -119,6 +158,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RCOMPSs_barrier", (DL_FUNC) &_RCOMPSs_barrier, 2},
     {"_RCOMPSs_Get_File", (DL_FUNC) &_RCOMPSs_Get_File, 2},
     {"_RCOMPSs_Get_MasterWorkingDir", (DL_FUNC) &_RCOMPSs_Get_MasterWorkingDir, 0},
+    {"_RCOMPSs_Extrae_event_and_counters", (DL_FUNC) &_RCOMPSs_Extrae_event_and_counters, 2},
+    {"_RCOMPSs_Extrae_ini", (DL_FUNC) &_RCOMPSs_Extrae_ini, 0},
+    {"_RCOMPSs_Extrae_flu", (DL_FUNC) &_RCOMPSs_Extrae_flu, 0},
+    {"_RCOMPSs_Extrae_fin", (DL_FUNC) &_RCOMPSs_Extrae_fin, 0},
     {NULL, NULL, 0}
 };
 

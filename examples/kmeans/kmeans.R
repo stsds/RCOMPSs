@@ -1,3 +1,6 @@
+flush.console()
+Sys.sleep(1)
+
 args <- commandArgs(trailingOnly = TRUE)
 
 use_merge2 <- FALSE
@@ -44,6 +47,8 @@ if(use_RCOMPSs){
     cat("Starting COMPSs ... ")
   }
   compss_start()
+  cat("COMPSs started!")
+  flush.console()
   if(!Minimize){
     cat("Done.\n")
   }

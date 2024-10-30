@@ -2,10 +2,30 @@
 
 a <- sessionInfo()
 cat("The version of R being used is:", paste0(a$R.version$major, ".", a$R.version$minor))
-if (length(commandArgs(trailingOnly = TRUE)) != 2) {
-  cat("Usage: Rscript script.R input_fifo output_fifo\n")
+if (length(commandArgs(trailingOnly = TRUE)) != 3) {
+  cat("Usage: Rscript script.R input_fifo output_fifo executor_id\n")
   q("no")
 }
+
+cat("RCOMPSs executor PID: ", Sys.getpid() ,"\n")
+executor_id <- as.integer(commandArgs(trailingOnly = TRUE)[3])
+
+time_since_epoch <- function() {
+  x1 <- as.POSIXct(Sys.time())
+  x2 <- format(x1, tz="GMT", usetz=F)
+  x3 <- lubridate::ymd_hms(x2)
+  epoch <- lubridate::ymd_hms('1970-01-01 00:00:00')
+  time_since_epoch <- (x3 - epoch) / lubridate::dseconds()
+  return(time_since_epoch)
+}
+
+RCOMPSs::extrae_ini()
+if (executor_id == 0) {
+  RCOMPSs::extrae_emit_event(8000666, 1)  # Sync event: for adjusting the timing
+}
+RCOMPSs::extrae_emit_event(9000200, 1)  # Inside worker event running
+RCOMPSs::extrae_emit_event(8001003, 8)  # Define the process purpose: process worker executor event
+RCOMPSs::extrae_emit_event(8001006, executor_id)  # Define the executor id
 
 # Extract input and output FIFO paths from command-line arguments
 input_fifo_path <- commandArgs(trailingOnly = TRUE)[1]
@@ -35,6 +55,7 @@ while (TRUE) {
   split_data <- strsplit(data, " ")[[1]]
   tag <- split_data[1]
   if (tag == "EXECUTE_TASK"){
+    RCOMPSs::extrae_emit_event(9000100, 4)
     # Print received data to the console
     task_id <- split_data[2] #(int)
     sandbox <- split_data[3]
@@ -54,13 +75,16 @@ while (TRUE) {
     cat("Received task execution with id: ", task_id, ", module: ", module, ", function: ", func, " params: ", params, "\n")
     # TODO: Add here the process of the task and write end_task message
     # Writing "END_TASK" message at this m  failed task
+
+    RCOMPSs::extrae_emit_event(9000100, 0)
+
     # Load the module
-
-
     cat("The module is:", module, "\n")
     tryCatch(
              {
+               RCOMPSs::extrae_emit_event(9000100, 5)
                source(module)
+               RCOMPSs::extrae_emit_event(9000100, 0)
                cat("Finished     source(module)", file = job_out)
                # Call the function using get()
                if (exists(func)) {
@@ -118,7 +142,9 @@ while (TRUE) {
                        # params_func_list[[i+1]] <- unserialize(connection = par_raw)
                        # close(con)
                        TIME_UNSER <- proc.time()
+                       RCOMPSs::extrae_emit_event(9000100, 8)
                        params_func_list[[i+1]] <- RCOMPSs::compss_unserialize(path_value)
+                       RCOMPSs::extrae_emit_event(9000100, 0)
                        TIME_UNSER <- proc.time() - TIME_UNSER
                        cat("RCOMPSs::compss_unserialize TIME:", TIME_UNSER[3], "seconds\n")
                        # print("params_func_list\n")
@@ -136,7 +162,9 @@ while (TRUE) {
                  # print("params_func_list:\n")
                  # print(params_func_list)
                  TIME_CALL <- proc.time()
+                 RCOMPSs::extrae_emit_event(9000100, 6)
                  result <- do.call(func, params_func_list)
+                 RCOMPSs::extrae_emit_event(9000100, 0)
                  TIME_CALL <- proc.time() - TIME_CALL
                  cat("do.call TIME:", TIME_CALL[3], "seconds\n")
                  cat("num_of_returns:", num_of_returns, "\n")
@@ -150,24 +178,32 @@ while (TRUE) {
                    # writeBin(x, con)
                    # close(con)
                    TIME_SER <- proc.time()
+                   RCOMPSs::extrae_emit_event(9000100, 9)
                    RCOMPSs::compss_serialize(result, path_return_value)
+                   RCOMPSs::extrae_emit_event(9000100, 0)
                    TIME_SER <- proc.time() - TIME_SER
                    cat("RCOMPSs::compss_serialize TIME:", TIME_SER[3], "seconds\n")
                    cat("The path is: ", path_return_value)
                  }
                  # print("The results is:\n")
                  # print(result)
+                 RCOMPSs::extrae_emit_event(9000100, 11)
                  cat("END_TASK", task_id, 0, file = output_fifo, "\n")
+                 RCOMPSs::extrae_emit_event(9000100, 0)
                } else {
                  cat("Function", function_name, "does not exist")
+                 RCOMPSs::extrae_emit_event(9000100, 13)
                  cat("END_TASK", task_id, 1, file = output_fifo, "\n")
+                 RCOMPSs::extrae_emit_event(9000100, 0)
                }
              }, error = function(e) {
                # Handle the error
                cat("Error:", e$message, file = job_err)
                print(paste("Error:", e$message))
                traceback()
+               RCOMPSs::extrae_emit_event(9000100, 13)
                cat("END_TASK", task_id, 1, file = output_fifo, "\n")
+               RCOMPSs::extrae_emit_event(9000100, 0)
              })
 
     # cat("END_TASK", task_id, 1, file = output_fifo, "\n")
@@ -175,6 +211,15 @@ while (TRUE) {
     cat("Received:", data, "\n")
   }
 }
+
+RCOMPSs::extrae_emit_event(9000200, 0)  # Inside worker event not running
+if (executor_id == 0) {
+  RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
+  RCOMPSs::extrae_emit_event(8000666, time_since_epoch())  # Sync event: for adjusting the timing
+  RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
+}
+RCOMPSs::extrae_flu()
+RCOMPSs::extrae_fin()
 
 # Close the FIFOs
 close(input_fifo)
