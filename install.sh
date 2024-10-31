@@ -138,11 +138,12 @@ clean() {
 install () {
   local target_directory=$1
   local tracing=$2
+  local compss_home="$1/../../"
 
   echo "INFO: Installation parameters:"
   echo "      - Current script directory: ${SCRIPT_DIR}"
   echo "      - JAVA_HOME: ${JAVA_HOME}"
-  echo "      - COMPSS_HOME: ${COMPSS_HOME}"
+  echo "      - compss_home: ${compss_home}"
   echo "      - Target directory: ${target_directory}"
   echo "      - Tracing: ${tracing}"
 
@@ -150,39 +151,40 @@ install () {
   echo "INFO: Starting the installation... Please wait..."
 
   # Deploy dummy extrae
-  mkdir -p ${COMPSS_HOME}/Bindings/RCOMPSs
-  cp -r ${SCRIPT_DIR}/aux/dummy_extrae/ ${COMPSS_HOME}/Bindings/RCOMPSs/.
+  mkdir -p ${compss_home}/Bindings/RCOMPSs
+  cp -r ${SCRIPT_DIR}/aux/dummy_extrae/ ${compss_home}/Bindings/RCOMPSs/.
   # Compile dummy extrae
-  ${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae/./compile.sh
+  ${compss_home}/Bindings/RCOMPSs/dummy_extrae/./compile.sh
 
-  pkg_cppflags="-I${COMPSS_HOME}/Bindings/bindings-common/include -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -I${JAVA_HOME}/jre/include -I${JAVA_HOME}/jre/include/linux"
-  pkg_libs="-L${COMPSS_HOME}/Bindings/bindings-common/lib -lbindings_common"
+  pkg_cppflags="-I${compss_home}/Bindings/bindings-common/include -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -I${JAVA_HOME}/jre/include -I${JAVA_HOME}/jre/include/linux"
+  pkg_libs="-L${compss_home}/Bindings/bindings-common/lib -lbindings_common"
   if [ "${tracing}" == "true" ]; then
     # Add extrae path
-    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${COMPSS_HOME}/Dependencies/extrae/include -pthread" > ${SCRIPT_DIR}/src/Makevars
-    echo "PKG_LIBS=${pkg_libs} -L${COMPSS_HOME}/Dependencies/extrae/lib -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
-    export LD_LIBRARY_PATH=${COMPSS_HOME}/Dependencies/extrae/lib:$LD_LIBRARY_PATH
-    export LD_LIBRARY_PATH=${COMPSS_HOME}/Dependencies/extrae/include:$LD_LIBRARY_PATH
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Dependencies/extrae/include -pthread" > ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Dependencies/extrae/lib -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/include:$LD_LIBRARY_PATH
   else
     # Add dummy extrae path
-    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae -pthread" > ${SCRIPT_DIR}/src/Makevars
-    echo "PKG_LIBS=${pkg_libs} -L${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
-    export LD_LIBRARY_PATH=${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae:$LD_LIBRARY_PATH
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Bindings/RCOMPSs/dummy_extrae -pthread" > ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Bindings/RCOMPSs/dummy_extrae -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    export LD_LIBRARY_PATH=${compss_home}/Bindings/RCOMPSs/dummy_extrae:$LD_LIBRARY_PATH
   fi
 
-  export LD_LIBRARY_PATH=${COMPSS_HOME}/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
-  export LD_LIBRARY_PATH=${COMPSS_HOME}/Bindings/bindings-common/include:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/include:$LD_LIBRARY_PATH
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/lib/amd64/server:${JAVA_HOME}/jre/lib/amd64/server
   # Update the paths on config_RCOMPSs.sh (for now we ignore path to libRblas.so  libRlapack.so
   current_dir=$(pwd)
   cd ..
-  R CMD build RCOMPSs
-
-  target_r_directory="${target_directory}/user_libs"
-  mkdir -p ${target_r_directory}
 
   # Install Rcpp, RMVL, pryr, proxy packages on R if not installed
+  target_r_directory="${target_directory}/user_libs"
+  mkdir -p ${target_r_directory}
   Rscript -e "list.of.packages <- c(\"Rcpp\", \"RMVL\", \"pryr\", \"proxy\", \"lubridate\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
+
+  # Build RCOMPSs
+  R CMD build RCOMPSs
 
   # Install RCOMPSs
   R CMD INSTALL -l ${target_r_directory} --no-test-load RCOMPSs_1.0.tar.gz
@@ -195,7 +197,7 @@ install () {
   cd ${current_dir}
 
   # Deploy the RCOMPSs executor
-  cp ${SCRIPT_DIR}/aux/executor.R ${COMPSS_HOME}/Runtime/scripts/system/adaptors/nio/pipers/
+  cp ${SCRIPT_DIR}/aux/executor.R ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
 
 
   # Clean unnecessary files
