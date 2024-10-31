@@ -57,9 +57,27 @@ if(use_RCOMPSs){
   res_KNN <- compss_wait_on(res_KNN)
   compss_stop()
 }
-print(res_KNN)
+res_KNN <- as.factor(as.numeric(res_KNN))
+if(confusion_matrix){
+  cm <- caret::confusionMatrix(data = res_KNN, reference = y_test)
+  print(cm)
+}else{
+  print(res_KNN)
+}
 
 if(use_R_default){
   res_knn <- class::knn(train = x_train, test = x_test, cl = y_train, k = k)
-  print(res_knn)
+  if(confusion_matrix){
+    cm <- caret::confusionMatrix(data = res_knn, reference = y_test)
+    print(cm)
+  }else{
+    print(res_knn)
+  }
+  if(!identical(res_knn, res_KNN)){
+    cat("+++++++++++++++++++++++++++++++++++")
+    cat("\n\033[31;1;4mWrong result!\n\033[0m")
+  }else{
+    cat("+++++++++++++++++++++++++++++++++++")
+    cat("\n\033[32;1;4mCorrect result!\n\033[0m")
+  }
 }

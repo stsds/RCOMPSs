@@ -7,7 +7,7 @@ KNN <- function(train, test, cl, k, num_frag, use_RCOMPSs = FALSE){
   ntrain_frag <- c(0, cumsum(rep(nrow(train) / num_frag, num_frag)))
   RES <- list()
   for(i in 1:num_frag){
-    cat("i in KNN", i, "\n")
+    #cat("i in KNN", i, "\n")
     train_ind <- (ntrain_frag[i]+1):ntrain_frag[i+1]
     if(use_RCOMPSs){
       RES[[i]] <- task.KNN_frag(train[train_ind,], test, cl[train_ind], k)
@@ -16,7 +16,7 @@ KNN <- function(train, test, cl, k, num_frag, use_RCOMPSs = FALSE){
     }
   }
   # print(RES)
-  cat("length of RES:", length(RES), "\n")
+  #cat("length of RES:", length(RES), "\n")
   if(use_RCOMPSs){
     y_pred <- do.call(task.KNN_merge, RES)
   }else{
@@ -107,7 +107,7 @@ parse_arguments <- function(Minimize) {
       } else if (args[i] == "-R") {
         use_R_default <- TRUE
       } else if (args[i] == "--R-default") {
-        use_R_default <- FALSE
+        use_R_default <- TRUE
       } else if (args[i] == "-h") {
         is.asking_for_help <- TRUE
       } else if (args[i] == "--help") {
@@ -117,7 +117,7 @@ parse_arguments <- function(Minimize) {
   }
 
   if(is.asking_for_help){
-    cat("Usage: Rscript kmeans.R [options]\n")
+    cat("Usage: Rscript knn.R [options]\n")
     cat("Options:\n")
     cat("  -s, --seed <seed>                Seed for random number generator\n")
     cat("  -n, --n_train <exp_num_points_train>      Number of training points\n")
@@ -137,10 +137,6 @@ parse_arguments <- function(Minimize) {
   #if(numpoints %% fragments){
   #  stop("Number of fragment is not a factor of number of points!\n")
   #}
-
-  if(use_RCOMPSs && use_R_default){
-    stop("Default R function `kmeans` cannot run with RCOMPSs\n")
-  }
 
   return(list(
               seed = seed,
