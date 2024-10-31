@@ -142,7 +142,7 @@ parse_arguments <- function(Minimize) {
   }
 
   if(is.asking_for_help){
-    cat("Usage: Rscript libear_regression.R [options]\n")
+    cat("Usage: Rscript linear_regression.R [options]\n")
     cat("Options:\n")
     cat("  -s, --seed <seed>                Seed for random number generator\n")
     cat("  -n, --numpoints <numpoints>      Number of points\n")
