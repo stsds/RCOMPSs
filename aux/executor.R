@@ -1,5 +1,10 @@
-# Check if the correct number of command-line arguments is provided
+# RCOMPSs worker
 
+# Parallel used for loading imports concurrently before starting the worker.
+library(parallel)
+library(doParallel)
+
+# Check if the correct number of command-line arguments is provided
 a <- sessionInfo()
 cat("The version of R being used is:", paste0(a$R.version$major, ".", a$R.version$minor))
 if (length(commandArgs(trailingOnly = TRUE)) != 3) {
@@ -36,6 +41,47 @@ input_fifo <- fifo(input_fifo_path, open = "r", blocking=TRUE)
 
 # Open the output FIFO for writing
 output_fifo <- fifo(output_fifo_path, open = "w+", blocking=TRUE)
+
+###############################################################
+##################### PRELOAD LIBRARIES #######################
+###############################################################
+# Load dinamically the imports before running the worker
+load_libraries_in_parallel <- function(libraries_list) {
+  num_cores <- detectCores() # Get the amount of available cores
+  cl <- makeCluster(num_cores) # Create a cluster of processes
+  registerDoParallel(cl) # Register the cluster
+
+  # Function to load dinamically a library
+  load_library <- function(library) {
+    tryCatch({
+      dyn.load(paste0("lib/", library, ".so"))
+      print(paste(library, " successfully loaded!"))
+    }, error = function(e) {
+      stop(paste("Error loading library:", library, ":", e$message))
+    })
+  }
+
+  # Apply the function load_library to all elements in parallel
+  result <- mclapply(libraries_list, load_library)
+
+  # Deregister the cluster and finalize the processes
+  stopCluster(cl)
+}
+
+nombre_variable <- "PRELOAD_R_LIBRARIES"
+libraries <- Sys.getenv(nombre_variable)
+if (!is.null(libraries)){
+    print(paste(libraries, "libraries to be loaded"))
+    # e.g.- libraries <- "tidyverse,lubridate,dplyr"
+    # Split the names of the libraries by comma
+    libraries_list <- strsplit(libraries, ",")[[1]]
+    # Load the libraries in multiple processes
+    load_libraries_in_parallel(libraries_list)
+}
+###############################################################
+################### END PRELOAD LIBRARIES #####################
+###############################################################
+
 
 # Read from input FIFO and write to output FIFO
 while (TRUE) {
