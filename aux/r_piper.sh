@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-  
+
   ########################################
   # SCRIPT HELPER FUNCTIONS
   ########################################
@@ -41,7 +41,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     # local cores=$3
     local cores=1
     echo "[R EXECUTOR] Launching R_executor for $cmdPipe to $resultPipe"
-    echo "Number of cores: $cores" >> /home/zhanx0q/RCOMPSs/temp
+    echo "Number of cores: $cores"
     taskset -c $cores Rscript $SCRIPT_DIR/executor.R $cmdPipe $resultPipe
 
     echo "${QUIT_TAG}" > "${resultPipe}"
@@ -50,13 +50,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
   export_vars(){
     envars=$(echo "$1" | tr ";" "\\n")
-    for var in $envars; do 
+    for var in $envars; do
        norm_var=$(echo "$var" | tr "#" " ")
        # shellcheck disable=SC2163
        export "${norm_var}"
     done
   }
-   
+
   execute_task() {
     local tid=$1
     local sandBox=$2
@@ -70,10 +70,10 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
     echo "[R EXECUTOR] Execute task $tid" >> "$jobOut"
     echo "[R EXECUTOR]   - CMD: $* 1>> $jobOut 2>> $jobErr" >> "$jobOut"
-    
+
     export_vars "$1"
     shift 1
-    
+
     # Real task execution
     # shellcheck disable=SC2068
     $@ 1>> "$jobOut" 2>> "$jobErr"
@@ -85,7 +85,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
     # Return the result to the Runtime
     echo "${END_TASK_TAG} ${tid} ${exitValue}" >> "$resultPipe"
-  } 
+  }
 
   clean_procs() {
     # Send forced kill to subprocesses
@@ -120,18 +120,21 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   # Arguments
   get_args "$@"
 
+  # launch piper_worker.R with all parameters.
+
+  Rscript piper_worker.R &
   # Launch one process per CMDPipe
-  pipe_pids=()
-  i=0
-  while [ $i -lt "${numPipesCMD}" ]; do
-    pipe_processor ${CMDpipes[$i]} ${RESULTpipes[$i]} $i &
-    pipe_pids[$i]=$!
-    i=$((i+1))
-  done
+  #pipe_pids=()
+  #i=0
+  #while [ $i -lt "${numPipesCMD}" ]; do
+  #  pipe_processor ${CMDpipes[$i]} ${RESULTpipes[$i]} $i &
+  #  pipe_pids[$i]=$!
+  #  i=$((i+1))
+  #done
 
   # Trap if error occurs (bindings_piper sends SIGTERM -15)
   trap clean_procs SIGTERM
-  
+
   stop_received=false
   while [ "${stop_received}" = false ]; do
     read line
@@ -162,7 +165,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
       *)
         echo "[R WORKER] UNKNOWN COMMAND ${line}"
     esac
-  done <"${controlCMDpipe}" 3>"${controlCMDpipe}"
+  done < "${controlCMDpipe}" 3>"${controlCMDpipe}"
 
   # Wait for sub-processes to perform execution
   errorStatus=0
@@ -179,8 +182,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   if [ $errorStatus -ne 0 ]; then
       echo "[R PIPER] Sub proccess failed"
       exit 1
-  else 
+  else
       echo "[R PIPER] Finished"
       exit 0
   fi
-

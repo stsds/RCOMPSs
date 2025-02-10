@@ -67,7 +67,7 @@ get_args() {
         c_binding=false
         ;;
       P)
-	# Custom Python binding value
+        # Custom Python binding value
         python_binding=false
         ;;
       N)
@@ -75,7 +75,7 @@ get_args() {
         tracing=false
         bindings=false
         c_binding=false
-	python_binding=false
+        python_binding=false
         ;;
       -)
         # Check more complex arguments
@@ -95,15 +95,15 @@ get_args() {
           no-c-binding)
             c_binding=false
             ;;
-	  no-python-binding)
+          no-python-binding)
             python_binding=false
-	    ;;
+            ;;
           nothing)
             # Disables all flags
             tracing=false
             bindings=false
             c_binding=false
-	    python_binding=false
+            python_binding=false
             ;;
           *)
             # Flag didn't match any patern. End of COMPSs flags
