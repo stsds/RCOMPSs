@@ -1,6 +1,8 @@
 # Parallel used for loading imports concurrently before starting the worker.
 library(parallel)
 library(doParallel)
+library(foreach)
+source("executor.R")
 
 LIBPATHS <- .libPaths()
 
@@ -68,12 +70,22 @@ odd_args <- args_list[odd_positions]
 pipe_pairs <- Map(c, odd_args, even_args)
 
 # Add a loop creating subprocesses (parallel processses) for each executor
-position = 0
-for i in pipe_pairs:
-    start_process(executor.R, i[0], i[1], position)  # launch independen processes from R
-    position += 1
+#position = 0
+#for i in pipe_pairs:
+#    start_process(executor.R, i[0], i[1], position)  # launch independen processes from R
+#    position += 1
 
-wait for all processes (they will be killed when the execution finishes)
+num_cores <- detectCores() - 1  # Use one less than the total cores
+cl <- makeCluster(num_cores)
+registerDoParallel(cl)
+
+foreach(position = 1:length(pipe_pairs)) %dopar% {
+  executor(pipe_pairs[[position]][1], pipe_pairs[[position]][2], position)
+}
+
+stopCluster(cl)
+
+#wait for all processes (they will be killed when the execution finishes)
 
 #print("Pipe_pairs:")
 #print(pipe_pairs)
