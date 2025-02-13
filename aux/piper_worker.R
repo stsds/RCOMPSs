@@ -51,10 +51,23 @@ LIBPATHS <- .libPaths()
 # ################### END PRELOAD LIBRARIES #####################
 # ###############################################################
 
+time_since_epoch <- function() {
+  x1 <- as.POSIXct(Sys.time())
+  x2 <- format(x1, tz="GMT", usetz=F)
+  x3 <- lubridate::ymd_hms(x2)
+  epoch <- lubridate::ymd_hms('1970-01-01 00:00:00')
+  time_since_epoch <- (x3 - epoch) / lubridate::dseconds()
+  return(time_since_epoch)
+}
+
 ###############################################################
 ####################### MAIN R SCRIPT #########################
 ###############################################################
 print("Starting R Worker!")
+
+RCOMPSs::extrae_ini()
+RCOMPSs::extrae_emit_event(8000666, 1)  # Sync event: for adjusting the timing
+
 # Get command-line arguments
 args <- commandArgs(TRUE)
 print(paste("Parameters:", paste(args, collapse=" ")))
@@ -77,12 +90,17 @@ pipe_pairs <- Map(c, odd_args, even_args)
 num_cores <- parallel::detectCores()  # Use one all total cores
 cl <- parallel::makeCluster(num_cores, outfile="")
 doParallel::registerDoParallel(cl)
-
 pipe_pids <- integer(length(pipe_pairs))
 foreach(position = 1:length(pipe_pairs), .verbose=TRUE, .combine = 'c') %dopar% {
   pipe_pids[position] <- Sys.getpid()
   executor(pipe_pairs[[position]][1], pipe_pairs[[position]][2], position - 1)
 }
+
+RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
+RCOMPSs::extrae_emit_event(8000666, time_since_epoch())  # Sync event: for adjusting the timing
+RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
+RCOMPSs::extrae_flu()
+RCOMPSs::extrae_fin()
 
 parallel::stopCluster(cl)
 

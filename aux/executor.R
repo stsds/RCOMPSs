@@ -1,26 +1,15 @@
-# RCOMPSs worker
+# ##################################### #
+# ######### RCOMPSs EXECUTOR ########## #
+# ##################################### #
 
-# Check if the correct number of command-line arguments is provided
-a <- sessionInfo()
-cat("The version of R being used is:", paste0(a$R.version$major, ".", a$R.version$minor))
+# a <- sessionInfo()
+# cat("The version of R being used is:", paste0(a$R.version$major, ".", a$R.version$minor))
 
 executor <- function(input_fifo_path, output_fifo_path, executor_id){
 
   cat("RCOMPSs executor PID: ", Sys.getpid() ,"\n")
 
-  time_since_epoch <- function() {
-    x1 <- as.POSIXct(Sys.time())
-    x2 <- format(x1, tz="GMT", usetz=F)
-    x3 <- lubridate::ymd_hms(x2)
-    epoch <- lubridate::ymd_hms('1970-01-01 00:00:00')
-    time_since_epoch <- (x3 - epoch) / lubridate::dseconds()
-    return(time_since_epoch)
-  }
-
   RCOMPSs::extrae_ini()
-  if (executor_id == 0) {
-    RCOMPSs::extrae_emit_event(8000666, 1)  # Sync event: for adjusting the timing
-  }
   RCOMPSs::extrae_emit_event(9000200, 1)  # Inside worker event running
   RCOMPSs::extrae_emit_event(8001003, 8)  # Define the process purpose: process worker executor event
   RCOMPSs::extrae_emit_event(8001006, executor_id)  # Define the executor id
@@ -199,19 +188,12 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id){
                  cat("END_TASK", task_id, 1, file = output_fifo, "\n")
                  RCOMPSs::extrae_emit_event(9000100, 0)
                })
-
-      # cat("END_TASK", task_id, 1, file = output_fifo, "\n")
     } else {
       cat("Received:", data, "\n")
     }
   }
 
   RCOMPSs::extrae_emit_event(9000200, 0)  # Inside worker event not running
-  if (executor_id == 0) {
-    RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
-    RCOMPSs::extrae_emit_event(8000666, time_since_epoch())  # Sync event: for adjusting the timing
-    RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
-  }
   RCOMPSs::extrae_flu()
   RCOMPSs::extrae_fin()
 
