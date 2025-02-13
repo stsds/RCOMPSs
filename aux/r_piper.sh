@@ -48,6 +48,19 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     echo "[R EXECUTOR] Pipe processor on $cmdPipe finished"
   }
 
+  executor_processor() {
+    local pipe_pairs=$1
+    echo "[R EXECUTOR] Launching R_worker"
+    Rscript ${SCRIPT_DIR}/piper_worker.R ${SCRIPT_DIR} ${pipe_pairs}
+    i=0
+    while [ $i -lt "${numPipesCMD}" ]; do
+      echo "${QUIT_TAG}" > ${RESULTpipes[$i]}
+      echo "[R EXECUTOR] Pipe processor on R_executor $i finished"
+      i=$((i+1))
+    done
+    echo "[R EXECUTOR] Pipe processor on R_worker finished"
+  }
+
   export_vars(){
     envars=$(echo "$1" | tr ";" "\\n")
     for var in $envars; do
@@ -121,8 +134,18 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   get_args "$@"
 
   # launch piper_worker.R with all parameters.
+  pipe_pairs=""
+  i=0
+  while [ $i -lt "${numPipesCMD}" ]; do
+    pipe_pairs="${pipe_pairs} ${CMDpipes[$i]} ${RESULTpipes[$i]}"
+    i=$((i+1))
+  done
+  echo "AAAAAAAAAAAAAAAAAA 1"
+  #Rscript ${SCRIPT_DIR}/piper_worker.R ${SCRIPT_DIR} ${pipe_pairs} &
+  executor_processor "${pipe_pairs}" &
+  worker_pid=$!
+  echo "AAAAAAAAAAAAAAAAAA 2 worker_pid ${worker_pid}"
 
-  Rscript piper_worker.R &
   # Launch one process per CMDPipe
   #pipe_pids=()
   #i=0
@@ -143,11 +166,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
       "QUERY_EXECUTOR_ID")
         in_pipe=$(echo "${line}" | tr " " "\t" | awk '{ print $2 }')
         out_pipe=$(echo "${line}" | tr " " "\t" | awk '{ print $3 }')
-        get_executor_index "${in_pipe}"
-        pipe_pid=${pipe_pids[${executor_index}]}
+        #get_executor_index "${in_pipe}"
+        #pipe_pid=${pipe_pids[${executor_index}]}
+        pipe_pid=${worker_pid}
         echo "REPLY_EXECUTOR_ID ${out_pipe} ${in_pipe} ${pipe_pid}" >> "${controlRESULTpipe}"
         ;;
       "REMOVE_EXECUTOR")
+        # NOT SUPPORTED YET
         in_pipe=$(echo "${line}" | tr " " "\t" | awk '{ print $2 }')
         out_pipe=$(echo "${line}" | tr " " "\t" | awk '{ print $3 }')
         get_executor_index "${in_pipe}"
@@ -160,8 +185,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         echo "REMOVED_EXECUTOR ${out_pipe} ${in_pipe}" >> "${controlRESULTpipe}"
         ;;
       "QUIT")
-          stop_received=true
-          ;;
+        stop_received=true
+        ;;
       *)
         echo "[R WORKER] UNKNOWN COMMAND ${line}"
     esac
@@ -169,14 +194,18 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
   # Wait for sub-processes to perform execution
   errorStatus=0
-  i=0
-  while [ $i -lt ${#pipe_pids[@]} ]; do
-     pid=${pipe_pids[$i]}
-     if [ ${pid} -gt 0 ]; then
-          wait $pid || errorStatus=$((errorStatus+1))
-     fi
-     i=$((i+1))
-  done
+  echo "[R PIPER] worker_pid ${worker_pid}"
+  if [ ${worker_pid} -gt 0 ]; then
+    wait $worker_pid || errorStatus=$((errorStatus+1))
+  fi
+  #i=0
+  #while [ $i -lt ${#pipe_pids[@]} ]; do
+  #   pid=${pipe_pids[$i]}
+  #   if [ ${pid} -gt 0 ]; then
+  #        wait $pid || errorStatus=$((errorStatus+1))
+  #   fi
+  #   i=$((i+1))
+  #done
 
   # Exit message
   if [ $errorStatus -ne 0 ]; then

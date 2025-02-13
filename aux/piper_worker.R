@@ -1,63 +1,68 @@
-# Parallel used for loading imports concurrently before starting the worker.
-library(parallel)
-library(doParallel)
+# ############################### #
+# ########## R WORKER ########### #
+# ############################### #
+
+# Foreach is used to start the executors.
 library(foreach)
-source("executor.R")
+# Preloading RCOMPSs to boost the executors
+library(RCOMPSs)
 
 LIBPATHS <- .libPaths()
 
-###############################################################
-##################### PRELOAD LIBRARIES #######################
-###############################################################
-# Load dinamically the imports before running the worker
-load_libraries_in_parallel <- function(libraries_list) {
-  num_cores <- detectCores() # Get the amount of available cores
-  cl <- makeCluster(num_cores) # Create a cluster of processes
-  registerDoParallel(cl) # Register the cluster
-
-  # Function to load dinamically a library
-  load_library <- function(library) {
-    tryCatch({
-      dyn.load(paste0(LIBPATHS, "/", library, "/libs/", library, ".so"))
-      print(paste(library, " successfully loaded!"))
-    }, error = function(e) {
-      stop(paste("Error loading library:", library, ":", e$message))
-    })
-  }
-
-  # Apply the function load_library to all elements in parallel
-  result <- mclapply(libraries_list, load_library)
-
-  # Deregister the cluster and finalize the processes
-  stopCluster(cl)
-}
-
-nombre_variable <- "PRELOAD_R_LIBRARIES"
-libraries <- Sys.getenv(nombre_variable)
-print("Preloading R libraries")
-if (!is.null(libraries)){
-    print(paste(libraries, "libraries to be loaded"))
-    # e.g.- libraries <- "tidyverse,lubridate,dplyr"
-    # Split the names of the libraries by comma
-    libraries_list <- strsplit(libraries, ",")[[1]]
-    # Load the libraries in multiple processes
-    load_libraries_in_parallel(libraries_list)
-} else {
-    print("No libraries to be preloaded")
-}
-###############################################################
-################### END PRELOAD LIBRARIES #####################
-###############################################################
+# ###############################################################
+# ##################### PRELOAD LIBRARIES #######################
+# ###############################################################
+# # Load dinamically the imports before running the worker
+# load_libraries_in_parallel <- function(libraries_list) {
+#   num_cores <- parallel::detectCores() - 1 # Get the amount of available cores
+#   cl <- parallel::makeCluster(num_cores, outfile="") # Create a cluster of processes
+#   doParallel::registerDoParallel(cl) # Register the cluster
+#
+#   # Function to load dinamically a library
+#   load_library <- function(library) {
+#     tryCatch({
+#       dyn.load(paste0(LIBPATHS, "/", library, "/libs/", library, ".so"))
+#       print(paste(library, " successfully loaded!"))
+#     }, error = function(e) {
+#       stop(paste("Error loading library:", library, ":", e$message))
+#     })
+#   }
+#
+#   # Apply the function load_library to all elements in parallel
+#   result <- parallel::mclapply(libraries_list, load_library)
+#   # Deregister the cluster and finalize the processes
+#   parallel::stopCluster(cl)
+# }
+#
+# nombre_variable <- "PRELOAD_R_LIBRARIES"
+# libraries <- Sys.getenv(nombre_variable)
+# print("Preloading R libraries")
+# if (!is.null(libraries)){
+#     print(paste(libraries, "libraries to be loaded"))
+#     # e.g.- libraries <- "tidyverse,lubridate,dplyr"
+#     # Split the names of the libraries by comma
+#     libraries_list <- strsplit(libraries, ",")[[1]]
+#     # Load the libraries in multiple processes
+#     load_libraries_in_parallel(libraries_list)
+# } else {
+#     print("No libraries to be preloaded")
+# }
+# ###############################################################
+# ################### END PRELOAD LIBRARIES #####################
+# ###############################################################
 
 ###############################################################
 ####################### MAIN R SCRIPT #########################
 ###############################################################
-# print("Starting R Worker!")
+print("Starting R Worker!")
 # Get command-line arguments
 args <- commandArgs(TRUE)
 print(paste("Parameters:", paste(args, collapse=" ")))
 
 args_list <- as.list(args)
+current_path <- args_list[1]
+args_list <- args_list[-1]  # Remove current dir
+source(paste(current_path, "executor.R", sep="/"))
 
 # Even positions - CMDpipes
 even_positions <- seq(2, length(args_list), by = 2)
@@ -69,32 +74,17 @@ odd_args <- args_list[odd_positions]
 
 pipe_pairs <- Map(c, odd_args, even_args)
 
-# Add a loop creating subprocesses (parallel processses) for each executor
-#position = 0
-#for i in pipe_pairs:
-#    start_process(executor.R, i[0], i[1], position)  # launch independen processes from R
-#    position += 1
+num_cores <- parallel::detectCores()  # Use one all total cores
+cl <- parallel::makeCluster(num_cores, outfile="")
+doParallel::registerDoParallel(cl)
 
-num_cores <- detectCores() - 1  # Use one less than the total cores
-cl <- makeCluster(num_cores)
-registerDoParallel(cl)
-
-foreach(position = 1:length(pipe_pairs)) %dopar% {
-  executor(pipe_pairs[[position]][1], pipe_pairs[[position]][2], position)
+pipe_pids <- integer(length(pipe_pairs))
+foreach(position = 1:length(pipe_pairs), .verbose=TRUE, .combine = 'c') %dopar% {
+  pipe_pids[position] <- Sys.getpid()
+  executor(pipe_pairs[[position]][1], pipe_pairs[[position]][2], position - 1)
 }
 
-stopCluster(cl)
-
-#wait for all processes (they will be killed when the execution finishes)
-
-#print("Pipe_pairs:")
-#print(pipe_pairs)
-#print(pares[[1]][[2]])
-
-# TODO: hacer un bucle que levante subprocesos a partir de executor R pasando
-# su pareja de pipes y el entero que le toca.
-# Al final, devolver una lista de pares con el entero y su pid.
-
+parallel::stopCluster(cl)
 
 ###############################################################
 ###############################################################

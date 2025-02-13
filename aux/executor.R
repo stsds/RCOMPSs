@@ -5,13 +5,8 @@ a <- sessionInfo()
 cat("The version of R being used is:", paste0(a$R.version$major, ".", a$R.version$minor))
 
 executor <- function(input_fifo_path, output_fifo_path, executor_id){
-  #if (length(commandArgs(trailingOnly = TRUE)) != 3) {
-  #  cat("Usage: Rscript script.R input_fifo output_fifo executor_id\n")
-  #  q("no")
-  #}
 
   cat("RCOMPSs executor PID: ", Sys.getpid() ,"\n")
-  #executor_id <- as.integer(commandArgs(trailingOnly = TRUE)[3])
 
   time_since_epoch <- function() {
     x1 <- as.POSIXct(Sys.time())
@@ -29,10 +24,6 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id){
   RCOMPSs::extrae_emit_event(9000200, 1)  # Inside worker event running
   RCOMPSs::extrae_emit_event(8001003, 8)  # Define the process purpose: process worker executor event
   RCOMPSs::extrae_emit_event(8001006, executor_id)  # Define the executor id
-
-  # Extract input and output FIFO paths from command-line arguments
-  #input_fifo_path <- commandArgs(trailingOnly = TRUE)[1]
-  #output_fifo_path <- commandArgs(trailingOnly = TRUE)[2]
 
   # Open the input FIFO for reading
   input_fifo <- fifo(input_fifo_path, open = "r", blocking=TRUE)
@@ -227,5 +218,6 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id){
   # Close the FIFOs
   close(input_fifo)
   close(output_fifo)
-  #
+
+  cat("RCOMPSs executor finish PID: ", Sys.getpid() ,"\n")
 }
