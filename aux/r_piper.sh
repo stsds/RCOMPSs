@@ -35,18 +35,18 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     shift 2
   }
 
-  pipe_processor() {
-    local cmdPipe=$1
-    local resultPipe=$2
-    # local cores=$3
-    local cores=1
-    echo "[R EXECUTOR] Launching R_executor for $cmdPipe to $resultPipe"
-    echo "Number of cores: $cores"
-    taskset -c $cores Rscript $SCRIPT_DIR/executor.R $cmdPipe $resultPipe
-
-    echo "${QUIT_TAG}" > "${resultPipe}"
-    echo "[R EXECUTOR] Pipe processor on $cmdPipe finished"
-  }
+  # pipe_processor() {
+  #   local cmdPipe=$1
+  #   local resultPipe=$2
+  #   # local cores=$3
+  #   local cores=1
+  #   echo "[R EXECUTOR] Launching R_executor for $cmdPipe to $resultPipe"
+  #   echo "Number of cores: $cores"
+  #   taskset -c $cores Rscript $SCRIPT_DIR/executor.R $cmdPipe $resultPipe
+  #
+  #   echo "${QUIT_TAG}" > "${resultPipe}"
+  #   echo "[R EXECUTOR] Pipe processor on $cmdPipe finished"
+  # }
 
   executor_processor() {
     local pipe_pairs=$1
@@ -112,18 +112,20 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     done
   }
 
-  function get_executor_index() {
-    executor_index=-1
-    for i in "${!CMDpipes[@]}"; do
-      if [[ "${CMDpipes[$i]}" = "${1}" ]]; then
-          executor_index=${i}
-      fi
-    done
-  }
+  # function get_executor_index() {
+  #   executor_index=-1
+  #   for i in "${!CMDpipes[@]}"; do
+  #     if [[ "${CMDpipes[$i]}" = "${1}" ]]; then
+  #         executor_index=${i}
+  #     fi
+  #   done
+  # }
 
   ########################################
   # MAIN
   ########################################
+
+  echo "Starting r_piper.sh"
 
   # Script variables
   QUIT_TAG="QUIT"
@@ -140,11 +142,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     pipe_pairs="${pipe_pairs} ${CMDpipes[$i]} ${RESULTpipes[$i]}"
     i=$((i+1))
   done
-  echo "AAAAAAAAAAAAAAAAAA 1"
-  #Rscript ${SCRIPT_DIR}/piper_worker.R ${SCRIPT_DIR} ${pipe_pairs} &
   executor_processor "${pipe_pairs}" &
   worker_pid=$!
-  echo "AAAAAAAAAAAAAAAAAA 2 worker_pid ${worker_pid}"
 
   # Launch one process per CMDPipe
   #pipe_pids=()
@@ -158,6 +157,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   # Trap if error occurs (bindings_piper sends SIGTERM -15)
   trap clean_procs SIGTERM
 
+  # TODO: This loop must be moved to piper_worker.R in we expect to
+  #       add or remove executors.
   stop_received=false
   while [ "${stop_received}" = false ]; do
     read line
@@ -175,8 +176,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
         # NOT SUPPORTED YET
         in_pipe=$(echo "${line}" | tr " " "\t" | awk '{ print $2 }')
         out_pipe=$(echo "${line}" | tr " " "\t" | awk '{ print $3 }')
-        get_executor_index "${in_pipe}"
-        pipe_pid=${pipe_pids[${executor_index}]}
+        #get_executor_index "${in_pipe}"
+        #pipe_pid=${pipe_pids[${executor_index}]}
+        pipe_pid=${worker_pid}
         if [ "${pipe_pid}" -gt 0 ]; then
           kill -9 ${pipe_pid} >/dev/null 2>/dev/null
           wait ${pipe_pid}

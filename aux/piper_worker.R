@@ -1,6 +1,6 @@
-# ############################### #
-# ########## R WORKER ########### #
-# ############################### #
+# ##################################### #
+# ########## RCOMPSs WORKER ########### #
+# ##################################### #
 
 # Foreach is used to start the executors.
 library(foreach)
@@ -87,7 +87,8 @@ odd_args <- args_list[odd_positions]
 
 pipe_pairs <- Map(c, odd_args, even_args)
 
-num_cores <- parallel::detectCores()  # Use one all total cores
+# num_cores <- parallel::detectCores() / 2  # Use one all total cores
+num_cores <- length(pipe_pairs)
 cl <- parallel::makeCluster(num_cores, outfile="")
 doParallel::registerDoParallel(cl)
 pipe_pids <- integer(length(pipe_pairs))

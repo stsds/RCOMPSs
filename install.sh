@@ -199,6 +199,7 @@ install () {
   # Deploy the RCOMPSs executor
   cp ${SCRIPT_DIR}/aux/executor.R ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
   cp ${SCRIPT_DIR}/aux/piper_worker.R ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
+  cp ${SCRIPT_DIR}/aux/r_piper.sh ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
 
 
   # Clean unnecessary files
