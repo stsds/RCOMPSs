@@ -51,7 +51,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   executor_processor() {
     local pipe_pairs=$1
     echo "[R EXECUTOR] Launching R_worker"
-    Rscript ${SCRIPT_DIR}/piper_worker.R ${SCRIPT_DIR} ${pipe_pairs}
+    Rscript --max-connections=2048 ${SCRIPT_DIR}/piper_worker.R ${SCRIPT_DIR} ${pipe_pairs}
     i=0
     while [ $i -lt "${numPipesCMD}" ]; do
       echo "${QUIT_TAG}" > ${RESULTpipes[$i]}
