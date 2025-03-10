@@ -139,11 +139,11 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
     #decor_f_name <- as.list(match.call(definition = f, expand.dots = FALSE))[[1]]
     # arguments[[1]] <- NULL
     if(DEBUG){
-    cat("The information that the decorated function <", f_name, "> has is:\n", sep = "")
+      cat("The information that the decorated function <", f_name, "> has is:\n", sep = "")
     }
     arguments_length <- length(arguments)
     if(DEBUG){
-    cat("Length of received arguments:", arguments_length, "\n")
+      cat("Length of received arguments:", arguments_length, "\n")
     }
 
     # Obtain the real values of the arguments if they are symbols
@@ -187,7 +187,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
     # If not, <argument> will be an empty list and <arguments_names> will be an empty character vector
     if(arguments_length > 0){
       if(DEBUG){
-      cat("Function <", f_name, "> has <", arguments_length, "> arguments:\n", sep = "")
+        cat("Function <", f_name, "> has <", arguments_length, "> arguments:\n", sep = "")
       }
       # print(arguments)
       # Grep the names of the arguments
@@ -236,23 +236,23 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
               SER_END.TIME <- proc.time()
               SER.TIME <- SER_END.TIME - INI.TIME
               if(DEBUG){
-              cat("Adding address ", addr, " in the hasmap.")
+                cat("Adding address ", addr, " in the hasmap.")
               }
               accessed_objects_map[[addr]] <- arg_ser_filename
               arguments[[i]] <- arg_ser_filename
               if(DEBUG){
-              cat("Argument <", arguments_names[i], "> is serialized to file: <",
-                  arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]),
-                  ">-<", arguments_type[i], ">;\n",
-                  "Time for serialization: ", SER.TIME[3], " seconds.", "\n", sep = "")
+                cat("Argument <", arguments_names[i], "> is serialized to file: <",
+                    arg_ser_filename, ">; ", "Type: <", typeof(arguments[[i]]),
+                    ">-<", arguments_type[i], ">;\n",
+                    "Time for serialization: ", SER.TIME[3], " seconds.", "\n", sep = "")
               }
             }
           }
         }else{
           if(DEBUG){
-          cat("Argument <", arguments_names[i], "> is: <", arguments[[i]], ">; ",
-              "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
-              "\n", sep = "")
+            cat("Argument <", arguments_names[i], "> is: <", arguments[[i]], ">; ",
+                "Type: <", typeof(arguments[[i]]), ">-<", arguments_type[i], ">",
+                "\n", sep = "")
           }
         }
       }
@@ -260,7 +260,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
       argument <- list()
       arguments_names <- character(0)
       if(DEBUG){
-      cat("Function <", f_name, "> does not take arguments.\n", sep = "")
+        cat("Function <", f_name, "> does not take arguments.\n", sep = "")
       }
     }
 
@@ -307,24 +307,29 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
     }
 
     TIME2 <- proc.time()
-          if(DEBUG){
-    cat("Time before register:", TIME2[3] - TIME1[3], "\n")
-          }
+    if(DEBUG){
+      cat("Time before register:", TIME2[3] - TIME1[3], "\n")
+    }
     # Do not execute function f, invoke instead the runtime with the arg and the information
     if(!info_only){
-      # Call register function here
-      register_core_element(CESignature = f_name,
-                            ImplSignature = f_name,
-                            ImplConstraints = "",
-                            ImplType = "METHOD",
-                            ImplLocal = "False",
-                            ImplIO = "False",
-                            prolog = c("", "", "False"),
-                            epilog = c("", "", "False"),
-                            container = c("", "", ""),
-                            typeArgs = c(paste0(getwd(), "/", filename), f_name)
-                            # typeArgs = c("/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/temp_add3.R", f_name)
-                            )
+      register_marker <- paste0("registered_", f_name)
+      if(!exists(register_marker)){
+        cat("Registering", f_name, "\n")
+        # Call register function here
+        register_core_element(CESignature = f_name,
+                              ImplSignature = f_name,
+                              ImplConstraints = "",
+                              ImplType = "METHOD",
+                              ImplLocal = "False",
+                              ImplIO = "False",
+                              prolog = c("", "", "False"),
+                              epilog = c("", "", "False"),
+                              container = c("", "", ""),
+                              typeArgs = c(paste0(getwd(), "/", filename), f_name)
+                              # typeArgs = c("/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/temp_add3.R", f_name)
+        )
+        assign(register_marker, TRUE, envir = globalenv())
+      }
 
       # Call process_task here
       process_task(app_id = app_id,
@@ -348,12 +353,12 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
                    content_types = content_types, # Empty string
                    weights = weights, # Empty string or "[unassigned]"
                    keep_renames = keep_renames # If the compss_type is FILE: 1; The rest: 0. c(0,1,0,1,1,1)
-                   )
+      )
 
       TIME3 <- proc.time()
-            if(DEBUG){
-      cat("Time after register:", TIME3[3] - TIME2[3], "\n")
-            }
+      if(DEBUG){
+        cat("Time after register:", TIME3[3] - TIME2[3], "\n")
+      }
       # If there is a return value, return the future_object which should contain outputfile as the argument
       if(return_value){
         FO <- list(outputfile)
@@ -376,7 +381,7 @@ parType_mapping <- function(arg){
           "double" = 7L,
           "character" = 8L,
           10L # FILE
-          )
+  )
 }
 
 #' Generate a unique random string based on the current time
@@ -463,7 +468,7 @@ compss_wait_on <- function(future_obj){
     for(i in 1:list_len){
       if(class(future_obj[[i]]) == "future_object"){
 
-            Get_File(0L, future_obj[[i]]$outputfile)
+        Get_File(0L, future_obj[[i]]$outputfile)
         return_list[[i]] <- compss_unserialize(future_obj[[i]]$outputfile)
       }else{
         return_list[[i]] <- future_obj[[i]]
