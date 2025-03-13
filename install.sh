@@ -181,7 +181,7 @@ install () {
   # Install Rcpp, RMVL, pryr, proxy packages on R if not installed
   target_r_directory="${target_directory}/user_libs"
   mkdir -p ${target_r_directory}
-  Rscript -e "list.of.packages <- c(\"Rcpp\", \"RMVL\", \"pryr\", \"proxy\", \"lubridate\", \"doParallel\", \"foreach\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
+  Rscript -e "list.of.packages <- c(\"Rcpp\", \"RMVL\", \"pryr\", \"proxy\", \"lubridate\", \"doParallel\", \"foreach\", \"fields\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
 
   # Build RCOMPSs
   R CMD build RCOMPSs

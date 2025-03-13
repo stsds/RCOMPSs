@@ -210,25 +210,25 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
           }else{
             content_types[i] <- "object"
             obj <- arguments[[i]]
-            addr <- pryr::address(obj)
-            if(DEBUG){
-              cat("Checking argument " , i , " with address ", addr, "\n")
-            }
+            #addr <- pryr::address(obj)
+            #if(DEBUG){
+            #  cat("Checking argument " , i , " with address ", addr, "\n")
+            #}
             # Check if object has been accessed before. No need to serialize again
             need_serialization <- TRUE
-            if(check_key_in_hashmap(addr, accessed_objects_map)){
-              if(DEBUG){
-                cat("Address already in the hashmap with file:", accessed_objects_map[[addr]], "\n")
-              }
-              stored_val <- compss_unserialize(accessed_objects_map[[addr]])
-              if(identical(arguments[[i]], stored_val)){
-                if(DEBUG){
-                  cat("Address is really already in the hashmap with file:", accessed_objects_map[[addr]], "\n")
-                }
-                arguments[[i]] <- accessed_objects_map[[addr]]
-                need_serialization <- FALSE
-              }
-            }
+            #if(check_key_in_hashmap(addr, accessed_objects_map)){
+            #  if(DEBUG){
+            #    cat("Address already in the hashmap with file:", accessed_objects_map[[addr]], "\n")
+            #  }
+            #  stored_val <- compss_unserialize(accessed_objects_map[[addr]])
+            #  if(identical(arguments[[i]], stored_val)){
+            #    if(DEBUG){
+            #      cat("Address is really already in the hashmap with file:", accessed_objects_map[[addr]], "\n")
+            #    }
+            #    arguments[[i]] <- accessed_objects_map[[addr]]
+            #    need_serialization <- FALSE
+            #  }
+            #}
             if(need_serialization){
               INI.TIME <- proc.time()
               arg_ser_filename <- paste0(MASTER_WORKING_DIR, "/", arguments_names[i], "_arg[", i, "]_",  UID())
@@ -236,9 +236,9 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
               SER_END.TIME <- proc.time()
               SER.TIME <- SER_END.TIME - INI.TIME
               if(DEBUG){
-                cat("Adding address ", addr, " in the hasmap.")
+                #  cat("Adding address ", addr, " in the hasmap.")
               }
-              accessed_objects_map[[addr]] <- arg_ser_filename
+              #accessed_objects_map[[addr]] <- arg_ser_filename
               arguments[[i]] <- arg_ser_filename
               if(DEBUG){
                 cat("Argument <", arguments_names[i], "> is serialized to file: <",
@@ -393,7 +393,7 @@ UID <- function() {
   time_string <- format(current_time, "%Y%m%d%H%M%S")
 
   # Generate a random string using the time string
-  random_string <- paste0(time_string, paste0(sample(letters, 50, replace = TRUE), collapse = ""))
+  random_string <- paste0(time_string, "-", paste0(sample(c(letters, LETTERS, 0:9), 50, replace = TRUE), collapse = ""))
 
   return(random_string)
 }

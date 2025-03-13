@@ -28,14 +28,15 @@ export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bi
     --num_nodes=$numNodes \
     --exec_time=$executionTime \
     --worker_working_dir=$(pwd) \
-    --log_level=debug \
+    --log_level=off \
     --lang=r \
     --tracing=$tracing \
     --graph=$tracing \
     --scheduler=es.bsc.compss.scheduler.orderstrict.fifo.FifoTS \
     --worker_in_master_cpus=$worker_in_master_cpus \
     --cpus_per_node=$cpus_per_node \
-    --keep_workingdir \
+    --master_working_dir=/scratch/zhanx0q/iops/master_dir \
+    --worker_working_dir=/scratch/zhanx0q/iops/worker_dir \
     $execFile $@
 
  #    --keep_workingdir \

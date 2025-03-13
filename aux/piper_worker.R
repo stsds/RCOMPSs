@@ -92,7 +92,7 @@ num_cores <- length(pipe_pairs)
 cl <- parallel::makeCluster(num_cores, outfile="")
 doParallel::registerDoParallel(cl)
 pipe_pids <- integer(length(pipe_pairs))
-foreach(position = 1:length(pipe_pairs), .verbose=TRUE, .combine = 'c') %dopar% {
+foreach(position = 1:length(pipe_pairs), .verbose=FALSE, .combine = 'c') %dopar% {
   pipe_pids[position] <- Sys.getpid()
   executor(pipe_pairs[[position]][1], pipe_pairs[[position]][2], position - 1)
 }

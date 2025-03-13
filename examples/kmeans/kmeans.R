@@ -155,7 +155,8 @@ for(replicate in 1:2){
       paste(R.version$major, R.version$minor, sep="."), ",",
       Initialization_time, ",",
       Kmeans_time, ",",
-      Total_time,
+      Total_time, ",",
+      replicate,
       "\n", sep = ""
       )
 

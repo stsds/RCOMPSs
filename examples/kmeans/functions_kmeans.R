@@ -100,6 +100,7 @@ kmeans_frag <- function(fragment_list, dimensions, num_centres = 10, iterations 
 
   while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, "\n"))
+    iteration_time <- proc.time()[3]
     old_centres <- centres
     if(use_RCOMPSs && use_merge2){
       partials_accum <- matrix(0, nrow = nrow(centres), ncol = dimensions + 1)
@@ -135,6 +136,8 @@ kmeans_frag <- function(fragment_list, dimensions, num_centres = 10, iterations 
       cat("centres:\n")
       print(centres)
     }
+    iteration_time <- proc.time()[3] - iteration_time
+    cat(paste0("ITERATION_TIME,", iteration, ",", iteration_time, "\n"))
   }
   cat("Converged!\n")
   return(centres)
