@@ -39,6 +39,8 @@ if(!Minimize){
   cat("Done.\n")
 }
 
+set.seed(seed)
+
 if(use_RCOMPSs){
   require(RCOMPSs)
 
@@ -47,7 +49,7 @@ if(use_RCOMPSs){
     cat("Starting COMPSs ... ")
   }
   compss_start()
-  cat("COMPSs started!")
+  cat("COMPSs started!\n")
   flush.console()
   if(!Minimize){
     cat("Done.\n")
@@ -57,6 +59,7 @@ if(use_RCOMPSs){
   if(!Minimize){
     cat("Defining the tasks ... ")
   }
+  task.fill_fragment <- task(fill_fragment, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.partial_sum <- task(partial_sum, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.merge <- task(merge, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.merge2 <- task(merge2, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
@@ -82,37 +85,49 @@ for(replicate in 1:2){
   if(!Minimize){
     cat("Generating data replicate", replicate, "... ")
   }
-  fragment_list <- list()
+  # Allocate the matrix for all the points.
+  # The first column to ncol-1 are the data while the last column records the fragment number
+  fragment_mat <- matrix(nrow = numpoints, ncol = dimensions + 1)
   # Prevent infinite loops
   points_per_fragment <- max(1, numpoints %/% num_fragments)
+  # Generate cluster central points
+  true_centres <- matrix(runif(num_centres * dimensions), 
+                         nrow = num_centres, ncol = dimensions)
 
-  points <- generate_points(numpoints, dimensions, mode, seed, num_centres)
-  sample_idx <- sample(1:numpoints, numpoints, replace = FALSE)
-  for (l in seq(0, numpoints - 1, by = points_per_fragment)) {
-    # Note that the seed is different for each fragment.
-    # This is done to avoid having repeated data.
-    # r <- min(numpoints, l + points_per_fragment)
-    # fragment_list[[length(fragment_list) + 1]] <- generate_fragment(r - l, dimensions, mode, seed + l)
-    fragment_list[[length(fragment_list) + 1]] <- points[sample_idx[(l + 1):(l + points_per_fragment)], 1:dimensions]
+  if(use_RCOMPSs){
+    fragment_list <- list()
+    for (f in 1:num_fragments) {
+      fragment_list[[f]] <- task.fill_fragment(true_centres, points_per_fragment, mode, f)
+      f <- f + 1
+    }
+    fragment_list <- compss_wait_on(fragment_list)
+    fragment_mat <- as.matrix(do.call(rbind, fragment_list))
+    rm(fragment_list)
+  }else{
+    f <- 1
+    for (l in seq(0, numpoints - 1, by = points_per_fragment)) {
+      row_ind <- (l + 1):(l + points_per_fragment)
+      fragment_mat[row_ind,] <- fill_fragment(true_centres, points_per_fragment, mode, f)
+      f <- f + 1
+    }
   }
   initialization_time <- proc.time()
   if(!Minimize){
     cat("Done.\n")
   }
+  #print(fragment_mat)
 
   # Run kmeans
   if(use_R_default){
-    centres <- kmeans(points, num_centres, iterations)
+    centres <- kmeans(fragment_mat[, 1:dimensions], num_centres, iterations)
   }else{
     centres <- kmeans_frag(
-                           fragment_list = fragment_list,
-                           dimensions = dimensions,
+                           fragment_mat = fragment_mat,
                            num_centres = num_centres,
                            iterations = iterations,
-                           seed = seed,
                            epsilon = epsilon,
                            arity = arity
-                           )
+    )
   }
 
   kmeans_time <- proc.time()
@@ -129,8 +144,13 @@ for(replicate in 1:2){
     cat("Kmeans time:", Kmeans_time, "seconds\n")
     cat("Total time:", Total_time, "seconds\n")
     cat("-----------------------------------------\n")
-    cat("CENTRES:\n")
-    print(centres)
+    # Sort the results and compare
+    ind_centres <- sort(centres[,1], index.return = TRUE)$ix
+    ind_true_centres <- sort(true_centres[,1], index.return = TRUE)$ix
+    cat("CENTRES\n")
+    print(centres[ind_centres,])
+    cat("TRUE CENTRES\n")
+    print(true_centres[ind_true_centres,])
     cat("-----------------------------------------\n")
   }
 
@@ -158,7 +178,7 @@ for(replicate in 1:2){
       Total_time, ",",
       replicate,
       "\n", sep = ""
-      )
+  )
 
 }
 
@@ -169,8 +189,9 @@ if(use_RCOMPSs){
 # Plot the data
 if(needs_plot){
   # pdf(paste0("kmeans", Sys.time(), ".pdf"))
-  pdf("kmeans.pdf")
-  plot(points, col = "blue")
+  pdf("/scratch/zhanx0q/RCOMPSs5/COMPSs/Bindings/RCOMPSs/examples/kmeans/kmeans.pdf")
+  par(bg = "white")
+  plot(fragment_mat[, 1:dimensions], col = "blue")
   points(centres, col = "red", pch = 8)
   dev.off()
 }

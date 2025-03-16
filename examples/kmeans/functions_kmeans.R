@@ -6,7 +6,16 @@ converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
     return(FALSE)
   }
   dist <- sum(rowSums((centres - old_centres)^2))
-  return(dist < epsilon^2 || iteration >= max_iter)
+  if(dist < epsilon^2){
+    cat("Converged!\n")
+    End <- TRUE
+  }else if(iteration >= max_iter){
+    cat("Max iteration reached!\n")
+    End <- TRUE
+  }else{
+    End <- FALSE
+  }
+  return(End)
 }
 
 recompute_centres <- function(partials, old_centres, arity) {
@@ -23,16 +32,13 @@ recompute_centres <- function(partials, old_centres, arity) {
   dimension <- ncol(old_centres)
   centres <- old_centres
   if(DEBUG$recompute_centres){
-    cat("centres:\n")
-    print(centres)
-    cat("\n")
     cat("length(partials) =", length(partials), "\n")
     cat("arity =", arity, "\n\n")
   }
 
   while(length(partials) > arity) {
     if(DEBUG$recompute_centres >= 2){
-      cat("\npartials\n")
+      cat("\npartials in recompute_centres\n")
       print(partials)
     }
     if(DEBUG$recompute_centres >= 1){
@@ -59,9 +65,16 @@ recompute_centres <- function(partials, old_centres, arity) {
   }else{
     partials <- do.call(merge, partials)
   }
+  # For empty clusters, we give a random new mean
+  cl0 <- which(partials[,3] == 0)
+  if(length(cl0) > 0){
+    centres[cl0,] <- matrix(runif(length(cl0) * dimension), nrow = length(cl0), ncol = dimension)
+    centres[-cl0,] <- partials[-cl0, 1:dimension] / partials[-cl0, dimension + 1]
+  }else{
   centres <- partials[,1:dimension] / partials[,dimension + 1]
+  }
   if(DEBUG$recompute_centres >= 2){
-    cat("\npartials\n")
+    cat("\npartials in recompute_centres after merge\n")
     print(partials)
     cat("dimension =", dimension, "\n")
     cat("\ncentres\n")
@@ -85,31 +98,37 @@ recompute_centres <- function(partials, old_centres, arity) {
 #' @param epsilon Epsilon (convergence distance)
 #' @param arity Reduction arity
 #' @return Final centres
-kmeans_frag <- function(fragment_list, dimensions, num_centres = 10, iterations = 20, seed = 0.0, epsilon = 1e-9, arity = 50) {
-  # Set the random seed
-  set.seed(seed)
-
+kmeans_frag <- function(fragment_mat, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50) {
   # Centres is usually a very small matrix, so it is affordable to have it in
   # the master.
   # TODO: The centres should be generated in a way that at least there is one point in the fragment that is close to the centre.
   centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  if(DEBUG$kmeans_frag){
+        cat("Initialized centres:\n")
+        print(centres)
+      }
 
   # Note: this implementation treats the centres as files, never as PSCOs.
   old_centres <- NULL
   iteration <- 0
 
+  # Necessary parameters
+  dimensions <- ncol(fragment_mat) - 1                         # dimensions of the data
+  num_frag <- max(fragment_mat[, dimensions + 1])              # number of fragments in total
+
   while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
-    cat(paste0("Doing iteration #", iteration + 1, "/", iterations, "\n"))
+    cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
     iteration_time <- proc.time()[3]
     old_centres <- centres
     if(use_RCOMPSs && use_merge2){
       partials_accum <- matrix(0, nrow = nrow(centres), ncol = dimensions + 1)
-      for(i in 1:length(fragment_list)){
-        partials <- task.partial_sum(fragment = fragment_list[[i]], old_centres)
+      for(i in 1:num_frag){
+        partials <- task.partial_sum(fragment = fragment_mat[which(fragment_mat[, dimensions+1] == i), 1:dimensions], old_centres)
         partials_accum <- task.merge2(partials_accum, partials)
       }
       partials_accum <- compss_wait_on(partials_accum)
       if(DEBUG$kmeans_frag){
+        cat("use_RCOMPSs = TRUE; use_merge2 = TRUE\n")
         cat("partials_accum:\n")
         print(partials_accum)
       }
@@ -117,15 +136,19 @@ kmeans_frag <- function(fragment_list, dimensions, num_centres = 10, iterations 
     }else{
       partials <- list()
       if(use_RCOMPSs){
-        for(i in 1:length(fragment_list)){
-          partials[[i]] <- task.partial_sum(fragment = fragment_list[[i]], old_centres)
+        if(DEBUG$kmeans_frag){
+          cat("use_RCOMPSs = TRUE; use_merge2 = FALSE\n")
+        }
+        for(i in 1:num_frag){
+          partials[[i]] <- task.partial_sum(fragment = fragment_mat[which(fragment_mat[, dimensions+1] == i), 1:dimensions], old_centres)
         }
       }else{
-        for(i in 1:length(fragment_list)){
-          partials[[i]] <- partial_sum(fragment = fragment_list[[i]], old_centres)
+        for(i in 1:num_frag){
+          partials[[i]] <- partial_sum(fragment = fragment_mat[which(fragment_mat[, dimensions+1] == i), 1:dimensions], old_centres)
         }
         if(DEBUG$kmeans_frag){
-          cat("partials:\n")
+          cat("use_RCOMPSs = FALSE; use_merge2 = FALSE\n")
+          cat("partials in kmeans_frag:\n")
           print(partials)
         }
       }
@@ -137,9 +160,8 @@ kmeans_frag <- function(fragment_list, dimensions, num_centres = 10, iterations 
       print(centres)
     }
     iteration_time <- proc.time()[3] - iteration_time
-    cat(paste0("ITERATION_TIME,", iteration, ",", iteration_time, "\n"))
+    cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
-  cat("Converged!\n")
   return(centres)
 }
 
@@ -158,7 +180,7 @@ generate_points <- function(points, dim, mode, seed, num_of_centres = 2) {
   rand <- list(
                "normal" = function(k, x) rnorm(k, mean = x, sd = 0.05),
                "uniform" = function(k, x) runif(k, x - 0.1, x + 0.1)
-               )
+  )
 
   # Set the random seed
   set.seed(seed)
@@ -201,14 +223,14 @@ parse_arguments <- function(Minimize) {
   # Define default values
   # Note that if `num_fragments` is not a factor of `numpoints`, the last fragment may give NA due to lack of points.
   seed <- 1
-  numpoints <- 9000
+  numpoints <- 100
   dimensions <- 2
   num_centres <- 5
-  fragments <- 3 
+  fragments <- 10 
   mode <- "uniform"
   iterations <- 20
   epsilon <- 1e-9
-  arity <- 2
+  arity <- 5
 
   # Execution using RCOMPSs
   use_RCOMPSs <- FALSE

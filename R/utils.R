@@ -314,7 +314,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
     if(!info_only){
       register_marker <- paste0("registered_", f_name)
       if(!exists(register_marker)){
-        cat("Registering", f_name, "\n")
+        # cat("Registering", f_name, "\n")
         # Call register function here
         register_core_element(CESignature = f_name,
                               ImplSignature = f_name,

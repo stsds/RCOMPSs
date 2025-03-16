@@ -8,7 +8,7 @@
   </SharedDisk>
   <ComputeNode Name="localhost">
     <Processor Name="MainProcessor">
-      <ComputingUnits>1</ComputingUnits>
+      <ComputingUnits>100</ComputingUnits>
     </Processor>
     <Adaptors>
       <Adaptor Name="es.bsc.compss.nio.master.NIOAdaptor">
