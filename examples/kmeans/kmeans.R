@@ -97,7 +97,8 @@ for(replicate in 1:2){
   if(use_RCOMPSs){
     fragment_list <- list()
     for (f in 1:num_fragments) {
-      fragment_list[[f]] <- task.fill_fragment(true_centres, points_per_fragment, mode, f)
+      params_fill_fragment <- list(true_centres, points_per_fragment, mode, f)
+      fragment_list[[f]] <- task.fill_fragment(params_fill_fragment)
       f <- f + 1
     }
     fragment_list <- compss_wait_on(fragment_list)
@@ -107,7 +108,8 @@ for(replicate in 1:2){
     f <- 1
     for (l in seq(0, numpoints - 1, by = points_per_fragment)) {
       row_ind <- (l + 1):(l + points_per_fragment)
-      fragment_mat[row_ind,] <- fill_fragment(true_centres, points_per_fragment, mode, f)
+      params_fill_fragment <- list(true_centres, points_per_fragment, mode, f)
+      fragment_mat[row_ind,] <- fill_fragment(params_fill_fragment)
       f <- f + 1
     }
   }

@@ -1,12 +1,17 @@
 DEBUG <- list(
-  partial_sum = F,
+  partial_sum = FALSE,
   merge = FALSE,
   converged = FALSE,
-  recompute_centres = F,
+  recompute_centres = FALSE,
   kmeans_frag = FALSE
 )
 
-fill_fragment <- function(centres, n, mode, frag_id){
+fill_fragment <- function(params_fill_fragment){
+
+  centres <- params_fill_fragment[[1]]
+  n <- params_fill_fragment[[2]]
+  mode <- params_fill_fragment[[3]]
+  frag_id <- params_fill_fragment[[4]]
 
   # Obtain necessary numbers
   ncluster <- nrow(centres)
@@ -31,6 +36,10 @@ fill_fragment <- function(centres, n, mode, frag_id){
 }
 
 partial_sum <- function(fragment, centres) {
+  #partial_sum <- function(params_partial_sum) {
+
+  #fragment <- as.matrix(params_partial_sum[[1]])
+  #centres <- as.matrix(params_partial_sum[[2]])
 
   # Get necessary parameters
   ncl <- nrow(centres)
@@ -42,8 +51,10 @@ partial_sum <- function(fragment, centres) {
   if(DEBUG$partial_sum) {
     cat("Doing partial sum\n")
     cat("nrow(centres) =", nrow(centres), "\n")
+    cat(paste0("dimension = ", dimension, "\n"))
+    cat(paste0("typeof(fragment) = ", typeof(fragment), "; ", "typeof(centres) = ", typeof(centres), "\n"))
     cat("fragment:\n")
-    print(fragment)
+    #rint(fragment)
     cat("centres:\n")
     print(centres)
   }

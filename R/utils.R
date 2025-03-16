@@ -464,16 +464,24 @@ compss_wait_on <- function(future_obj){
     return(return_value)
   }else if(class(future_obj) == "list"){
     list_len <-length(future_obj)
-    return_list <- list()
-    for(i in 1:list_len){
-      if(class(future_obj[[i]]) == "future_object"){
-
-        Get_File(0L, future_obj[[i]]$outputfile)
-        return_list[[i]] <- compss_unserialize(future_obj[[i]]$outputfile)
-      }else{
-        return_list[[i]] <- future_obj[[i]]
-      }
-    }
+    #return_list <- list()
+    #for(i in 1:list_len){
+    #  if(class(future_obj[[i]]) == "future_object"){
+    #    Get_File(0L, future_obj[[i]]$outputfile)
+    #    return_list[[i]] <- compss_unserialize(future_obj[[i]]$outputfile)
+    #  }else{
+    #    return_list[[i]] <- future_obj[[i]]
+    #  }
+    #}
+    return_list <- lapply(future_obj, 
+                          function(obj) {
+                            if (class(obj) == "future_object") {
+                              Get_File(0L, obj$outputfile)
+                              return(compss_unserialize(obj$outputfile))
+                            } else {
+                              return(obj)
+                            }
+                          })
     return(return_list)
   }else{
     return(future_obj)
