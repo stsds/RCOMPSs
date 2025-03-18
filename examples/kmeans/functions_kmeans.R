@@ -98,7 +98,7 @@ recompute_centres <- function(partials, old_centres, arity) {
 #' @param epsilon Epsilon (convergence distance)
 #' @param arity Reduction arity
 #' @return Final centres
-kmeans_frag <- function(fragment_mat, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50) {
+kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50) {
   # Centres is usually a very small matrix, so it is affordable to have it in
   # the master.
   # TODO: The centres should be generated in a way that at least there is one point in the fragment that is close to the centre.
@@ -113,8 +113,8 @@ kmeans_frag <- function(fragment_mat, num_centres = 10, iterations = 20, epsilon
   iteration <- 0
 
   # Necessary parameters
-  dimensions <- ncol(fragment_mat) - 1                         # dimensions of the data
-  num_frag <- max(fragment_mat[, dimensions + 1])              # number of fragments in total
+  dimensions <- ncol(fragment_list[[1]]) - 1                         # dimensions of the data
+  num_frag <- length(fragment_list)              # number of fragments in total
 
   while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
@@ -123,7 +123,7 @@ kmeans_frag <- function(fragment_mat, num_centres = 10, iterations = 20, epsilon
     if(use_RCOMPSs && use_merge2){
       partials_accum <- matrix(0, nrow = nrow(centres), ncol = dimensions + 1)
       for(i in 1:num_frag){
-        partials <- task.partial_sum(fragment = fragment_mat[which(fragment_mat[, dimensions+1] == i), 1:dimensions], old_centres)
+        partials <- task.partial_sum(fragment = fragment_list[[i]], old_centres)
         partials_accum <- task.merge2(partials_accum, partials)
       }
       partials_accum <- compss_wait_on(partials_accum)
@@ -140,11 +140,11 @@ kmeans_frag <- function(fragment_mat, num_centres = 10, iterations = 20, epsilon
           cat("use_RCOMPSs = TRUE; use_merge2 = FALSE\n")
         }
         for(i in 1:num_frag){
-          partials[[i]] <- task.partial_sum(fragment = fragment_mat[which(fragment_mat[, dimensions+1] == i), 1:dimensions], old_centres)
+          partials[[i]] <- task.partial_sum(fragment = fragment_list[[i]], old_centres)
         }
       }else{
         for(i in 1:num_frag){
-          partials[[i]] <- partial_sum(fragment = fragment_mat[which(fragment_mat[, dimensions+1] == i), 1:dimensions], old_centres)
+          partials[[i]] <- partial_sum(fragment = fragment_list[[i]], old_centres)
         }
         if(DEBUG$kmeans_frag){
           cat("use_RCOMPSs = FALSE; use_merge2 = FALSE\n")

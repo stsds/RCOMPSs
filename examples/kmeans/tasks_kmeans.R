@@ -11,7 +11,6 @@ fill_fragment <- function(params_fill_fragment){
   centres <- params_fill_fragment[[1]]
   n <- params_fill_fragment[[2]]
   mode <- params_fill_fragment[[3]]
-  frag_id <- params_fill_fragment[[4]]
 
   # Obtain necessary numbers
   ncluster <- nrow(centres)
@@ -24,13 +23,11 @@ fill_fragment <- function(params_fill_fragment){
   )
 
   # Initialize the random points
-  frag <- matrix(NA, nrow = n, ncol = dim + 1)
-  frag[, 1:dim] <- matrix(rand[[mode]](n * dim), nrow = n, ncol = dim)
+  frag <- matrix(rand[[mode]](n * dim), nrow = n, ncol = dim)
 
   # Assign to different groups
   group_ind <- sample(1:ncluster, n, replace = TRUE)
-  frag[, 1:dim] <- frag[, 1:dim] + centres[group_ind, ]
-  frag[, dim+1] <- frag_id
+  frag <- frag + centres[group_ind, ]
 
   return(frag)
 }
