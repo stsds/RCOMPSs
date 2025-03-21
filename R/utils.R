@@ -458,7 +458,8 @@ compss_barrier <- function(no_more_tasks = FALSE){
 #' @param future_obj
 #' @export
 compss_wait_on <- function(future_obj){
-  if(class(future_obj) == "future_object"){
+  #if(class(future_obj) == "future_object"){
+  if (length(class(obj)) == 1 && class(obj) == "future_object") { 
     Get_File(0L, future_obj$outputfile)
     return_value <- compss_unserialize(future_obj$outputfile)
     return(return_value)
