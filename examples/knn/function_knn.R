@@ -61,6 +61,9 @@ parse_arguments <- function(Minimize) {
   # Confusion matrix?
   confusion_matrix <- TRUE
 
+  # plot?
+  needs_plot <- FALSE
+
   # Parse arguments
   if(length(args) >= 1){
     for (i in 1:length(args)) {
@@ -89,17 +92,21 @@ parse_arguments <- function(Minimize) {
       } else if (args[i] == "--fragments") {
         fragments <- as.integer(args[i + 1])
       } else if (args[i] == "-k") {
-        k <- args[i + 1]
+        k <- as.integer(args[i + 1])
       } else if (args[i] == "--knn") {
-        k <- args[i + 1]
+        k <- as.integer(args[i + 1])
       } else if (args[i] == "-a") {
         arity <- as.integer(args[i + 1])
       } else if (args[i] == "--arity") {
         arity <- as.integer(args[i + 1])
       } else if (args[i] == "-m") {
-        confusion_matrix <- as.logical(args[i + 1])
+        confusion_matrix <- TRUE
       } else if (args[i] == "--confusion_matrix") {
-        confusion_matrix <- as.logical(args[i + 1])
+        confusion_matrix <- TRUE
+      } else if (args[i] == "-p") {
+        needs_plot <- as.logical(args[i + 1])
+      } else if (args[i] == "--plot") {
+        needs_plot <- as.logical(args[i + 1])
       } else if (args[i] == "-C") {
         use_RCOMPSs <- TRUE
       } else if (args[i] == "--RCOMPSs") {
@@ -119,18 +126,19 @@ parse_arguments <- function(Minimize) {
   if(is.asking_for_help){
     cat("Usage: Rscript knn.R [options]\n")
     cat("Options:\n")
-    cat("  -s, --seed <seed>                Seed for random number generator\n")
+    cat("  -s, --seed <seed>                         Seed for random number generator\n")
     cat("  -n, --n_train <exp_num_points_train>      Number of training points\n")
-    cat("  -N, --n_test <exp_num_points_test>      Number of testing points\n")
-    cat("  -d, --dimensions <dimensions>    Number of dimensions\n")
-    cat("  -c, --num_class <num_class>  Number of classes\n")
-    cat("  -f, --fragments <fragments>      Number of fragments\n")
-    cat("  -k, --knn <k>                Numberof the nearest neighbours to consider\n")
-    cat("  -a, --arity <arity>              Reduction arity\n")
-    cat("  -m, --confusion_matrix <confusion_matrix>          Boolean: confusion_matrix?\n")
-    cat("  -C, --RCOMPSs <use_RCOMPSs>      Boolean: Use RCOMPSs parallelization?\n")
-    cat("  -R, --R-default <use_R_default>  Boolean: Use default knn function to compute?")
-    cat("  -h, --help                       Show this help message\n")
+    cat("  -N, --n_test <exp_num_points_test>        Number of testing points\n")
+    cat("  -d, --dimensions <dimensions>             Number of dimensions\n")
+    cat("  -c, --num_class <num_class>               Number of classes\n")
+    cat("  -f, --fragments <fragments>               Number of fragments\n")
+    cat("  -k, --knn <k>                             Number of the nearest neighbours to consider\n")
+    cat("  -a, --arity <arity>                       Reduction arity\n")
+    cat("  -p, --plot <needs_plot>                   Boolean: Plot?\n")
+    cat("  -m, --confusion_matrix <confusion_matrix> Flag: confusion_matrix?\n")
+    cat("  -C, --RCOMPSs <use_RCOMPSs>               Flag: Use RCOMPSs parallelization?\n")
+    cat("  -R, --R-default <use_R_default>           Flag: Use default knn function to compute?\n")
+    cat("  -h, --help                                Show this help message\n")
     q(status = 0)
   }
 
@@ -148,6 +156,7 @@ parse_arguments <- function(Minimize) {
               k = k,
               arity = arity,
               confusion_matrix = confusion_matrix,
+              needs_plot = needs_plot,
               use_RCOMPSs = use_RCOMPSs,
               use_R_default = use_R_default
               ))
