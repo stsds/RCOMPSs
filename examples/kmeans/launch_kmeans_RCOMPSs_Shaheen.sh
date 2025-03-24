@@ -31,15 +31,17 @@ export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bi
     --lang=r \
     --tracing=$tracing \
     --graph=$tracing \
-    --scheduler=es.bsc.compss.scheduler.orderstrict.fifo.FifoTS \
     --worker_in_master_cpus=$worker_in_master_cpus \
     --cpus_per_node=$cpus_per_node \
+    --scheduler=es.bsc.compss.scheduler.orderstrict.fifo.FifoTS \
     --log_dir=/scratch/zhanx0q/iops \
     --master_working_dir=/scratch/zhanx0q/iops/master_dir \
     --worker_working_dir=/scratch/zhanx0q/iops/worker_dir \
+    --cpu_affinity="disabled" \
     $execFile $@
 
  #    --keep_workingdir \
+ #    --scheduler=es.bsc.compss.scheduler.orderstrict.fifo.FifoTS \
 
 #runcompss --lang=r -g kmeans.R --plot FALSE --RCOMPSs --fragments 8 --arity 2 --numpoints 9000 --iterations 4
 
