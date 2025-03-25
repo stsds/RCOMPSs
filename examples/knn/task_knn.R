@@ -110,11 +110,16 @@ KNN_merge <- function(...){
 }
 
 KNN_classify <- function(...){
+  input <- list(...)
   if(DEBUG$KNN_classify) {
     cat("Doing KNN_classify\n")
-    print(list(...))
+    print(input)
   }
-  final_merge <- do.call(KNN_merge, list(...))
+  if(length(input) > 1){
+    final_merge <- do.call(KNN_merge, list(...))
+  }else{
+    final_merge <- input[[1]]
+  }
   if(DEBUG$KNN_classify) {
     cat("final_merge:\n"); print(final_merge)
   }
