@@ -27,13 +27,28 @@ KNN_fill_fragment <- function(params_fill_fragment){
 }
 
 KNN_frag <- function(train, test, k){
-  dimensions <- ncol(train) - 1
+    dimensions <- ncol(train) - 1
   x_train <- train[,1:dimensions]
   cl <- train[,dimensions+1]
   x_test <- test[,1:dimensions]
+  if(DEBUG$KNN_frag){
+    cat(paste0("Starting KNN_frag, k = ", k, ", dimensions = ", dimensions, "\n"))
+    cat("x_train:\n"); print(x_train)
+    cat("cl:\n"); print(cl)
+    cat("x_test:\n"); print(x_test)
+  }
   res_dist <- fields::rdist(x_test, x_train)
+  if(DEBUG$KNN_frag){
+    cat("res_dist1:\n"); print(res_dist)
+  }
   res_cl <- t(apply(res_dist, 1, function(x) cl[sort(x, index.return = TRUE)$ix[1:k]]))
+  if(DEBUG$KNN_frag){
+    cat("res_cl:\n"); print(res_cl)
+  }
   res_dist <- t(apply(res_dist, 1, function(x) sort(x)[1:k]))
+  if(DEBUG$KNN_frag){
+    cat("res_dist2:\n"); print(res_dist)
+  }
 
   fragres <- list(res_dist = res_dist, res_cl = res_cl)
   return(fragres)

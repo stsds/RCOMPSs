@@ -1,33 +1,39 @@
 KNN <- function(train, test, k, use_RCOMPSs = FALSE){
-  # ntrain_frag <- c(0, cumsum(rep(nrow(train) / num_frag, num_frag)))
+  num_frag_train <- length(train)
+  num_frag_test <- length(test)
 
-  num_frag <- length(train)
-
-  RES <- vector("list", num_frag)
+  RES <- vector("list", num_frag_test)
   if(use_RCOMPSs){
-    for(i in 1:num_frag){
-      RES[[i]] <- task.KNN_frag(train[[i]], test, k)
+    for(i in 1:num_frag_test){
+      RES[[i]] <- vector("list", num_frag_train)
+      for(j in 1:num_frag_train){
+        RES[[i]][[j]] <- task.KNN_frag(train[[j]], test[[i]], k)
+      }
+      while(length(RES[[i]]) > arity){
+        RES_subset <- RES[[i]][1:arity]
+        RES[[i]] <- RES[[i]][(arity + 1):length(RES[[i]])]
+        RES[[i]][[length(RES[[i]]) + 1]] <- do.call(task.KNN_merge, RES_subset)
+      }
+      RES[[i]] <- do.call(task.KNN_classify, RES[[i]])
     }
-    while(length(RES) > arity){
-      RES_subset <- RES[1:arity]
-      RES <- RES[(arity + 1):length(RES)]
-      RES[[length(RES) + 1]] <- do.call(task.KNN_merge, RES_subset)
-    }
-    y_pred <- do.call(task.KNN_classify, RES)
-    y_pred <- compss_wait_on(y_pred)
+    for(i in 1:num_frag_test) RES[[i]] <- compss_wait_on(RES[[i]])
   }else{
-    for(i in 1:num_frag){
-      RES[[i]] <- KNN_frag(train[[i]], test, k)
+    for(i in 1:num_frag_test){
+      RES[[i]] <- vector("list", num_frag_train)
+      for(j in 1:num_frag_train){
+        RES[[i]][[j]] <- KNN_frag(train[[j]], test[[i]], k)
+      }
+      while(length(RES[[i]]) > arity){
+        RES_subset <- RES[[i]][1:arity]
+        RES[[i]] <- RES[[i]][(arity + 1):length(RES[[i]])]
+        RES[[i]][[length(RES[[i]]) + 1]] <- do.call(KNN_merge, RES_subset)
+      }
+      RES[[i]] <- do.call(KNN_classify, RES[[i]])
     }
-    while(length(RES) > arity){
-      RES_subset <- RES[1:arity]
-      RES <- RES[(arity + 1):length(RES)]
-      RES[[length(RES) + 1]] <- do.call(KNN_merge, RES_subset)
-    }
-    y_pred <- do.call(KNN_classify, RES)
   }
 
-  return(y_pred)
+  PRED <- do.call(c, RES)
+  return(PRED)
 }
 
 
@@ -50,7 +56,8 @@ parse_arguments <- function(Minimize) {
   n_test <- 200
   dimensions <- 2
   num_class <- 5
-  fragments <- 4
+  fragments_train <- 5
+  fragments_test <- 5
   k <- 3
   arity <- 2
 
@@ -93,9 +100,13 @@ parse_arguments <- function(Minimize) {
       } else if (args[i] == "--num_class") {
         num_class <- as.integer(args[i + 1])
       } else if (args[i] == "-f") {
-        fragments <- as.integer(args[i + 1])
-      } else if (args[i] == "--fragments") {
-        fragments <- as.integer(args[i + 1])
+        fragments_train <- as.integer(args[i + 1])
+      } else if (args[i] == "--fragments_train") {
+        fragments_train <- as.integer(args[i + 1])
+      } else if (args[i] == "-F") {
+        fragments_test <- as.integer(args[i + 1])
+      } else if (args[i] == "--fragments_test") {
+        fragments_test <- as.integer(args[i + 1])
       } else if (args[i] == "-k") {
         k <- as.integer(args[i + 1])
       } else if (args[i] == "--knn") {
@@ -128,19 +139,16 @@ parse_arguments <- function(Minimize) {
     }
   }
 
-  if(n_train %% fragments != 0){
-    stop("Number of fragment is not a factor of number of points!\n")
-  }
-
   if(is.asking_for_help){
     cat("Usage: Rscript knn.R [options]\n")
     cat("Options:\n")
     cat("  -s, --seed <seed>                         Seed for random number generator\n")
-    cat("  -n, --n_train <n_train>      Number of training points\n")
-    cat("  -N, --n_test <n_test>        Number of testing points\n")
+    cat("  -n, --n_train <n_train>                   Number of training points\n")
+    cat("  -N, --n_test <n_test>                     Number of testing points\n")
     cat("  -d, --dimensions <dimensions>             Number of dimensions\n")
     cat("  -c, --num_class <num_class>               Number of classes\n")
-    cat("  -f, --fragments <fragments>               Number of fragments\n")
+    cat("  -f, --fragments_train <fragments_train>   Number of fragments of training data\n")
+    cat("  -F, --fragments_test  <fragments_test>    Number of fragments of testing data\n")
     cat("  -k, --knn <k>                             Number of the nearest neighbours to consider\n")
     cat("  -a, --arity <arity>                       Reduction arity\n")
     cat("  -p, --plot <needs_plot>                   Boolean: Plot?\n")
@@ -151,9 +159,13 @@ parse_arguments <- function(Minimize) {
     q(status = 0)
   }
 
-  #if(numpoints %% fragments){
-  #  stop("Number of fragment is not a factor of number of points!\n")
-  #}
+  if(n_train %% fragments_train != 0){
+    stop("Number of fragment_train is not a factor of n_train!\n")
+  }
+
+  if(n_test %% fragments_test != 0){
+    stop("Number of fragment_test is not a factor of n_test!\n")
+  }
 
   return(list(
               seed = seed,
@@ -161,7 +173,8 @@ parse_arguments <- function(Minimize) {
               n_test = n_test,
               dimensions = dimensions,
               num_class = num_class,
-              num_fragments = fragments,
+              num_fragments_train = fragments_train,
+              num_fragments_test = fragments_test,
               k = k,
               arity = arity,
               confusion_matrix = confusion_matrix,
@@ -178,10 +191,12 @@ print_parameters <- function(params) {
   cat(sprintf("  Number of testing points: %d\n", params$n_test))
   cat(sprintf("  Dimensions: %d\n", params$dimensions))
   cat(sprintf("  Number of class: %d\n", params$num_class))
-  cat(sprintf("  Number of fragments: %d\n", params$num_fragments))
+  cat(sprintf("  Number of fragments of training data: %d\n", params$num_fragments_train))
+  cat(sprintf("  Number of fragments of testing data: %d\n", params$num_fragments_test))
   cat(sprintf("  K: %d\n", params$k))
   cat(sprintf("  Arity: %d\n", params$arity))
   cat("  confusion_matrix:", params$confusion_matrix, "\n")
+  cat("  needs_plot:", params$needs_plot, "\n")
   cat("  use_RCOMPSs:", params$use_RCOMPSs, "\n")
   cat("  use_R_default:", params$use_R_default, "\n")
 }

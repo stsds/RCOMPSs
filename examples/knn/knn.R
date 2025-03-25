@@ -80,36 +80,30 @@ for(replicate in 1:2){
   if(!Minimize){
     cat("Generating data replicate", replicate, "... ")
   }
-  #for(i in 2:(num_class+1)){
-    # Generate the data
-    #center <- runif(dimensions, min = -10, max = 10)
-    #ind_train <- (sum(num_points_train[1:(i-1)]) + 1):sum(num_points_train[1:i])
-    #x_train[ind_train,] <- MASS::mvrnorm(n = num_points_train[i], mu = center, Sigma = diag(dimensions))
-    #y_train[ind_train] <- i-1
-    #ind_test <- (sum(num_points_test[1:(i-1)]) + 1):sum(num_points_test[1:i])
-    #x_test[ind_test,] <- MASS::mvrnorm(n = num_points_test[i], mu = center, Sigma = diag(dimensions)*5)
-    #y_test[ind_test] <- i-1
-  #}
-  #y_train <- factor(y_train)
-  #y_test <- factor(y_test)
 
-  points_per_fragment <- max(1, n_train %/% num_fragments)
+  points_per_fragment_train <- max(1, n_train %/% num_fragments_train)
+  points_per_fragment_test <- max(1, n_test %/% num_fragments_test)
   # Generate cluster central points
   true_centres <- matrix(runif(num_class * dimensions),
                          nrow = num_class, ncol = dimensions)
 
-  params_test <- list(centres = true_centres, n = n_test)
-  params_train <- list(centres = true_centres, n = points_per_fragment)
-  x_train <- vector("list", num_fragments)
+  params_train <- list(centres = true_centres, n = points_per_fragment_train)
+  params_test <- list(centres = true_centres, n = points_per_fragment_test)
+  x_train <- vector("list", num_fragments_train)
+  x_test <- vector("list", num_fragments_test)
   if(use_RCOMPSs){
-    x_test <- task.KNN_fill_fragment(params_test)
-    for(f in 1:num_fragments){
+    for(f in 1:num_fragments_train){
       x_train[[f]] <- task.KNN_fill_fragment(params_train)
     }
+    for(f in 1:num_fragments_test){
+      x_test[[f]] <- task.KNN_fill_fragment(params_test)
+    }
   }else{
-    x_test <- KNN_fill_fragment(params_test)
-    for(f in 1:num_fragments){
+    for(f in 1:num_fragments_train){
       x_train[[f]] <- KNN_fill_fragment(params_train)
+    }
+    for(f in 1:num_fragments_test){
+      x_test[[f]] <- KNN_fill_fragment(params_test)
     }
   }
 
@@ -129,20 +123,24 @@ for(replicate in 1:2){
   KNN_time <- knn_time[3] - initialization_time[3]
   Total_time <- proc.time()[3] - start_time[3]
 
+  Initialization_time <- round(Initialization_time, 3)
+  KNN_time <- round(KNN_time, 3)
+  Total_time <- round(Total_time, 3)
+  cat("-----------------------------------------\n")
+  cat("-------------- RESULTS ------------------\n")
+  cat("-----------------------------------------\n")
+  cat("Initialization time:", Initialization_time, "seconds\n")
+  cat("KNN time:", KNN_time, "seconds\n")
+  cat("Total time:", Total_time, "seconds\n")
+  cat("-----------------------------------------\n")
+  cat("KNN_RES,seed,n_train,n_test,dimensions,num_class,k,arity,confusion_matrix,needs_plot,use_RCOMPSs,use_R_default,Minimize,Initialization_time,KNN_time,Total_time\n")
+  cat(paste0("KNN_res,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, "\n"))
   if(!Minimize){
-    cat("-----------------------------------------\n")
-    cat("-------------- RESULTS ------------------\n")
-    cat("-----------------------------------------\n")
-    cat("Initialization time:", Initialization_time, "seconds\n")
-    cat("KNN time:", KNN_time, "seconds\n")
-    cat("Total time:", Total_time, "seconds\n")
-    cat("-----------------------------------------\n")
-    cat("KNN_RES,seed,n_train,n_test,dimensions,num_class,k,arity,confusion_matrix,needs_plot,use_RCOMPSs,use_R_default,Minimize,Initialization_time,KNN_time,Total_time\n")
-    cat(paste0("KNN_res,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, "\n"))
     res_KNN <- as.factor(as.numeric(res_KNN))
     if(confusion_matrix){
       cat("Confusion Matrix:\n")
       if(use_RCOMPSs) x_test <- compss_wait_on(x_test)
+      x_test <- do.call(rbind, x_test)
       cm <- caret::confusionMatrix(data = res_KNN, reference = as.factor(x_test[,ncol(x_test)]))
       print(cm)
     }else{
