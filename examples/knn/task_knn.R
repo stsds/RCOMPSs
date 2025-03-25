@@ -27,7 +27,7 @@ KNN_fill_fragment <- function(params_fill_fragment){
 }
 
 KNN_frag <- function(train, test, k){
-    dimensions <- ncol(train) - 1
+  dimensions <- ncol(train) - 1
   x_train <- train[,1:dimensions]
   cl <- train[,dimensions+1]
   x_test <- test[,1:dimensions]
@@ -50,50 +50,77 @@ KNN_frag <- function(train, test, k){
     cat("res_dist2:\n"); print(res_dist)
   }
 
-  fragres <- list(res_dist = res_dist, res_cl = res_cl)
-  return(fragres)
+  #fragres <- list(res_dist = res_dist, res_cl = res_cl)
+  #return(fragres)
+
+  dist_cl <- cbind(res_dist, res_cl)
+  return(dist_cl)
 }
 
 KNN_merge <- function(...){
   input <- list(...)
   input_len <- length(input)
-  k <- ncol(input[[1]][[1]])
-  res_dist <- do.call(cbind, lapply(input, function(x) x[[1]]))
-  res_cl <- do.call(cbind, lapply(input, function(x) x[[2]]))
-  ntest <- nrow(res_dist)
   if(DEBUG$KNN_merge) {
     cat("Doing KNN_merge\n")
-    cat("k =", k, "\n")
-    cat("input_len of KNN_merge:", input_len, "\n")
-    cat("typeof(res_dist):", typeof(res_dist), "\n")
-    cat("class(res_dist):", class(res_dist), "\n")
-    cat("dim(res_dist):", dim(res_dist), "\n")
-    cat("res_dist before merge:\n"); print(res_dist)
-    cat("res_cl before merge:\n"); print(res_cl)
+    for(i in 1:input_len){
+      cat("Input", i, "\n")
+      print(input[[i]])
+    }
   }
-  sorted_distance_ind <- t(apply(res_dist, 1, function(d) sort(d, index.return = TRUE)$ix[1:k]))
-  res_dist <- matrix(res_dist[cbind(1:ntest, c(sorted_distance_ind))], nrow = ntest, ncol = k)
-  res_cl <- matrix(res_cl[cbind(1:ntest, c(sorted_distance_ind))], nrow = ntest, ncol = k)
-  merge_res <- list(res_dist = res_dist, res_cl = res_cl)
-  if(DEBUG$KNN_merge) {
-    cat("sorted_distance_ind:\n")
-    print(sorted_distance_ind)
-    cat("res_dist after merge:\n")
-    print(res_dist)
-    cat("res_cl after merge:\n")
-    print(res_cl)
-    cat("merge_res:\n")
-    print(merge_res)
+  if(input_len == 1){
+    return(input[[1]])
+  }else{
+    #k <- ncol(input[[1]][[1]])
+    #res_dist <- do.call(cbind, lapply(input, function(x) x[[1]]))
+    #res_cl <- do.call(cbind, lapply(input, function(x) x[[2]]))
+    k <- ncol(input[[1]]) / 2
+    res_dist <- do.call(cbind, lapply(input, function(x) x[,1:k]))
+    res_cl <- do.call(cbind, lapply(input, function(x) x[,(k+1):(2*k)]))
+    ntest <- nrow(res_dist)
+    if(DEBUG$KNN_merge) {
+      cat("Doing KNN_merge\n")
+      cat("k =", k, "\n")
+      cat("input_len of KNN_merge:", input_len, "\n")
+      cat("typeof(res_dist):", typeof(res_dist), "\n")
+      cat("class(res_dist):", class(res_dist), "\n")
+      cat("dim(res_dist):", dim(res_dist), "\n")
+      cat("res_dist before merge:\n"); print(res_dist)
+      cat("res_cl before merge:\n"); print(res_cl)
+    }
+    sorted_distance_ind <- t(apply(res_dist, 1, function(d) sort(d, index.return = TRUE)$ix[1:k]))
+    res_dist <- matrix(res_dist[cbind(1:ntest, c(sorted_distance_ind))], nrow = ntest, ncol = k)
+    res_cl <- matrix(res_cl[cbind(1:ntest, c(sorted_distance_ind))], nrow = ntest, ncol = k)
+    #merge_res <- list(res_dist = res_dist, res_cl = res_cl)
+    dist_cl <- cbind(res_dist, res_cl)
+    if(DEBUG$KNN_merge) {
+      cat("sorted_distance_ind:\n")
+      print(sorted_distance_ind)
+      cat("res_dist after merge:\n")
+      print(res_dist)
+      cat("res_cl after merge:\n")
+      print(res_cl)
+      #cat("merge_res:\n")
+      #print(merge_res)
+      cat("dist_cl:\n")
+      print(dist_cl)
+    }
+    #return(merge_res)
+    return(dist_cl)
   }
-  return(merge_res)
 }
 
 KNN_classify <- function(...){
+  if(DEBUG$KNN_classify) {
+    cat("Doing KNN_classify\n")
+    print(list(...))
+  }
   final_merge <- do.call(KNN_merge, list(...))
   if(DEBUG$KNN_classify) {
     cat("final_merge:\n"); print(final_merge)
   }
-  final_cl <- final_merge$res_cl
+  k <- ncol(final_merge) / 2
+  #final_cl <- final_merge$res_cl
+  final_cl <- final_merge[,(k+1):(2*k)]
   KNN_get_mode <- function(x) {
     ux <- unique(x)
     ux[which.max(tabulate(match(x, ux)))]
