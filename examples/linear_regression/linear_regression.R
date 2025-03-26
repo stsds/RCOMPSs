@@ -40,56 +40,113 @@ if (use_RCOMPSs){
   require(RCOMPSs)
 
   compss_start()
+  task.LR_fill_fragment <- task(LR_fill_fragment, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.LR_genpred <- task(LR_genpred, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.select_columns <- task(select_columns, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.partial_ztz <- task(partial_ztz, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.partial_zty <- task(partial_zty, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-  #task.compute_model_parameters <- task(compute_model_parameters, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.compute_model_parameters <- task(compute_model_parameters, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.compute_prediction <- task(compute_prediction, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.row_combine <- task(row_combine, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.merge <- task(merge, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-  #task.merge3 <- task(merge3, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
 }
 
 # Example usage:
 set.seed(seed)
-n <- numpoints
-d <- dimensions
-
-# Generate random data
-training_data_x <- matrix(runif(n*d), nrow = n, ncol = d)
+n <- num_fit
+N <- num_pred
+d <- dimensions_x
+D <- dimensions_y
 
 # Generate random regression coefficients
-true_coeff <- numeric(d+1)
+true_coeff <- matrix(runif((d+1)*D, -10, 10), nrow = d + 1, ncol = D)
 ## If all the covariate are corresponding to 0, we need to do it again
-while(sum(true_coeff) == true_coeff[1]){
-  true_coeff <- round(runif(d+1, -10, 10))
+for(j in 1:D){
+  while(all(true_coeff[-1,j] == 0)){
+    true_coeff <- round(runif(d, -10, 10))
+  }
 }
-## Create the response variable with some noise
-training_data_y <- matrix(apply(t(true_coeff[2:(d+1)] * t(training_data_x)), 1, sum) + rnorm(n, mean = true_coeff[1], sd = 1), ncol = 1)
-## Generate random data for prediction
-test_data_x <- matrix(runif(n*d), nrow = n, ncol = d)
 
-# Fit the model
-model <- fit_linear_regression(training_data_x, 
-                               training_data_y, 
-                               fit_intercept = TRUE, 
-                               numrows = numrows, 
-                               arity = arity, 
-                               use_RCOMPSs = use_RCOMPSs)
+for(replicate in 1:2){
 
-# Predict using the model
-predictions <- predict_linear_regression(model, test_data_x)
+  if(replicate > 1) compare_accuracy <- FALSE
 
-# To compare accuracy
-model_base <- lm(training_data_y ~ training_data_x)
-coeff <- coefficients(model_base)
-predictions_base <- coeff[1] + apply(t(coeff[2:length(coeff)] * t(test_data_x)), MARGIN = 1, FUN = sum)
+  start_time <- proc.time()
 
-# Results:
-cat("True coefficients:     ", round(true_coeff, 2), "\n")
-cat("Estimated coefficients:", round(c(model$intercept, model$coef), 2), "\n")
-cat("`lm` coefficients:     ", round(coeff, 2), "\n")
-cat("Squared error of the difference between `predictions` and `predictions_base` is:", sum((predictions - predictions_base)^2), "\n")
-# save_model(model, "model.rds")
-# loaded_model <- load_model("model.rds")
+  # Generate random data
+  X_Y <- vector("list", num_fragments_fit)
+  PRED <- vector("list", num_fragments_pred)
+  if(use_RCOMPSs){
+    for(i in 1:num_fragments_fit){
+      params <- list(dim = c(n / num_fragments_fit, d, D), true_coeff = true_coeff)
+      X_Y[[i]] <- task.LR_fill_fragment(params)
+    }
+    for(j in 1:num_fragments_pred){
+      params <- list(n = N / num_fragments_pred, d = d)
+      PRED[[j]] <- task.LR_genpred(params)
+    }
+  }else{
+    for(i in 1:num_fragments_fit){
+      params <- list(dim = c(n / num_fragments_fit, d, D), true_coeff = true_coeff)
+      X_Y[[i]] <- LR_fill_fragment(params)
+    }
+    for(j in 1:num_fragments_pred){
+      params <- list(n = N / num_fragments_pred, d = d)
+      PRED[[j]] <- LR_genpred(params)
+    }
+  }
 
-if (use_RCOMPSs){
-  compss_stop()
+  # Fit the model
+  model <- fit_linear_regression(X_Y, d, D, arity = arity, use_RCOMPSs = use_RCOMPSs)
+
+  # Predict using the model
+  predictions <- predict_linear_regression(PRED, model, use_RCOMPSs)
+
+  if(use_RCOMPSs){
+    predictions <- compss_wait_on(predictions)
+  }
+  linear_regression_time <- proc.time()
+
+  LR_time <- round(linear_regression_time[3] - start_time[3], 3)
+
+  # To compare accuracy
+  if(compare_accuracy){
+    if(use_RCOMPSs){
+      X_Y <- do.call(task.row_combine, X_Y)
+      X_Y <- compss_wait_on(X_Y)
+      PRED <- do.call(task.row_combine, PRED)
+      PRED <- compss_wait_on(PRED)
+      model <- compss_wait_on(model)
+    }else{
+      X_Y <- do.call(rbind, X_Y)
+      PRED <- do.call(rbind, PRED)
+    }
+    X <- X_Y[,1:dimensions_x]
+    Y <- X_Y[,(dimensions_x+1):(dimensions_x+dimensions_y)]
+    start_lm <- proc.time()
+    model_base <- lm(Y ~ X)
+    coeff <- coefficients(model_base)
+    #predictions_base <- predict(model, PRED)
+    #predictions_base <- coeff[1] + apply(t(coeff[2:length(coeff)] * t(PRED)), MARGIN = 1, FUN = sum)
+    predictions_base <- cbind(1, PRED) %*% coeff
+    end_lm <- proc.time()
+    # Results:
+    cat("True coefficients:\n"); print(round(true_coeff, 2))
+    cat("Estimated coefficients:\n"); print(round(model, 2))
+    cat("`lm` coefficients:\n"); print(round(coeff, 2))
+    cat("Squared error of the difference between `predictions` and `predictions_base` is:", sum((predictions - predictions_base)^2), "\n")
+  }
+
+  lm_time <- round(end_lm[3] - start_lm[3], 3)
+
+  cat("-----------------------------------------\n")
+  cat("-------------- RESULTS ------------------\n")
+  cat("-----------------------------------------\n")
+  cat("Linear regression time:", LR_time, "seconds\n")
+  if(compare_accuracy) cat("Base R lm time:", lm_time, "seconds\n")
+  cat("-----------------------------------------\n")
+  cat("LR_RES,seed,num_fit,num_pred,dimensions_x,dimensions_y,num_fragments_fit,num_fragments_pred,arity,needs_plot,use_RCOMPSs,compare_accuracy,Minimize,LR_time,run\n")
+  cat(paste0("LR_res,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", needs_plot, ",", use_RCOMPSs, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
 }
+
+if(use_RCOMPSs) compss_stop()

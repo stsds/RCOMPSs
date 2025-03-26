@@ -1,87 +1,78 @@
-fit_linear_regression <- function(x, y, fit_intercept = TRUE, numrows = 2, arity = 2, use_RCOMPSs = FALSE) {
+fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
 
-  n_features <- ncol(x)
-  n_targets <- ncol(y)
-  ztz <- compute_ztz(x, fit_intercept, numrows, arity, use_RCOMPSs)
-  zty <- compute_zty(x, y, fit_intercept, numrows, arity, use_RCOMPSs)
+  nfrag <- length(x_y)
+  x <- vector("list", nfrag)
+  y <- vector("list", nfrag)
+  ztz <- vector("list", nfrag)
+  zty <- vector("list", nfrag)
   if(use_RCOMPSs){
-    ztz <- compss_wait_on(ztz)
-    zty <- compss_wait_on(zty)
-  }
-  params <- compute_model_parameters(ztz, zty, fit_intercept)
-
-  list(intercept = params[[1]], coef = params[[2]], n_features = n_features, n_targets = n_targets)
-}
-
-predict_linear_regression <- function(model, x) {
-  return(as.numeric(as.matrix(x) %*% model$coef + model$intercept))
-}
-
-save_model <- function(model, filepath) {
-  saveRDS(model, file = filepath)
-}
-
-load_model <- function(filepath) {
-  readRDS(file = filepath)
-}
-
-row_range <- function(ind, nr, n){
-  if(ind * nr <= n){
-    return(( (ind - 1) * nr + 1 ):( ind * nr ))
-  }else{
-    return(( (ind - 1) * nr + 1 ):n)
-  }
-}
-
-compute_ztz <- function(x, fit_intercept, numrows, arity, use_RCOMPSs) {
-  partials <- list()
-  i <- 1
-  total_rows <- nrow(x)
-  if(use_RCOMPSs){
-    while( (i-1)*numrows < total_rows ) {
-      block_x <- x[row_range(i, numrows, total_rows), , drop = FALSE]
-      partials[[i]] <- task.partial_ztz(block_x, fit_intercept)
-      i <- i + 1
+    # Compute ztz and zty
+    for(i in 1:nfrag) {
+      x[[i]] <- task.select_columns(x_y[[i]], 1:dx)
+      y[[i]] <- task.select_columns(x_y[[i]], (dx+1):(dx+dy))
+      ztz[[i]] <- task.partial_ztz(x[[i]])
+      zty[[i]] <- task.partial_zty(x[[i]], y[[i]])
     }
-  }else{
-    while( (i-1)*numrows < total_rows ) {
-      partials[[i]] <- partial_ztz(x[row_range(i, numrows, total_rows), , drop = FALSE], fit_intercept)
-      i <- i + 1
+    # Merge ztz
+    while(length(ztz) > arity){
+      ztz_subset <- ztz[1:arity]
+      ztz <- ztz[(arity + 1):length(ztz)]
+      ztz[[length(ztz) + 1]] <- do.call(task.merge, ztz_subset)
     }
-  }
-  if(use_RCOMPSs){
-    partials <- do.call(task.merge, partials)
-    return(partials)
+    ztz <- do.call(task.merge, ztz)
+    # Merge zty
+    while(length(zty) > arity){
+      zty_subset <- zty[1:arity]
+      zty <- zty[(arity + 1):length(zty)]
+      zty[[length(zty) + 1]] <- do.call(task.merge, zty_subset)
+    }
+    zty <- do.call(task.merge, zty)
+    # Compute ztz^(-1) %*% zty
+    parameters <- task.compute_model_parameters(ztz, zty)
   }else{
-    return(Reduce("+", partials))
+    # Compute ztz and zty
+    for(i in 1:nfrag) {
+      x[[i]] <- select_columns(x_y[[i]], 1:dx)
+      y[[i]] <- select_columns(x_y[[i]], (dx+1):(dx+dy))
+      ztz[[i]] <- partial_ztz(x[[i]])
+      zty[[i]] <- partial_zty(x[[i]], y[[i]])
+    }
+    # Merge ztz
+    while(length(ztz) > arity){
+      ztz_subset <- ztz[1:arity]
+      ztz <- ztz[(arity + 1):length(ztz)]
+      ztz[[length(ztz) + 1]] <- do.call(merge, ztz_subset)
+    }
+    ztz <- do.call(merge, ztz)
+    # Merge zty
+    while(length(zty) > arity){
+      zty_subset <- zty[1:arity]
+      zty <- zty[(arity + 1):length(zty)]
+      zty[[length(zty) + 1]] <- do.call(merge, zty_subset)
+    }
+    zty <- do.call(merge, zty)
+    # Compute ztz^(-1) %*% zty
+    parameters <- compute_model_parameters(ztz, zty)
   }
+
+  return(parameters)
 }
 
-compute_zty <- function(x, y, fit_intercept, numrows, arity, use_RCOMPSs) {
-  partials <- list()
-  i <- 1
-  total_rows <- nrow(x)
+predict_linear_regression <- function(x, parameters, use_RCOMPSs) {
+  nf <- length(x)
+  pred <- vector("list", nf)
   if(use_RCOMPSs){
-    while( (i-1)*numrows < total_rows ) {
-      block_x <- x[row_range(i, numrows, total_rows), , drop = FALSE]
-      block_y <- y[row_range(i, numrows, total_rows), , drop = FALSE]
-      partials[[i]] <- task.partial_zty(block_x, block_y, fit_intercept)
-      i <- i + 1
+    for(i in 1:nf){
+      pred[[i]] <- task.compute_prediction(x[[i]], parameters)
     }
+    pred <- do.call(task.row_combine, pred)
   }else{
-    while( (i-1)*numrows < total_rows ) {
-      partials[[i]] <- partial_zty(x[row_range(i, numrows, total_rows), , drop = FALSE], 
-                                   y[row_range(i, numrows, total_rows), , drop = FALSE], 
-                                   fit_intercept)
-      i <- i + 1
+    for(i in 1:nf){
+      pred[[i]] <- compute_prediction(x[[i]], parameters)
     }
+    pred <- do.call(row_combine, pred)
   }
-  if(use_RCOMPSs){
-    partials <- do.call(task.merge, partials)
-    return(partials)
-  }else{
-    return(Reduce("+", partials))
-  }
+  return(pred)
 }
 
 parse_arguments <- function(Minimize) {
@@ -95,9 +86,12 @@ parse_arguments <- function(Minimize) {
   # Define default values
   # Note that if `num_fragments` is not a factor of `numpoints`, the last fragment may give NA due to lack of points.
   seed <- 1
-  numpoints <- 9000
-  dimensions <- 2
-  numrows <- 1000
+  num_fit <- 9000
+  num_pred <- 1000
+  dimensions_x <- 2
+  dimensions_y <- 2
+  num_fragments_fit <- 10
+  num_fragments_pred <- 5
   arity <- 2
 
   # Execution using RCOMPSs
@@ -105,6 +99,12 @@ parse_arguments <- function(Minimize) {
 
   # asking for help
   is.asking_for_help <- FALSE
+
+  # Compare accuracy?
+  compare_accuracy <- FALSE
+
+  # Plot?
+  needs_plot <- FALSE
 
   # Parse arguments
   if(length(args) >= 1){
@@ -115,16 +115,28 @@ parse_arguments <- function(Minimize) {
         seed <- as.integer(args[i + 1])
       } else if (args[i] == "-n") {
         numpoints <- as.integer(args[i + 1])
-      } else if (args[i] == "--numpoints") {
+      } else if (args[i] == "--num_fit") {
+        numpoints <- as.integer(args[i + 1])
+      } else if (args[i] == "-N") {
+        numpoints <- as.integer(args[i + 1])
+      } else if (args[i] == "--num_pred") {
         numpoints <- as.integer(args[i + 1])
       } else if (args[i] == "-d") {
-        dimensions <- as.integer(args[i + 1])
-      } else if (args[i] == "--dimensions") {
-        dimensions <- as.integer(args[i + 1])
-      } else if (args[i] == "-r") {
-        numrows <- as.integer(args[i + 1])
-      } else if (args[i] == "--numrows") {
-        numrows <- as.integer(args[i + 1])
+        dimensions_x <- as.integer(args[i + 1])
+      } else if (args[i] == "--dimensions_x") {
+        dimensions_x <- as.integer(args[i + 1])
+      } else if (args[i] == "-D") {
+        dimensions_y <- as.integer(args[i + 1])
+      } else if (args[i] == "--dimensions_y") {
+        dimensions_y <- as.integer(args[i + 1])
+      } else if (args[i] == "-f") {
+        num_fragments_fit <- as.integer(args[i + 1])
+      } else if (args[i] == "--fragments_fit") {
+        num_fragments_fit <- as.integer(args[i + 1])
+      } else if (args[i] == "-F") {
+        num_fragments_pred <- as.integer(args[i + 1])
+      } else if (args[i] == "--fragments_pred") {
+        num_fragments_pred <- as.integer(args[i + 1])
       } else if (args[i] == "-a") {
         arity <- as.integer(args[i + 1])
       } else if (args[i] == "--arity") {
@@ -133,6 +145,12 @@ parse_arguments <- function(Minimize) {
         use_RCOMPSs <- TRUE
       } else if (args[i] == "--RCOMPSs") {
         use_RCOMPSs <- TRUE
+      } else if (args[i] == "-p") {
+        needs_plot <- as.logical(args[i + 1])
+      } else if (args[i] == "--plot") {
+        needs_plot <- as.logical(args[i + 1])
+      } else if (args[i] == "--compare_accuracy") {
+        compare_accuracy <- TRUE
       } else if (args[i] == "-h") {
         is.asking_for_help <- TRUE
       } else if (args[i] == "--help") {
@@ -144,33 +162,48 @@ parse_arguments <- function(Minimize) {
   if(is.asking_for_help){
     cat("Usage: Rscript linear_regression.R [options]\n")
     cat("Options:\n")
-    cat("  -s, --seed <seed>                Seed for random number generator\n")
-    cat("  -n, --numpoints <numpoints>      Number of points\n")
-    cat("  -d, --dimensions <dimensions>    Number of dimensions\n")
-    cat("  -r, --numrows <numrows>          Number of rows to create the submatrix\n")
-    cat("  -r, --arity <arity>              Integer: Arity of the merge\n")
-    cat("  -C, --RCOMPSs <use_RCOMPSs>      Boolean: Use RCOMPSs parallelization?\n")
-    cat("  -M, --Minimize <Minimize>        Boolean: Minimize printout?\n")
-    cat("  -h, --help                       Show this help message\n")
+    cat("  -s, --seed <seed>                          Seed for random number generator\n")
+    cat("  -n, --num_fit <num_fit>                    Number of fitting points\n")
+    cat("  -N, --num_pred <num_pred>                  Number of predicting points\n")
+    cat("  -d, --dimensions_x <dimensions_x>          Number of X dimensions\n")
+    cat("  -D, --dimensions_y <dimensions_y>          Number of Y dimensions\n")
+    cat("  -f, --fragments_fit <num_fragments_fit>    Number of fragments of the fitting data\n")
+    cat("  -F, --fragments_pred <num_fragments_pred>  Number of fragments of the prediction data\n")
+    cat("  -r, --arity <arity>                        Integer: Arity of the merge\n")
+    cat("  -C, --RCOMPSs <use_RCOMPSs>                Boolean: Use RCOMPSs parallelization?\n")
+    cat("  -p, --plot <needs_plot>                    Boolean: Plot?\n")
+    cat("  -M, --Minimize <Minimize>                  Boolean: Minimize printout?\n")
+    cat("  --compare_accuracy <compare_accuracy>      Boolean: Compare accuracy?\n")
+    cat("  -h, --help                                 Show this help message\n")
     q(status = 0)
   }
 
   return(list(
               seed = seed,
-              numpoints = numpoints,
-              dimensions = dimensions,
-              numrows = numrows,
+              num_fit = num_fit,
+              num_pred = num_pred,
+              dimensions_x = dimensions_x,
+              dimensions_y = dimensions_y,
+              num_fragments_fit = num_fragments_fit,
+              num_fragments_pred = num_fragments_pred,
               arity = arity,
-              use_RCOMPSs = use_RCOMPSs
+              use_RCOMPSs = use_RCOMPSs,
+              needs_plot = needs_plot,
+              compare_accuracy = compare_accuracy
               ))
 }
 
 print_parameters <- function(params) {
   cat("Parameters:\n")
-  cat(sprintf("  Seed: %d\n", params$seed))
-  cat(sprintf("  Number of points: %d\n", params$numpoints))
-  cat(sprintf("  Dimensions: %d\n", params$dimensions))
-  cat(sprintf("  Number of rows: %d\n", params$numrows))
-  cat(sprintf("  Number of rows: %d\n", params$arity))
+  cat("  Seed:", params$seed, "\n")
+  cat("  Number of fitting points:", params$num_fit, "\n")
+  cat("  Number of predicting points:", params$num_pred, "\n")
+  cat("  X dimensions:", params$dimensions_x, "\n")
+  cat("  Y dimensions:", params$dimensions_y, "\n")
+  cat("  Number of fragments of the fitting data:", params$num_fragments_fit, "\n")
+  cat("  Number of fragments of the predicting data:", params$num_fragments_pred, "\n")
+  cat("  Arity:", params$arity, "\n")
   cat("  use_RCOMPSs:", params$use_RCOMPSs, "\n")
+  cat("  Compare accuracy?", params$compare_accuracy, "\n")
+  cat("  Plot?", params$needs_plot, "\n")
 }

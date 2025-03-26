@@ -459,11 +459,11 @@ compss_barrier <- function(no_more_tasks = FALSE){
 #' @export
 compss_wait_on <- function(future_obj){
   #if(class(future_obj) == "future_object"){
-  if (length(class(obj)) == 1 && class(obj) == "future_object") { 
+  if (length(class(future_obj)) == 1 && class(future_obj) == "future_object") { 
     Get_File(0L, future_obj$outputfile)
     return_value <- compss_unserialize(future_obj$outputfile)
     return(return_value)
-  }else if(class(future_obj) == "list"){
+  }else if(length(class(future_obj)) == 1 && class(future_obj) == "list"){
     list_len <-length(future_obj)
     #return_list <- list()
     #for(i in 1:list_len){
@@ -485,6 +485,7 @@ compss_wait_on <- function(future_obj){
                           })
     return(return_list)
   }else{
+    warning("[compss_wait_on] class(future_obj):", class(future_obj), "\nNot doing anything!\n")
     return(future_obj)
   }
 }
