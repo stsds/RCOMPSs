@@ -58,17 +58,53 @@ fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
   return(parameters)
 }
 
-predict_linear_regression <- function(x, parameters, use_RCOMPSs) {
+predict_linear_regression <- function(x, parameters, arity, use_RCOMPSs) {
   nf <- length(x)
   pred <- vector("list", nf)
   if(use_RCOMPSs){
     for(i in 1:nf){
       pred[[i]] <- task.compute_prediction(x[[i]], parameters)
     }
+    offset <- 0
+    while(length(pred) > arity){
+      if(offset == 0){
+        pred_subset <- pred[1:arity]
+        pred <- pred[arity:length(pred)]
+        pred[[1]] <- do.call(task.row_combine, pred_subset)
+        offset <- offset + 1
+      }else{
+        pred_subset <- pred[1:arity + offset]
+        pred <- pred[c(1:offset, (arity+offset):length(pred))]
+        pred[[1+offset]] <- do.call(task.row_combine, pred_subset)
+        if(offset + arity < length(pred)){
+          offset <- offset + 1
+        }else{
+          offset <- 0
+        }
+      }
+    }
     pred <- do.call(task.row_combine, pred)
   }else{
     for(i in 1:nf){
       pred[[i]] <- compute_prediction(x[[i]], parameters)
+    }
+    offset <- 0
+    while(length(pred) > arity){
+      if(offset == 0){
+        pred_subset <- pred[1:arity]
+        pred <- pred[arity:length(pred)]
+        pred[[1]] <- do.call(row_combine, pred_subset)
+        offset <- offset + 1
+      }else{
+        pred_subset <- pred[1:arity + offset]
+        pred <- pred[c(1:offset, (arity+offset):length(pred))]
+        pred[[1+offset]] <- do.call(row_combine, pred_subset)
+        if(offset + arity < length(pred)){
+          offset <- offset + 1
+        }else{
+          offset <- 0
+        }
+      }
     }
     pred <- do.call(row_combine, pred)
   }
@@ -114,13 +150,13 @@ parse_arguments <- function(Minimize) {
       } else if (args[i] == "--seed") {
         seed <- as.integer(args[i + 1])
       } else if (args[i] == "-n") {
-        numpoints <- as.integer(args[i + 1])
+        num_fit <- as.integer(args[i + 1])
       } else if (args[i] == "--num_fit") {
-        numpoints <- as.integer(args[i + 1])
+        num_fit <- as.integer(args[i + 1])
       } else if (args[i] == "-N") {
-        numpoints <- as.integer(args[i + 1])
+        num_pred <- as.integer(args[i + 1])
       } else if (args[i] == "--num_pred") {
-        numpoints <- as.integer(args[i + 1])
+        num_pred <- as.integer(args[i + 1])
       } else if (args[i] == "-d") {
         dimensions_x <- as.integer(args[i + 1])
       } else if (args[i] == "--dimensions_x") {

@@ -1,15 +1,22 @@
 DEBUG <- list(
-  partial_ztz = FALSE,
-  partial_zty = FALSE,
-  compute_model_parameters = FALSE,
-  merge = FALSE
+              LR_fill_fragment = FALSE,
+              partial_ztz = FALSE,
+              partial_zty = FALSE,
+              compute_model_parameters = FALSE,
+              merge = FALSE
 )
 
-LR_fill_fragment <- function(params_LR_fill_fragment){
+LR_fill_fragment <- function(params_LR_fill_fragment, true_coeff){
   num_frag <- params_LR_fill_fragment$dim[1]
   dimension_x <- params_LR_fill_fragment$dim[2]
   dimension_y <- params_LR_fill_fragment$dim[3]
-  true_coeff <- params_LR_fill_fragment$true_coeff
+  if(DEBUG$LR_fill_fragment){
+    cat("Doing LR_fill_fragment ...\n")
+    cat(paste0("num_frag = ", num_frag, "; dimension_x = ", dimension_x, "; dimension_y = ", dimension_y, "\n"))
+    cat("class(true_coeff):", class(true_coeff), "\n")
+    cat("typeof(true_coeff):", typeof(true_coeff), "\n")
+    cat("Printing true_coeff\n"); print(true_coeff)
+  }
   # Generate X
   x_frag <- matrix(runif(num_frag * dimension_x), nrow = num_frag, ncol = dimension_x)
   # Create the response variable with some noise
