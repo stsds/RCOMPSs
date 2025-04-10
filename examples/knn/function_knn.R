@@ -16,7 +16,6 @@ KNN <- function(train, test, k, use_RCOMPSs = FALSE){
       }
       RES[[i]] <- do.call(task.KNN_classify, RES[[i]])
     }
-    for(i in 1:num_frag_test) RES[[i]] <- compss_wait_on(RES[[i]])
   }else{
     for(i in 1:num_frag_test){
       RES[[i]] <- vector("list", num_frag_train)
@@ -32,8 +31,7 @@ KNN <- function(train, test, k, use_RCOMPSs = FALSE){
     }
   }
 
-  PRED <- do.call(c, RES)
-  return(PRED)
+  return(RES)
 }
 
 

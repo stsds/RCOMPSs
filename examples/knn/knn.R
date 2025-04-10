@@ -72,7 +72,7 @@ if(use_RCOMPSs){
   }
 }
 
-for(replicate in 1:2){
+for(replicate in 1:1){
 
   start_time <- proc.time()
 
@@ -114,9 +114,19 @@ for(replicate in 1:2){
 
   # Run KNN
   res_KNN <- KNN(train = x_train, test = x_test, k = k, use_RCOMPSs)
-  if(use_RCOMPSs){
-    res_KNN <- compss_wait_on(res_KNN)
+
+  if(!Minimize){
+    if(use_RCOMPSs){
+      res_KNN <- compss_wait_on(res_KNN)
+    }
+    PRED <- do.call(c, res_KNN)
+  }else{
+    compss_barrier(FALSE)
   }
+
+  #if(use_RCOMPSs){
+  #  res_KNN <- compss_wait_on(res_KNN)
+  #}
   knn_time <- proc.time()
 
   Initialization_time <- initialization_time[3] - start_time[3]

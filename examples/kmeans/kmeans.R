@@ -77,7 +77,7 @@ if(use_RCOMPSs){
 # I.e it generates random data from some parameters that determine the size,
 # dimensionality and etc and returns the elapsed time.
 
-for(replicate in 1:2){
+for(replicate in 1:1){
 
   start_time <- proc.time()
 

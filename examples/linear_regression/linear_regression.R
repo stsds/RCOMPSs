@@ -65,7 +65,7 @@ for(j in 1:D){
   }
 }
 
-for(replicate in 1:2){
+for(replicate in 1:1){
   cat("Doing replicate", replicate, "...\n")
 
   if(replicate > 1) compare_accuracy <- FALSE
