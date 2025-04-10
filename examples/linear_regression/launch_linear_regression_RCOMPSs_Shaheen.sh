@@ -18,7 +18,7 @@ export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bi
   cpus_per_node=$6
 
   # Leave application args on $@
-  shift 4
+  shift 6
 
   # Enqueue the application
   enqueue_compss \
@@ -37,6 +37,7 @@ export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bi
     --master_working_dir=/scratch/zhanx0q/iops/master_dir \
     --worker_working_dir=/scratch/zhanx0q/iops/worker_dir \
     --cpu_affinity="disabled" \
+    --scheduler=es.bsc.compss.scheduler.orderstrict.fifo.FifoTS \
     $execFile $@
 
  #    --keep_workingdir \

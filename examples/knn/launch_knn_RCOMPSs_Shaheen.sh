@@ -18,7 +18,7 @@ export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bi
   cpus_per_node=$6
 
   # Leave application args on $@
-  shift 4
+  shift 6
 
   # Enqueue the application
   enqueue_compss \
@@ -27,17 +27,16 @@ export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bi
     --project_name=k10164 \
     --num_nodes=$numNodes \
     --exec_time=$executionTime \
-    --log_level=debug \
+    --log_level=off \
     --lang=r \
     --tracing=$tracing \
     --graph=$tracing \
     --worker_in_master_cpus=$worker_in_master_cpus \
     --cpus_per_node=$cpus_per_node \
     --scheduler=es.bsc.compss.scheduler.orderstrict.fifo.FifoTS \
-    --log_dir=/scratch/zhanx0q/bandwidth \
-    --master_working_dir=/scratch/zhanx0q/bandwidth/master_dir \
-    --worker_working_dir=/scratch/zhanx0q/bandwidth/worker_dir \
-    --keep_workingdir \
+    --log_dir=/scratch/zhanx0q/iops \
+    --master_working_dir=/scratch/zhanx0q/iops/master_dir \
+    --worker_working_dir=/scratch/zhanx0q/iops/worker_dir \
     --cpu_affinity="disabled" \
     $execFile $@
 

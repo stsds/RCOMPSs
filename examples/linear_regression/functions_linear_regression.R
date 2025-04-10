@@ -1,17 +1,17 @@
 fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
 
   nfrag <- length(x_y)
-  x <- vector("list", nfrag)
-  y <- vector("list", nfrag)
+  #x <- vector("list", nfrag)
+  #y <- vector("list", nfrag)
   ztz <- vector("list", nfrag)
   zty <- vector("list", nfrag)
   if(use_RCOMPSs){
     # Compute ztz and zty
     for(i in 1:nfrag) {
-      x[[i]] <- task.select_columns(x_y[[i]], 1:dx)
-      y[[i]] <- task.select_columns(x_y[[i]], (dx+1):(dx+dy))
-      ztz[[i]] <- task.partial_ztz(x[[i]])
-      zty[[i]] <- task.partial_zty(x[[i]], y[[i]])
+      #x[[i]] <- task.select_columns(x_y[[i]], 1:dx)
+      #y[[i]] <- task.select_columns(x_y[[i]], (dx+1):(dx+dy))
+      ztz[[i]] <- task.partial_ztz(x_y[[i]], dx)
+      zty[[i]] <- task.partial_zty(x_y[[i]], dx)
     }
     # Merge ztz
     while(length(ztz) > arity){
@@ -32,10 +32,10 @@ fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
   }else{
     # Compute ztz and zty
     for(i in 1:nfrag) {
-      x[[i]] <- select_columns(x_y[[i]], 1:dx)
-      y[[i]] <- select_columns(x_y[[i]], (dx+1):(dx+dy))
-      ztz[[i]] <- partial_ztz(x[[i]])
-      zty[[i]] <- partial_zty(x[[i]], y[[i]])
+      #x[[i]] <- select_columns(x_y[[i]], 1:dx)
+      #y[[i]] <- select_columns(x_y[[i]], (dx+1):(dx+dy))
+      ztz[[i]] <- partial_ztz(x_y[[i]])
+      zty[[i]] <- partial_zty(x_y[[i]])
     }
     # Merge ztz
     while(length(ztz) > arity){
@@ -65,48 +65,48 @@ predict_linear_regression <- function(x, parameters, arity, use_RCOMPSs) {
     for(i in 1:nf){
       pred[[i]] <- task.compute_prediction(x[[i]], parameters)
     }
-    offset <- 0
-    while(length(pred) > arity){
-      if(offset == 0){
-        pred_subset <- pred[1:arity]
-        pred <- pred[arity:length(pred)]
-        pred[[1]] <- do.call(task.row_combine, pred_subset)
-        offset <- offset + 1
-      }else{
-        pred_subset <- pred[1:arity + offset]
-        pred <- pred[c(1:offset, (arity+offset):length(pred))]
-        pred[[1+offset]] <- do.call(task.row_combine, pred_subset)
-        if(offset + arity < length(pred)){
-          offset <- offset + 1
-        }else{
-          offset <- 0
-        }
-      }
-    }
-    pred <- do.call(task.row_combine, pred)
+    #offset <- 0
+    #while(length(pred) > arity){
+    #  if(offset == 0){
+    #    pred_subset <- pred[1:arity]
+    #    pred <- pred[arity:length(pred)]
+    #    pred[[1]] <- do.call(task.row_combine, pred_subset)
+    #    offset <- offset + 1
+    #  }else{
+    #    pred_subset <- pred[1:arity + offset]
+    #    pred <- pred[c(1:offset, (arity+offset):length(pred))]
+    #    pred[[1+offset]] <- do.call(task.row_combine, pred_subset)
+    #    if(offset + arity < length(pred)){
+    #      offset <- offset + 1
+    #    }else{
+    #      offset <- 0
+    #    }
+    #  }
+    #}
+    #pred <- do.call(task.row_combine, pred)
   }else{
     for(i in 1:nf){
       pred[[i]] <- compute_prediction(x[[i]], parameters)
     }
-    offset <- 0
-    while(length(pred) > arity){
-      if(offset == 0){
-        pred_subset <- pred[1:arity]
-        pred <- pred[arity:length(pred)]
-        pred[[1]] <- do.call(row_combine, pred_subset)
-        offset <- offset + 1
-      }else{
-        pred_subset <- pred[1:arity + offset]
-        pred <- pred[c(1:offset, (arity+offset):length(pred))]
-        pred[[1+offset]] <- do.call(row_combine, pred_subset)
-        if(offset + arity < length(pred)){
-          offset <- offset + 1
-        }else{
-          offset <- 0
-        }
-      }
-    }
-    pred <- do.call(row_combine, pred)
+    #offset <- 0
+    #while(length(pred) > arity){
+    #  if(offset == 0){
+    #    pred_subset <- pred[1:arity]
+    #    pred <- pred[arity:length(pred)]
+    #    pred[[1]] <- do.call(row_combine, pred_subset)
+    #    offset <- offset + 1
+    #  }else{
+    #    pred_subset <- pred[1:arity + offset]
+    #    pred <- pred[c(1:offset, (arity+offset):length(pred))]
+    #    pred[[1+offset]] <- do.call(row_combine, pred_subset)
+    #    if(offset + arity < length(pred)){
+    #      offset <- offset + 1
+    #    }else{
+    #      offset <- 0
+    #    }
+    #  }
+    #}
+    #pred <- do.call(row_combine, pred)
   }
   return(pred)
 }

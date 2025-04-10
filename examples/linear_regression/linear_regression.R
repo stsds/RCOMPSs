@@ -40,7 +40,7 @@ if (use_RCOMPSs){
   compss_start()
   task.LR_fill_fragment <- task(LR_fill_fragment, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.LR_genpred <- task(LR_genpred, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-  task.select_columns <- task(select_columns, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  #task.select_columns <- task(select_columns, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.partial_ztz <- task(partial_ztz, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.partial_zty <- task(partial_zty, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   task.compute_model_parameters <- task(compute_model_parameters, "tasks_linear_regression.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
@@ -65,7 +65,7 @@ for(j in 1:D){
   }
 }
 
-for(replicate in 1){
+for(replicate in 1:2){
   cat("Doing replicate", replicate, "...\n")
 
   if(replicate > 1) compare_accuracy <- FALSE
@@ -115,10 +115,13 @@ for(replicate in 1){
       X_Y <- compss_wait_on(X_Y)
       PRED <- do.call(task.row_combine, PRED)
       PRED <- compss_wait_on(PRED)
+      predictions <- do.call(task.row_combine, predictions)
+      predictions <- compss_wait_on(predictions)
       model <- compss_wait_on(model)
     }else{
       X_Y <- do.call(rbind, X_Y)
       PRED <- do.call(rbind, PRED)
+      predictions <- do.call(rbind, predictions)
     }
     X <- X_Y[,1:dimensions_x]
     Y <- X_Y[,(dimensions_x+1):(dimensions_x+dimensions_y)]
@@ -135,6 +138,8 @@ for(replicate in 1){
     cat("Estimated coefficients:\n"); print(round(model, 2))
     cat("`lm` coefficients:\n"); print(round(coeff, 2))
     cat("Squared error of the difference between `predictions` and `predictions_base` is:", sum((predictions - predictions_base)^2), "\n")
+
+    rm(X, Y, PRED, model_base, coeff, predictions_base)
   }
 
   cat("-----------------------------------------\n")
@@ -145,6 +150,8 @@ for(replicate in 1){
   cat("-----------------------------------------\n")
   cat("LR_RES,seed,num_fit,num_pred,dimensions_x,dimensions_y,num_fragments_fit,num_fragments_pred,arity,needs_plot,use_RCOMPSs,compare_accuracy,Minimize,LR_time,run\n")
   cat(paste0("LR_res,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", needs_plot, ",", use_RCOMPSs, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+
+  rm(X_Y, model, predictions)
 }
 
 if(use_RCOMPSs) compss_stop()

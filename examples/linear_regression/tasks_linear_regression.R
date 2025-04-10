@@ -25,6 +25,8 @@ LR_fill_fragment <- function(params_LR_fill_fragment, true_coeff){
   y_frag <- y_frag + M
 
   X_Y <- cbind(x_frag, y_frag)
+  #X_Y <- list(x_frag = x_frag, y_frag = y_frag)
+  
   return(X_Y)
 }
 
@@ -36,19 +38,44 @@ LR_genpred <- function(params_LR_genpred){
   return(x_pred)
 }
 
-select_columns <- function(M, ind){
-  return(M[,ind])
+#select_columns <- function(M, ind){
+#  return(M[,ind])
+#}
+
+partial_ztz <- function(x_y, dx) {
+  if(DEBUG$partial_ztz){
+    cat("Executing task: partial_ztz\n")
+    cat("In partial_ztz, x_y: type is", typeof(x_y), "class is", class(x_y), "\n")
+  }
+  x <- x_y[,1:dx]
+  if(DEBUG$partial_ztz){
+    cat("In partial_ztz, x:\n")
+    print(x)
+  }
+  x <- cbind(1, x)
+  if(DEBUG$partial_ztz){
+    cat("Executing task: partial_ztz\n")
+  }
+  ztz <- t(x) %*% x
+  if(DEBUG$partial_ztz){
+    cat("Executing task: partial_ztz ---- Success!\n")
+  }
+  return(ztz)
 }
 
-partial_ztz <- function(x) {
-  x <- cbind(1, x)
-  t(x) %*% x
-}
 
-
-partial_zty <- function(x, y) {
+partial_zty <- function(x_y, dx) {
+  if(DEBUG$partial_zty){
+    cat("Executing task: partial_zty\n")
+  }
+  x <- x_y[,1:dx]
+  y <- x_y[,(dx+1):ncol(x_y)]
   x <- cbind(1, x)
-  t(x) %*% y
+  zty <- t(x) %*% y
+  if(DEBUG$partial_zty){
+    cat("Executing task: partial_zty ---- Success!\n")
+  }
+  return(zty)
 }
 
 compute_model_parameters <- function(ztz, zty) {
