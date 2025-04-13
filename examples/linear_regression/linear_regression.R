@@ -65,7 +65,7 @@ for(j in 1:D){
   }
 }
 
-for(replicate in 1:1){
+for(replicate in 1:2){
   cat("Doing replicate", replicate, "...\n")
 
   if(replicate > 1) compare_accuracy <- FALSE
@@ -102,7 +102,11 @@ for(replicate in 1:1){
   predictions <- predict_linear_regression(PRED, model, arity, use_RCOMPSs)
 
   if(use_RCOMPSs){
-    predictions <- compss_wait_on(predictions)
+    if(compare_accuracy){
+      predictions <- compss_wait_on(predictions)
+    }else{
+      compss_barrier()
+    }
   }
   linear_regression_time <- proc.time()
 
