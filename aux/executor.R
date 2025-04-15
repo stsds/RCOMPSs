@@ -14,6 +14,8 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id){
   RCOMPSs::extrae_emit_event(8001003, 8)  # Define the process purpose: process worker executor event
   RCOMPSs::extrae_emit_event(8001006, executor_id)  # Define the executor id
 
+  RCOMPSs::extrae_emit_event(9090425, 3)
+
   # Open the input FIFO for reading
   input_fifo <- fifo(input_fifo_path, open = "r", blocking=TRUE)
 
@@ -21,9 +23,12 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id){
   output_fifo <- fifo(output_fifo_path, open = "w+", blocking=TRUE)
 
   # Read from input FIFO and write to output FIFO
+  RCOMPSs::extrae_emit_event(9090425, 0)
   while (TRUE) {
+    RCOMPSs::extrae_emit_event(9090425, 4)
     # Read data from input FIFO
     data <- readLines(input_fifo, n = 1)
+    RCOMPSs::extrae_emit_event(9090425, 5)
     cat("Received:", data, "\n")
     # Check if data is empty (end of stream)
     if (length(data) == 0) {
@@ -38,6 +43,7 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id){
     split_data <- strsplit(data, " ")[[1]]
     tag <- split_data[1]
     if (tag == "EXECUTE_TASK"){
+      RCOMPSs::extrae_emit_event(9090425, 6)
       RCOMPSs::extrae_emit_event(9000100, 4)
       # Print received data to the console
       task_id <- split_data[2] #(int)
@@ -60,6 +66,7 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id){
       # Writing "END_TASK" message at this m  failed task
 
       RCOMPSs::extrae_emit_event(9000100, 0)
+      RCOMPSs::extrae_emit_event(9090425, 0)
 
       # Load the module
       cat("The module is:", module, "\n")

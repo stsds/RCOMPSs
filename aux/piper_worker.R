@@ -88,14 +88,19 @@ odd_args <- args_list[odd_positions]
 pipe_pairs <- Map(c, odd_args, even_args)
 
 # num_cores <- parallel::detectCores() / 2  # Use one all total cores
+RCOMPSs::extrae_emit_event(9090425, 1)
 num_cores <- length(pipe_pairs)
 cl <- parallel::makeCluster(num_cores, outfile="")
 doParallel::registerDoParallel(cl)
 pipe_pids <- integer(length(pipe_pairs))
 foreach(position = 1:length(pipe_pairs), .verbose=FALSE, .combine = 'c') %dopar% {
+  RCOMPSs::extrae_emit_event(9090425, 2)
   pipe_pids[position] <- Sys.getpid()
   executor(pipe_pairs[[position]][1], pipe_pairs[[position]][2], position - 1)
+  RCOMPSs::extrae_emit_event(9090425, 0)
 }
+
+RCOMPSs::extrae_emit_event(9090425, 0)
 
 RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
 RCOMPSs::extrae_emit_event(8000666, time_since_epoch())  # Sync event: for adjusting the timing
