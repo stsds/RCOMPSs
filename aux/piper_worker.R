@@ -53,9 +53,9 @@ LIBPATHS <- .libPaths()
 
 time_since_epoch <- function() {
   x1 <- as.POSIXct(Sys.time())
-  x2 <- format(x1, tz="GMT", usetz=F)
+  x2 <- format(x1, tz = "GMT", usetz = F)
   x3 <- lubridate::ymd_hms(x2)
-  epoch <- lubridate::ymd_hms('1970-01-01 00:00:00')
+  epoch <- lubridate::ymd_hms("1970-01-01 00:00:00")
   time_since_epoch <- (x3 - epoch) / lubridate::dseconds()
   return(time_since_epoch)
 }
@@ -66,16 +66,16 @@ time_since_epoch <- function() {
 print("Starting R Worker!")
 
 RCOMPSs::extrae_ini()
-RCOMPSs::extrae_emit_event(8000666, 1)  # Sync event: for adjusting the timing
+RCOMPSs::extrae_emit_event(8000666, 1) # Sync event: for adjusting the timing
 
 # Get command-line arguments
 args <- commandArgs(TRUE)
-print(paste("Parameters:", paste(args, collapse=" ")))
+print(paste("Parameters:", paste(args, collapse = " ")))
 
 args_list <- as.list(args)
 current_path <- args_list[1]
-args_list <- args_list[-1]  # Remove current dir
-source(paste(current_path, "executor.R", sep="/"))
+args_list <- args_list[-1] # Remove current dir
+source(paste(current_path, "executor.R", sep = "/"))
 
 # Even positions - CMDpipes
 even_positions <- seq(2, length(args_list), by = 2)
@@ -90,10 +90,10 @@ pipe_pairs <- Map(c, odd_args, even_args)
 # num_cores <- parallel::detectCores() / 2  # Use one all total cores
 RCOMPSs::extrae_emit_event(9090425, 1)
 num_cores <- length(pipe_pairs)
-cl <- parallel::makeCluster(num_cores, outfile="")
+cl <- parallel::makeCluster(num_cores, outfile = "")
 doParallel::registerDoParallel(cl)
 pipe_pids <- integer(length(pipe_pairs))
-foreach(position = 1:length(pipe_pairs), .verbose=FALSE, .combine = 'c') %dopar% {
+foreach(position = 1:length(pipe_pairs), .verbose = FALSE, .combine = "c") %dopar% {
   RCOMPSs::extrae_emit_event(9090425, 2)
   pipe_pids[position] <- Sys.getpid()
   executor(pipe_pairs[[position]][1], pipe_pairs[[position]][2], position - 1)
@@ -102,9 +102,9 @@ foreach(position = 1:length(pipe_pairs), .verbose=FALSE, .combine = 'c') %dopar%
 
 RCOMPSs::extrae_emit_event(9090425, 0)
 
-RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
-RCOMPSs::extrae_emit_event(8000666, time_since_epoch())  # Sync event: for adjusting the timing
-RCOMPSs::extrae_emit_event(8000666, 0)  # Sync event: for adjusting the timing
+RCOMPSs::extrae_emit_event(8000666, 0) # Sync event: for adjusting the timing
+RCOMPSs::extrae_emit_event(8000666, time_since_epoch()) # Sync event: for adjusting the timing
+RCOMPSs::extrae_emit_event(8000666, 0) # Sync event: for adjusting the timing
 RCOMPSs::extrae_flu()
 RCOMPSs::extrae_fin()
 

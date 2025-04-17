@@ -1,5 +1,6 @@
 /*
  *  Copyright 2002-2025 Barcelona Supercomputing Center (www.bsc.es)
+ *            2023-2025 King Abdullah University of Science and Technology (www.kaust.edu.sa)
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,7 +17,7 @@
  */
 #include "extrae.h"
 
-void Extrae_init (void){}
-void Extrae_fini (void){}
-void Extrae_flush (void){}
-void Extrae_eventandcounters (extrae_type_t type, extrae_value_t value){}
+void Extrae_init(void) {}
+void Extrae_fini(void) {}
+void Extrae_flush(void) {}
+void Extrae_eventandcounters(extrae_type_t type, extrae_value_t value) {}

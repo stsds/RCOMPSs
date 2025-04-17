@@ -8,26 +8,23 @@
 #   tracing     Boolean to compile with Extrae
 ######################################################################
 
-
-
-######################################################################
-
 #---------------------------------------------------
 # SCRIPT CONSTANTS DECLARATION
 #---------------------------------------------------
-INCORRECT_TARGET_DIR="Error: No target directory"
 
+INCORRECT_TARGET_DIR="Error: No target directory"
 
 #---------------------------------------------------
 # SET SCRIPT VARIABLES
 #---------------------------------------------------
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BINDING_DIR="$( dirname "${SCRIPT_DIR}")"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BINDING_DIR="$(dirname "${SCRIPT_DIR}")"
 
 #---------------------------------------------------
 # FUNCTIONS DECLARATION
 #---------------------------------------------------
+
 show_opts() {
   cat <<EOT
 * Options:
@@ -72,38 +69,38 @@ get_args() {
   while getopts h-: flag; do
     # Treat the argument
     case "$flag" in
-      h)
+    h)
+      # Display help
+      usage 0
+      ;;
+    -)
+      # Check more complex arguments
+      case "$OPTARG" in
+      help)
         # Display help
         usage 0
         ;;
-      -)
-        # Check more complex arguments
-        case "$OPTARG" in
-          help)
-            # Display help
-            usage 0
-            ;;
-          opts)
-            # Display help
-            show_opts
-            exit 0
-            ;;
-          *)
-            # Flag didn't match any pattern. End of COMPSs' R Binding flags
-            display_error "${INCORRECT_PARAMETER}"
-            break
-            ;;
-        esac
+      opts)
+        # Display help
+        show_opts
+        exit 0
         ;;
       *)
-        # Flag didn't match any pattern. End of COMPSs flags
+        # Flag didn't match any pattern. End of COMPSs' R Binding flags
         display_error "${INCORRECT_PARAMETER}"
         break
         ;;
+      esac
+      ;;
+    *)
+      # Flag didn't match any pattern. End of COMPSs flags
+      display_error "${INCORRECT_PARAMETER}"
+      break
+      ;;
     esac
   done
   # Shift option arguments
-  shift $((OPTIND-1))
+  shift $((OPTIND - 1))
 
   # Parse target directory location
   if [ $# -gt 1 ]; then
@@ -127,15 +124,15 @@ log_parameters() {
 # HELPER FUNCTIONS
 #---------------------------------------------------
 
-command_exists () {
-  type "$1" &> /dev/null ;
+command_exists() {
+  type "$1" &>/dev/null
 }
 
 clean() {
   echo "Cleaning R-binding files"
 }
 
-install () {
+install() {
   local target_directory=$1
   local tracing=$2
   local compss_home="$1/../../"
@@ -160,14 +157,14 @@ install () {
   pkg_libs="-L${compss_home}/Bindings/bindings-common/lib -lbindings_common"
   if [ "${tracing}" == "true" ]; then
     # Add extrae path
-    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Dependencies/extrae/include -pthread" > ${SCRIPT_DIR}/src/Makevars
-    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Dependencies/extrae/lib -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Dependencies/extrae/include -pthread" >${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Dependencies/extrae/lib -lpttrace" >>${SCRIPT_DIR}/src/Makevars
     export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/include:$LD_LIBRARY_PATH
   else
     # Add dummy extrae path
-    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Bindings/RCOMPSs/dummy_extrae -pthread" > ${SCRIPT_DIR}/src/Makevars
-    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Bindings/RCOMPSs/dummy_extrae -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Bindings/RCOMPSs/dummy_extrae -pthread" >${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Bindings/RCOMPSs/dummy_extrae -lpttrace" >>${SCRIPT_DIR}/src/Makevars
     export LD_LIBRARY_PATH=${compss_home}/Bindings/RCOMPSs/dummy_extrae:$LD_LIBRARY_PATH
   fi
 
@@ -201,18 +198,15 @@ install () {
   cp ${SCRIPT_DIR}/aux/piper_worker.R ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
   cp ${SCRIPT_DIR}/aux/r_piper.sh ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
 
-
   # Clean unnecessary files
   echo "INFO: Cleaning unnecessary files..."
-
 }
-
 
 #---------------------------------------------------
 # MAIN INSTALLATION FUNCTION
 #---------------------------------------------------
 
-install_r_binding () {
+install_r_binding() {
   # Add trap for clean
   trap clean EXIT
 
@@ -227,6 +221,7 @@ install_r_binding () {
 #---------------------------------------------------
 # MAIN EXECUTION
 #---------------------------------------------------
+
 get_args "$@"
 log_parameters
 install_r_binding
