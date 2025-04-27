@@ -1,3 +1,13 @@
+# Copyright (c) 2025- King Abdullah University of Science and Technology,
+# All rights reserved.
+# RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+
+# @file functions_linear_regression.R
+# @brief This file contains the functions for the linear regression with predictions application
+# @version 1.0
+# @author Xiran Zhang
+# @date 2025-04-28
+
 fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
 
   nfrag <- length(x_y)

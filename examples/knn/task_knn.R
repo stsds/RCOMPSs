@@ -1,3 +1,13 @@
+# Copyright (c) 2025- King Abdullah University of Science and Technology,
+# All rights reserved.
+# RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+
+# @file task_knn.R
+# @brief This file contains the tasks of the KNN classification application
+# @version 1.0
+# @author Xiran Zhang
+# @date 2025-04-28
+
 DEBUG <- list(
               KNN_fill_fragment = FALSE,
               KNN_frag = FALSE,

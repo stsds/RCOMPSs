@@ -1,0 +1,12 @@
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 1 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize 
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 2 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize 
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 4 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize 
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 8 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize 
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 16 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize  
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 32 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize  
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 48 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 64 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize  
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 80 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize  
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 96 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize  
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 112 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize 
+./launch_knn_RCOMPSs_Shaheen.sh None 1 1200 false 128 192 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize

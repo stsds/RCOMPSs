@@ -1,3 +1,13 @@
+# Copyright (c) 2025- King Abdullah University of Science and Technology,
+# All rights reserved.
+# RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+
+# @file kmeans.R
+# @brief This file contains the main application of K-means clustering
+# @version 1.0
+# @author Xiran Zhang
+# @date 2025-04-28
+
 flush.console()
 Sys.sleep(1)
 

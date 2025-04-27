@@ -1,3 +1,17 @@
+/**
+ * Copyright (c) 2025- King Abdullah University of Science and Technology,
+ * All rights reserved.
+ * RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+**/
+
+/**
+ * @file linear_regression.R
+ * @brief This file contains the main file of the linear regression with predictions application
+ * @version 1.0
+ * @author Xiran Zhang; Javier Conejero
+ * @date 2025-04-28
+**/
+
 #include <Rcpp.h>
 #include <iostream>
 #include <GS_compss.h>

@@ -1,4 +1,14 @@
-# Require extra package: caret, ggplot2
+# Copyright (c) 2025- King Abdullah University of Science and Technology,
+# All rights reserved.
+# RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+
+# @file knn.R
+# @brief This file contains the tasks of the KNN classification application
+# @version 1.0
+# @author Xiran Zhang
+# @date 2025-04-28
+
+# This application requires two extra packages: caret, ggplot2
 
 flush.console()
 Sys.sleep(1)

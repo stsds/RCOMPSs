@@ -1,3 +1,13 @@
+# Copyright (c) 2025- King Abdullah University of Science and Technology,
+# All rights reserved.
+# RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+
+# @file piper_worker.R
+# @brief This file links the piper and the worker
+# @version 1.0
+# @author Xiran Zhang
+# @date 2025-04-28
+
 # ##################################### #
 # ########## RCOMPSs WORKER ########### #
 # ##################################### #
@@ -8,48 +18,6 @@ library(foreach)
 library(RCOMPSs)
 
 LIBPATHS <- .libPaths()
-
-# ###############################################################
-# ##################### PRELOAD LIBRARIES #######################
-# ###############################################################
-# # Load dinamically the imports before running the worker
-# load_libraries_in_parallel <- function(libraries_list) {
-#   num_cores <- parallel::detectCores() - 1 # Get the amount of available cores
-#   cl <- parallel::makeCluster(num_cores, outfile="") # Create a cluster of processes
-#   doParallel::registerDoParallel(cl) # Register the cluster
-#
-#   # Function to load dinamically a library
-#   load_library <- function(library) {
-#     tryCatch({
-#       dyn.load(paste0(LIBPATHS, "/", library, "/libs/", library, ".so"))
-#       print(paste(library, " successfully loaded!"))
-#     }, error = function(e) {
-#       stop(paste("Error loading library:", library, ":", e$message))
-#     })
-#   }
-#
-#   # Apply the function load_library to all elements in parallel
-#   result <- parallel::mclapply(libraries_list, load_library)
-#   # Deregister the cluster and finalize the processes
-#   parallel::stopCluster(cl)
-# }
-#
-# nombre_variable <- "PRELOAD_R_LIBRARIES"
-# libraries <- Sys.getenv(nombre_variable)
-# print("Preloading R libraries")
-# if (!is.null(libraries)){
-#     print(paste(libraries, "libraries to be loaded"))
-#     # e.g.- libraries <- "tidyverse,lubridate,dplyr"
-#     # Split the names of the libraries by comma
-#     libraries_list <- strsplit(libraries, ",")[[1]]
-#     # Load the libraries in multiple processes
-#     load_libraries_in_parallel(libraries_list)
-# } else {
-#     print("No libraries to be preloaded")
-# }
-# ###############################################################
-# ################### END PRELOAD LIBRARIES #####################
-# ###############################################################
 
 time_since_epoch <- function() {
   x1 <- as.POSIXct(Sys.time())

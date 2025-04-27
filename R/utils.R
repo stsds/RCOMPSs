@@ -1,3 +1,14 @@
+
+# Copyright (c) 2025- King Abdullah University of Science and Technology,
+# All rights reserved.
+# RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+
+# @file utils.R
+# @brief This file contains the main function for the RCOMPSs package
+# @version 1.0
+# @author Xiran Zhang
+# @date 2025-04-28
+
 accessed_objects_map <- new.env()
 
 check_key_in_hashmap <- function(key, env) {

@@ -1,8 +1,0 @@
-library(RCOMPSs)
-source("func.R")
-compss_start()
-dec <- task(append, "func", info_only = FALSE, return_value = T)
-res <- dec("Hello", "World")
-res <- compss_wait_on(res)
-cat("The results is:", res, "\n")
-compss_stop()

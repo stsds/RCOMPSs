@@ -1,3 +1,13 @@
+# Copyright (c) 2025- King Abdullah University of Science and Technology,
+# All rights reserved.
+# RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
+
+# @file functions_kmeans.R
+# @brief This file contains the functions for the K-means clustering application
+# @version 1.0
+# @author Xiran Zhang
+# @date 2025-04-28
+
 converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
   if(DEBUG$converged) {
     cat("Doing converged\n")
