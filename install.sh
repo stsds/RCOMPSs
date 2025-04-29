@@ -3,6 +3,8 @@
 #####################################################################
 # Name:         install.sh
 # Description:  COMPSs' R binding building script.
+#               Used by COMPSs to install the R language support within
+#               the COMPSs installation folder.
 # Parameters:
 #		target_dir  Target directory where to install the R binding
 #   tracing     Boolean to compile with Extrae

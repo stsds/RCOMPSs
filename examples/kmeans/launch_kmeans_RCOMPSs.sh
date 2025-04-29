@@ -1,8 +1,7 @@
 #!/bin/bash -e
 
 export COMPSS_PYTHON_VERSION=3.12.1
-module use /apps/GPP/modulefiles/applications/COMPSs/.custom
-module load TrunkJCB
+module load COMPSs/Trunk
 
 export R_LIBS_USER=/gpfs/apps/MN5/GPP/COMPSs/TrunkJCB/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
 export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/TrunkJCB/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
@@ -34,10 +33,6 @@ export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/TrunkJCB/Bindings/bindings-comm
     --graph=$tracing \
     $execFile $@
 
-
-#runcompss --lang=r -g kmeans.R --plot FALSE --RCOMPSs --fragments 8 --arity 2 --numpoints 9000 --iterations 4
-
-
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
@@ -45,6 +40,6 @@ export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/TrunkJCB/Bindings/bindings-comm
 #
 # Example:
 #       ./launch_kmeans_RCOMPSs.sh None 2 5 false --plot FALSE --RCOMPSs --fragments 8 --arity 2 --numpoints 9000 --iterations 4
-#        ./launch_kmeans_RCOMPSs.sh None 2 20 true --plot FALSE --RCOMPSs --fragments 424 --arity 100 --numpoints 4240000 --iterations 4
+#       ./launch_kmeans_RCOMPSs.sh None 2 20 true --plot FALSE --RCOMPSs --fragments 424 --arity 100 --numpoints 4240000 --iterations 4
 #
 ######################################################
