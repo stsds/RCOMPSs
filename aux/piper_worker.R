@@ -3,7 +3,7 @@
 # RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
 
 # @file piper_worker.R
-# @brief This file links the piper and the worker
+# @brief This file contains the code to start a R worker main process that spawns a set of executors (normally one per core).
 # @version 1.0
 # @author Xiran Zhang
 # @date 2025-04-28

@@ -5,7 +5,7 @@
 # RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
 
 # @file executor.R
-# @brief This file is the executor
+# @brief This file contains the R executor code, in charge of processing the task ordered by the COMPSs runtime.
 # @version 1.0
 # @author Xiran Zhang
 # @date 2025-04-28
