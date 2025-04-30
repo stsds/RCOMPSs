@@ -34,7 +34,7 @@ for point in $numpoints; do
       --arity $arity \
       --plot FALSE \
       --Minimize \
-      >> $stdout_file 2>> $stderr_file
+      >>$stdout_file 2>>$stderr_file
 
   done
 

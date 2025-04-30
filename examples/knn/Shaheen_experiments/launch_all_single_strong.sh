@@ -11,6 +11,7 @@ wait_and_get_jobID() {
 
 jobID="None"
 
+cd ..
 ./launch_knn_RCOMPSs_Shaheen.sh $jobID 1 600 false 1 128 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize 
 wait_and_get_jobID
 ./launch_knn_RCOMPSs_Shaheen.sh $jobID 1 600 false 2 128 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize
@@ -34,3 +35,4 @@ wait_and_get_jobID
 ./launch_knn_RCOMPSs_Shaheen.sh $jobID 1 120 false 112 128 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize
 wait_and_get_jobID
 ./launch_knn_RCOMPSs_Shaheen.sh $jobID 1 120 false 128 128 --seed 2 --n_train 1228800 --n_test 64000 --dimensions 50 --num_class 5 --fragments_train 96 --fragments_test 32 --knn 30 --arity 32 --RCOMPSs --Minimize
+cd Shaheen_experiments
