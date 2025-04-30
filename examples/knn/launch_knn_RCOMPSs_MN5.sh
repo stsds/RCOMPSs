@@ -46,7 +46,7 @@ export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PAT
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
-#       ./launch_knn_RCOMPSs.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*knn_arguments>
+#       ./launch_knn_RCOMPSs_MN5.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*knn_arguments>
 #
 # Example:
 #       ./launch_knn_RCOMPSs_MN5.sh None 4 40 false 100 112 --seed 2 --n_train 8000 --n_test 4088000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 511 --knn 30 --arity 103 --RCOMPSs --Minimize

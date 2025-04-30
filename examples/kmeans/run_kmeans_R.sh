@@ -10,7 +10,7 @@ iterations=200
 epsilon=1e-9
 arity=10
 
-cd /home/zhanx0q/RCOMPSs/RCOMPSs/RCOMPSs/examples/kmeans
+cd $COMPSS_HOME/Bindings/RCOMPSs/examples/kmeans
 
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
 stdout_file="R-$timestamp.out"

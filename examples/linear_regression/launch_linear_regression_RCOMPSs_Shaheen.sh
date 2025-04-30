@@ -44,13 +44,9 @@ export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PAT
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
-#       ./launch_linear_regression_RCOMPSs_Shaheen.sh jobDependency numNodes executionTime tracing kmeans_args
+#       ./launch_linear_regression_RCOMPSs_Shaheen.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*linear_regression_arguments>
 #
 # Example:
-#       ./launch_linear_regression_RCOMPSs_Shaheen.sh None 2  5   true --plot FALSE --RCOMPSs --fragments 8    --arity 2   --numpoints 9000      --iterations 4
-#       ./launch_linear_regression_RCOMPSs_Shaheen.sh None 2  120 true --plot FALSE --RCOMPSs --fragments 1344 --arity 288 --numpoints 13440000  --iterations 4 --dimensions 10 --seed 2
-#       ./launch_linear_regression_RCOMPSs_Shaheen.sh None 4/8/16  300 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 60480000  --iterations 10 --dimensions 20 --seed 2
-#       ./launch_linear_regression_RCOMPSs_Shaheen.sh None 4/8/16 300 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 937440  --iterations 10 --dimensions 20 --seed 2
-#       ./launch_linear_regression_RCOMPSs_Shaheen.sh None 4/8/16 30 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 937440  --iterations 10 --dimensions 5 --seed 2
+#       ./launch_linear_regression_RCOMPSs_Shaheen.sh None 4 50 false 100 112 --seed 2 --num_fit 10240000 --num_pred 2560000 --dimensions_x 1000 --dimensions_y 1000 --fragments_fit 512 --fragments_pred 128 --arity 2 --RCOMPSs --Minimize
 #
 ######################################################

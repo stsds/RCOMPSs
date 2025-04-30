@@ -44,13 +44,9 @@ export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PAT
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
-#       ./launch_kmeans_RCOMPSs_Shaheen.sh jobDependency numNodes executionTime tracing kmeans_args
+#       ./launch_kmeans_RCOMPSs_Shaheen.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*kmeans_arguments>
 #
 # Example:
-#       ./launch_kmeans_RCOMPSs_Shaheen.sh None 2  5   true --plot FALSE --RCOMPSs --fragments 8    --arity 2   --numpoints 9000      --iterations 4
-#       ./launch_kmeans_RCOMPSs_Shaheen.sh None 2  120 true --plot FALSE --RCOMPSs --fragments 1344 --arity 288 --numpoints 13440000  --iterations 4 --dimensions 10 --seed 2
-#       ./launch_kmeans_RCOMPSs_Shaheen.sh None 4/8/16  300 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 60480000  --iterations 10 --dimensions 20 --seed 2
-#       ./launch_kmeans_RCOMPSs_Shaheen.sh None 4/8/16 300 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 937440  --iterations 10 --dimensions 20 --seed 2
-#       ./launch_kmeans_RCOMPSs_Shaheen.sh None 4/8/16 30 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 937440  --iterations 10 --dimensions 5 --seed 2
+#       ./launch_kmeans_RCOMPSs_Shaheen.sh None 4 120 false 100 112 --plot FALSE --RCOMPSs --fragments 512 --arity 64 --numpoints 152730112 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize
 #
 ######################################################

@@ -29,7 +29,4 @@ wait_and_get_jobID
 ./launch_knn_RCOMPSs_MN5.sh $jobID 1 10 false 64 112 --seed 2 --n_train 2000 --n_test 128000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 64 --knn 30 --arity 64 --RCOMPSs --Minimize
 wait_and_get_jobID
 ./launch_knn_RCOMPSs_MN5.sh $jobID 1 10 false 80 112 --seed 2 --n_train 2000 --n_test 160000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 80 --knn 30 --arity 80 --RCOMPSs --Minimize
-#./launch_knn_RCOMPSs_MN5.sh $jobID 1 10 false 96 112 --seed 2 --n_train 2000 --n_test 160000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 80 --knn 30 --arity 96 --RCOMPSs --Minimize
-#./launch_knn_RCOMPSs_MN5.sh $jobID 1 10 false 112 112 --seed 2 --n_train 2000 --n_test 160000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 80 --knn 30 --arity 112 --RCOMPSs --Minimize
-#./launch_knn_RCOMPSs_MN5.sh $jobID 1 10 false 128 112 --seed 2 --n_train 2000 --n_test 160000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 80 --knn 30 --arity 128 --RCOMPSs --Minimize
 cd MN5_experiments

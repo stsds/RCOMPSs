@@ -40,17 +40,12 @@ export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PAT
     --cpu_affinity="disabled" \
     $execFile $@
 
-
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
-#       ./launch_knn_RCOMPSs_Shaheen.sh jobDependency numNodes executionTime tracing kmeans_args
+#       ./launch_knn_RCOMPSs_Shaheen.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*knn_arguments>
 #
 # Example:
-#       ./launch_knn_RCOMPSs_Shaheen.sh None 2  5   true --plot FALSE --RCOMPSs --fragments 8    --arity 2   --numpoints 9000      --iterations 4
-#       ./launch_knn_RCOMPSs_Shaheen.sh None 2  120 true --plot FALSE --RCOMPSs --fragments 1344 --arity 288 --numpoints 13440000  --iterations 4 --dimensions 10 --seed 2
-#       ./launch_knn_RCOMPSs_Shaheen.sh None 4/8/16  300 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 60480000  --iterations 10 --dimensions 20 --seed 2
-#       ./launch_knn_RCOMPSs_Shaheen.sh None 4/8/16 300 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 937440  --iterations 10 --dimensions 20 --seed 2
-#       ./launch_knn_RCOMPSs_Shaheen.sh None 4/8/16 30 true --plot FALSE --RCOMPSs --fragments 6048 --arity 288 --numpoints 937440  --iterations 10 --dimensions 5 --seed 2
+#       ./launch_knn_RCOMPSs_Shaheen.sh None 4 40 false 100 112 --seed 2 --n_train 8000 --n_test 4088000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 511 --knn 30 --arity 103 --RCOMPSs --Minimize
 #
 ######################################################

@@ -29,7 +29,4 @@ wait_and_get_jobID
 ./launch_linear_regression_RCOMPSs_MN5.sh $jobID 1 180 false 64 112 --seed 2 --num_fit 10240000 --num_pred 2560000 --dimensions_x 1000 --dimensions_y 1000 --fragments_fit 1024 --fragments_pred 256 --arity 2 --RCOMPSs --Minimize
 wait_and_get_jobID
 ./launch_linear_regression_RCOMPSs_MN5.sh $jobID 1 180 false 80 112 --seed 2 --num_fit 10240000 --num_pred 2560000 --dimensions_x 1000 --dimensions_y 1000 --fragments_fit 1024 --fragments_pred 256 --arity 2 --RCOMPSs --Minimize
-#./launch_linear_regression_RCOMPSs_MN5.sh $jobID 1 50 false 96 112 --seed 2 --num_fit 10240000 --num_pred 2560000 --dimensions_x 1000 --dimensions_y 1000 --fragments_fit 1024 --fragments_pred 256 --arity 2 --RCOMPSs --Minimize
-#./launch_linear_regression_RCOMPSs_MN5.sh $jobID 1 40 false 112 112 --seed 2 --num_fit 10240000 --num_pred 2560000 --dimensions_x 1000 --dimensions_y 1000 --fragments_fit 1024 --fragments_pred 256 --arity 2 --RCOMPSs --Minimize
-#./launch_linear_regression_RCOMPSs_MN5.sh $jobID 1 40 false 128 112 --seed 2 --num_fit 10240000 --num_pred 2560000 --dimensions_x 1000 --dimensions_y 1000 --fragments_fit 1024 --fragments_pred 256 --arity 2 --RCOMPSs --Minimize
 cd MN5_experiments
