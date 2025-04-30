@@ -3,8 +3,8 @@
 export COMPSS_PYTHON_VERSION=3.12.1
 module load COMPSs/Trunk
 
-export R_LIBS_USER=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
-export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
+export R_LIBS_USER=$COMPSS_HOME/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
+export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
 
   # Define script variables
   scriptDir=$(pwd)/$(dirname $0)

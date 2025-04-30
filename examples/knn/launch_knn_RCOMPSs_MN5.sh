@@ -3,12 +3,12 @@
 export COMPSS_PYTHON_VERSION=3.12.1
 module load COMPSs/Trunk
 
-export R_LIBS_USER=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
-export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
+export R_LIBS_USER=$COMPSS_HOME/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
+export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
 
   # Define script variables
   scriptDir=$(pwd)/$(dirname $0)
-  execFile=${scriptDir}/../knn.R
+  execFile=${scriptDir}/knn.R
 
   # Retrieve arguments
   jobDependency=$1
@@ -46,10 +46,9 @@ export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/bindings-common/
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
-#       ./launch_knn_RCOMPSs.sh jobDependency numNodes executionTime tracing kmeans_args
+#       ./launch_knn_RCOMPSs.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*knn_arguments>
 #
 # Example:
-#       ./launch_knn_RCOMPSs.sh None 2 5 false 0 112 --plot FALSE --RCOMPSs --fragments 8 --arity 2 --numpoints 9000 --iterations 4
-#       ./launch_knn_RCOMPSs.sh None 2 20 true 0 112 --plot FALSE --RCOMPSs --fragments 424 --arity 100 --numpoints 4240000 --iterations 4
+#       ./launch_knn_RCOMPSs_MN5.sh None 4 40 false 100 112 --seed 2 --n_train 8000 --n_test 4088000 --dimensions 50 --num_class 5 --fragments_train 1 --fragments_test 511 --knn 30 --arity 103 --RCOMPSs --Minimize
 #
 ######################################################

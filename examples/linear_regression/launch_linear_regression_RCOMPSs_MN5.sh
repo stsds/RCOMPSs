@@ -3,12 +3,12 @@
 export COMPSS_PYTHON_VERSION=3.12.1
 module load COMPSs/Trunk
 
-export R_LIBS_USER=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
-export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
+export R_LIBS_USER=$COMPSS_HOME/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
+export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
 
   # Define script variables
   scriptDir=$(pwd)/$(dirname $0)
-  execFile=${scriptDir}/../linear_regression.R
+  execFile=${scriptDir}/linear_regression.R
 
   # Retrieve arguments
   jobDependency=$1
@@ -45,10 +45,9 @@ export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/bindings-common/
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
-#       ./launch_linear_regression_RCOMPSs.sh jobDependency numNodes executionTime tracing kmeans_args
+#       ./launch_linear_regression_RCOMPSs_MN5.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*linear_regression_arguments>
 #
 # Example:
-#       ./launch_linear_regression_RCOMPSs.sh None 2 5 false 0 112 --plot FALSE --RCOMPSs --fragments 8 --arity 2 --numpoints 9000 --iterations 4
-#       ./launch_linear_regression_RCOMPSs.sh None 2 20 true 0 112 --plot FALSE --RCOMPSs --fragments 424 --arity 100 --numpoints 4240000 --iterations 4
+#       ./launch_linear_regression_RCOMPSs_MN5.sh None 4 50 false 100 112 --seed 2 --num_fit 10240000 --num_pred 2560000 --dimensions_x 1000 --dimensions_y 1000 --fragments_fit 512 --fragments_pred 128 --arity 2 --RCOMPSs --Minimize
 #
 ######################################################
