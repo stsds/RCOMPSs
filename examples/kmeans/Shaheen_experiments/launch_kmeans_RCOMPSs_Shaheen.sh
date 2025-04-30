@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash -e
 
 source /scratch/zhanx0q/RCOMPSs5/COMPSs_installation/compssenv
 
