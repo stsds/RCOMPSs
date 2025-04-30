@@ -11,6 +11,7 @@ wait_and_get_jobID() {
 
 jobID="None"
 
+cd ..
 ./launch_kmeans_RCOMPSs.sh $jobID 1 300 false 1 112 --plot FALSE --RCOMPSs --fragments 128 --arity 128 --numpoints 51200000 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize	
 wait_and_get_jobID
 ./launch_kmeans_RCOMPSs.sh $jobID 1 300 false 2 112 --plot FALSE --RCOMPSs --fragments 128 --arity 128 --numpoints 51200000 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize	
@@ -28,7 +29,4 @@ wait_and_get_jobID
 ./launch_kmeans_RCOMPSs.sh $jobID 1 300 false 64 112 --plot FALSE --RCOMPSs --fragments 128 --arity 128 --numpoints 51200000 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize	
 wait_and_get_jobID
 ./launch_kmeans_RCOMPSs.sh $jobID 1 300 false 80 112 --plot FALSE --RCOMPSs --fragments 128 --arity 128 --numpoints 51200000 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize	
-
-#./launch_kmeans_RCOMPSs.sh $jobID 1 30 false 96 128 --plot FALSE --RCOMPSs --fragments 128 --arity 128 --numpoints 51200000 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize	
-#./launch_kmeans_RCOMPSs.sh $jobID 1 30 false 112 128 --plot FALSE --RCOMPSs --fragments 128 --arity 128 --numpoints 51200000 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize
-#./launch_kmeans_RCOMPSs.sh $jobID 1 30 false 128 128 --plot FALSE --RCOMPSs --fragments 128 --arity 128 --numpoints 51200000 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize
+cd MN5_experiments
