@@ -45,10 +45,9 @@ export LD_LIBRARY_PATH=/gpfs/apps/MN5/GPP/COMPSs/Trunk/Bindings/bindings-common/
 ######################################################
 # APPLICATION EXECUTION EXAMPLE
 # Call:
-#       ./launch_kmeans_RCOMPSs.sh jobDependency numNodes executionTime tracing kmeans_args
+#       ./launch_kmeans_RCOMPSs_MN5.sh <jobDependency> <numNodes> <executionTime> <tracing> <workerInMasterCPUs> <workerCPUs> <*kmeans_arguments>
 #
 # Example:
-#       ./launch_kmeans_RCOMPSs.sh None 2 5 false 0 112 --plot FALSE --RCOMPSs --fragments 8 --arity 2 --numpoints 9000 --iterations 4
-#       ./launch_kmeans_RCOMPSs.sh None 2 20 true 0 112 --plot FALSE --RCOMPSs --fragments 424 --arity 100 --numpoints 4240000 --iterations 4
+#       ./launch_kmeans_RCOMPSs_MN5.sh None 4 120 false 100 112 --plot FALSE --RCOMPSs --fragments 512 --arity 64 --numpoints 152730112 --iterations 2 --dimensions 100 --num_centres 10 --seed 2 --mode normal --Minimize
 #
 ######################################################
