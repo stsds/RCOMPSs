@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-source /scratch/zhanx0q/RCOMPSs5/COMPSs_installation/compssenv
+source $COMPSS_HOME/compssenv
 
-export R_LIBS_USER=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
-export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
+export R_LIBS_USER=$COMPSS_HOME/Bindings/RCOMPSs/user_libs:$R_LIBS_USER
+export LD_LIBRARY_PATH=$COMPSS_HOME/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
 
   # Define script variables
   scriptDir=$(pwd)/$(dirname $0)
@@ -34,9 +34,9 @@ export LD_LIBRARY_PATH=/scratch/zhanx0q/RCOMPSs5/COMPSs_installation/Bindings/bi
     --worker_in_master_cpus=$worker_in_master_cpus \
     --cpus_per_node=$cpus_per_node \
     --scheduler=es.bsc.compss.scheduler.orderstrict.fifo.FifoTS \
-    --log_dir=/scratch/zhanx0q/bandwidth \
-    --master_working_dir=/scratch/zhanx0q/bandwidth/master_dir \
-    --worker_working_dir=/scratch/zhanx0q/bandwidth/worker_dir \
+    --log_dir=/scratch/$USER/bandwidth \
+    --master_working_dir=/scratch/$USER/bandwidth/master_dir \
+    --worker_working_dir=/scratch/$USER/bandwidth/worker_dir \
     --cpu_affinity="disabled" \
     $execFile $@
 
