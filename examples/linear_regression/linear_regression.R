@@ -75,7 +75,7 @@ for(j in 1:D){
   }
 }
 
-for(replicate in 1:2){
+for(replicate in 1:1){
   cat("Doing replicate", replicate, "...\n")
 
   if(replicate > 1) compare_accuracy <- FALSE
@@ -148,10 +148,10 @@ for(replicate in 1:2){
     end_lm <- proc.time()
     lm_time <- round(end_lm[3] - start_lm[3], 3)
     # Results:
-    cat("True coefficients:\n"); print(round(true_coeff, 2))
-    cat("Estimated coefficients:\n"); print(round(model, 2))
-    cat("`lm` coefficients:\n"); print(round(coeff, 2))
-    cat("Squared error of the difference between `predictions` and `predictions_base` is:", sum((predictions - predictions_base)^2), "\n")
+    cat("\nTrue coefficients:\n"); print(round(true_coeff, 2))
+    cat("\nEstimated coefficients:\n"); print(round(model, 2))
+    cat("\n`lm` coefficients:\n"); print(round(coeff, 2))
+    cat("\nSquared error of the difference between `predictions` and `predictions_base` is:", sum((predictions - predictions_base)^2), "\n")
 
     rm(X, Y, PRED, model_base, coeff, predictions_base)
   }
@@ -162,9 +162,10 @@ for(replicate in 1:2){
   cat("Linear regression time:", LR_time, "seconds\n")
   if(compare_accuracy) cat("Base R lm time:", lm_time, "seconds\n")
   cat("-----------------------------------------\n")
-  cat("LR_RES,seed,num_fit,num_pred,dimensions_x,dimensions_y,num_fragments_fit,num_fragments_pred,arity,needs_plot,use_RCOMPSs,compare_accuracy,Minimize,LR_time,run\n")
-  cat(paste0("LR_res,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", needs_plot, ",", use_RCOMPSs, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
-
+  if(Minimize){
+	  cat("LR_RES,seed,num_fit,num_pred,dimensions_x,dimensions_y,num_fragments_fit,num_fragments_pred,arity,use_RCOMPSs,compare_accuracy,Minimize,LR_time,run\n")
+	  cat(paste0("LR_res,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", use_RCOMPSs, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+  }
   rm(X_Y, model, predictions)
 }
 

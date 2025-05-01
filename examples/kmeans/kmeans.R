@@ -165,24 +165,26 @@ for(replicate in 1:1){
   }else{
     type <- "R_sequential"
   }
-  cat("KMEANS_RESULTS,",
-      seed, ",",
-      numpoints, ",",
-      dimensions, ",",
-      num_centres, ",",
-      num_fragments, ",",
-      mode, ",",
-      iterations, ",",
-      epsilon, ",",
-      arity, ",",
-      type, ",",
-      paste(R.version$major, R.version$minor, sep="."), ",",
-      Initialization_time, ",",
-      Kmeans_time, ",",
-      Total_time, ",",
-      replicate,
-      "\n", sep = ""
-  )
+  if(Minimize){
+    cat("KMEANS_RESULTS,",
+        seed, ",",
+        numpoints, ",",
+        dimensions, ",",
+        num_centres, ",",
+        num_fragments, ",",
+        mode, ",",
+        iterations, ",",
+        epsilon, ",",
+        arity, ",",
+        type, ",",
+        paste(R.version$major, R.version$minor, sep="."), ",",
+        Initialization_time, ",",
+        Kmeans_time, ",",
+        Total_time, ",",
+        replicate,
+        "\n", sep = ""
+    )
+  }
 
 }
 
@@ -194,10 +196,9 @@ if(use_RCOMPSs){
 # Plot the data
 if(needs_plot){
   pdf(paste0("kmeans", Sys.time(), ".pdf"))
-  #pdf("/scratch/zhanx0q/RCOMPSs5/COMPSs/Bindings/RCOMPSs/examples/kmeans/kmeans.pdf")
   par(bg = "white")
   fragment_mat <- do.call(rbind, fragment_list)
-  plot(fragment_mat, col = "blue")
+  plot(fragment_mat, col = "blue", xlab = "x", ylab = "y")
   points(centres, col = "red", pch = 8)
   dev.off()
 }

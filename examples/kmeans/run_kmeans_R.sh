@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-seed=1
+seed=3
 numpoints=10000
-dimensions=10
-num_centres=10
+dimensions=2
+num_centres=5
 fragments=10
 mode="normal"
-iterations=5
+iterations=50
 epsilon=1e-9
 arity=2
 
@@ -26,6 +26,5 @@ Rscript kmeans.R \
   --iterations $iterations \
   --epsilon $epsilon \
   --arity $arity \
-  --plot FALSE \
-  --Minimize \
+  --plot TRUE \
   >>$stdout_file 2>>$stderr_file

@@ -44,8 +44,8 @@ fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
     for(i in 1:nfrag) {
       #x[[i]] <- select_columns(x_y[[i]], 1:dx)
       #y[[i]] <- select_columns(x_y[[i]], (dx+1):(dx+dy))
-      ztz[[i]] <- partial_ztz(x_y[[i]])
-      zty[[i]] <- partial_zty(x_y[[i]])
+      ztz[[i]] <- partial_ztz(x_y[[i]], dx)
+      zty[[i]] <- partial_zty(x_y[[i]], dx)
     }
     # Merge ztz
     while(length(ztz) > arity){
@@ -149,9 +149,6 @@ parse_arguments <- function(Minimize) {
   # Compare accuracy?
   compare_accuracy <- FALSE
 
-  # Plot?
-  needs_plot <- FALSE
-
   # Parse arguments
   if(length(args) >= 1){
     for (i in 1:length(args)) {
@@ -191,10 +188,6 @@ parse_arguments <- function(Minimize) {
         use_RCOMPSs <- TRUE
       } else if (args[i] == "--RCOMPSs") {
         use_RCOMPSs <- TRUE
-      } else if (args[i] == "-p") {
-        needs_plot <- as.logical(args[i + 1])
-      } else if (args[i] == "--plot") {
-        needs_plot <- as.logical(args[i + 1])
       } else if (args[i] == "--compare_accuracy") {
         compare_accuracy <- TRUE
       } else if (args[i] == "-h") {
@@ -217,7 +210,6 @@ parse_arguments <- function(Minimize) {
     cat("  -F, --fragments_pred <num_fragments_pred>  Number of fragments of the prediction data\n")
     cat("  -r, --arity <arity>                        Integer: Arity of the merge\n")
     cat("  -C, --RCOMPSs <use_RCOMPSs>                Boolean: Use RCOMPSs parallelization?\n")
-    cat("  -p, --plot <needs_plot>                    Boolean: Plot?\n")
     cat("  -M, --Minimize <Minimize>                  Boolean: Minimize printout?\n")
     cat("  --compare_accuracy <compare_accuracy>      Boolean: Compare accuracy?\n")
     cat("  -h, --help                                 Show this help message\n")
@@ -234,7 +226,6 @@ parse_arguments <- function(Minimize) {
               num_fragments_pred = num_fragments_pred,
               arity = arity,
               use_RCOMPSs = use_RCOMPSs,
-              needs_plot = needs_plot,
               compare_accuracy = compare_accuracy
               ))
 }
@@ -251,5 +242,4 @@ print_parameters <- function(params) {
   cat("  Arity:", params$arity, "\n")
   cat("  use_RCOMPSs:", params$use_RCOMPSs, "\n")
   cat("  Compare accuracy?", params$compare_accuracy, "\n")
-  cat("  Plot?", params$needs_plot, "\n")
 }

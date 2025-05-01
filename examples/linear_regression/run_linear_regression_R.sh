@@ -24,5 +24,5 @@ Rscript linear_regression.R \
   --fragments_fit $fragments_fit \
   --fragments_pred $fragments_pred \
   --arity $arity \
-  --Minimize \
+  --compare_accuracy \
   >>$stdout_file 2>>$stderr_file

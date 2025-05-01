@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 seed=2
-n_train=1000
-n_test=2000
-dimensions=10
+n_train=100
+n_test=100
+dimensions=2
 num_class=5
 fragments_train=5
-fragments_test=10
+fragments_test=2
 knn=5
 arity=2
 
@@ -26,5 +26,7 @@ Rscript knn.R \
   --fragments_test $fragments_test \
   --knn $knn \
   --arity $arity \
-  --Minimize \
+  --confusion_matrix \
+  --plot TRUE \
   >>$stdout_file 2>>$stderr_file
+

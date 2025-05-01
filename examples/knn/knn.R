@@ -130,13 +130,10 @@ for(replicate in 1:1){
       res_KNN <- compss_wait_on(res_KNN)
     }
     PRED <- do.call(c, res_KNN)
-  }else{
+  }else if(use_RCOMPSs){
     compss_barrier(FALSE)
   }
 
-  #if(use_RCOMPSs){
-  #  res_KNN <- compss_wait_on(res_KNN)
-  #}
   knn_time <- proc.time()
 
   Initialization_time <- initialization_time[3] - start_time[3]
@@ -153,19 +150,21 @@ for(replicate in 1:1){
   cat("KNN time:", KNN_time, "seconds\n")
   cat("Total time:", Total_time, "seconds\n")
   cat("-----------------------------------------\n")
-  cat("KNN_RES,seed,n_train,n_test,dimensions,num_class,k,arity,confusion_matrix,needs_plot,use_RCOMPSs,use_R_default,Minimize,Initialization_time,KNN_time,Total_time,replicate\n")
-  cat(paste0("KNN_res,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+  if(Minimize){
+	  cat("KNN_RES,seed,n_train,n_test,dimensions,num_class,k,arity,confusion_matrix,needs_plot,use_RCOMPSs,use_R_default,Minimize,Initialization_time,KNN_time,Total_time,replicate\n")
+	  cat(paste0("KNN_res,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+  }
   if(!Minimize){
-    res_KNN <- as.factor(as.numeric(res_KNN))
+    PRED <- as.factor(as.numeric(PRED))
     if(confusion_matrix){
       cat("Confusion Matrix:\n")
       if(use_RCOMPSs) x_test <- compss_wait_on(x_test)
       x_test <- do.call(rbind, x_test)
-      cm <- caret::confusionMatrix(data = res_KNN, reference = as.factor(x_test[,ncol(x_test)]))
+      cm <- caret::confusionMatrix(data = PRED, reference = as.factor(x_test[,ncol(x_test)]))
       print(cm)
     }else{
       cat("Result of KNN:\n")
-      print(res_KNN)
+      print(PRED)
     }
     cat("-----------------------------------------\n")
   }
@@ -197,9 +196,9 @@ for(replicate in 1:1){
     p <- ggplot() +
       geom_point(aes(x = x, y = y, colour = class,
                      shape = "Training data"), size = 3) +
-geom_point(aes(x = x_test[,1], y = x_test[,2],
+geom_point(aes(x = x_test[,1], y = x_test[,2], color = PRED,
                shape = "Testing data"))
-    ggsave("plot_knn.pdf", plot = p, device = "pdf", width = 18, height = 15)
+    ggsave("plot_knn.pdf", plot = p, device = "pdf", width = 8, height = 8)
   }
 }
 if(use_RCOMPSs){
