@@ -1,41 +1,31 @@
 #!/usr/bin/env bash
 
 seed=1
-numpoints=$(seq 1e8 5e7 5e8)
+numpoints=10000
 dimensions=10
-num_centres=$dimensions
-fragments=(10 25 50 100 150 200)
+num_centres=10
+fragments=10
 mode="normal"
-iterations=200
+iterations=5
 epsilon=1e-9
-arity=10
-
-cd $COMPSS_HOME/Bindings/RCOMPSs/examples/kmeans
+arity=2
 
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
-stdout_file="R-$timestamp.out"
-stderr_file="R-$timestamp.err"
+stdout_file="R-kmeans-$timestamp.out"
+stderr_file="R-kmeans-$timestamp.err"
 touch $stdout_file
 touch $stderr_file
 
-for point in $numpoints; do
-
-  for frag in "${fragments[@]}"; do
-
-    Rscript kmeans.R \
-      --seed $seed \
-      --numpoints $point \
-      --dimensions $dimensions \
-      --num_centres $num_centres \
-      --fragments $frag \
-      --mode $mode \
-      --iterations $iterations \
-      --epsilon $epsilon \
-      --arity $arity \
-      --plot FALSE \
-      --Minimize \
-      >>$stdout_file 2>>$stderr_file
-
-  done
-
-done
+Rscript kmeans.R \
+  --seed $seed \
+  --numpoints $numpoints \
+  --dimensions $dimensions \
+  --num_centres $num_centres \
+  --fragments $fragments \
+  --mode $mode \
+  --iterations $iterations \
+  --epsilon $epsilon \
+  --arity $arity \
+  --plot FALSE \
+  --Minimize \
+  >>$stdout_file 2>>$stderr_file

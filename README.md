@@ -14,18 +14,104 @@ RCOMPSs is the result of a collaborative effort between the STSDS group at KAUST
 Installation
 ------------
 
-RCOMPSs is installed from the COMPSs installation.
+RCOMPSs is installed from the COMPSs installation from source code adding `--rcompss` to the `buildlocal` command.
 
-The `install.sh` script is used by the COMPSs installer to include RCOMPSs within the COMPSs installation directory as follows:
+Please, check the [COMPSs installation instructions](https://compss-doc.readthedocs.io/en/latest/Sections/01_Installation/02_Building_from_sources.html)
+
+Examples
+--------
+
+**IMPORTANT:** It is mandatory to install COMPSs before running any of the examples.
+
+**IMPORTANT 2:** It is mandatory to export an environment variable named `COMPSS_HOME` with the COMPSs installation path. For example:
 
 ```bash
-./install.sh <target_dir> <tracing>
+export COMPSS_HOME=/opt/COMPSs
 ```
 
-Where:
+### Addition
 
-- `target_dir`: Destination path where to install RCOMPSs
-- `tracing`: Compile with tracing enabled or disabled (true | false)
+The `addition` example shows a simple R application parallelized with RCOMPSs.
+It declares a task that adds two values, and then it is invoked with 4 inputs in order to get the accumulated value.
+
+```bash
+cd examples/addition
+./run_addition_RCOMPSs
+```
+
+The output are two files (stdout and stderr) containing the output from the execution.
+
+### K-means
+
+TBD: Description.
+
+Location:
+
+```bash
+cd examples/kmeans
+```
+
+Sequential execution:
+
+```bash
+./run_kmeansn_R.sh
+```
+
+Parallel execution:
+
+```bash
+./run_kmeans_RCOMPSs.sh
+```
+
+Additionally, the `MN5_experiments` and `Shaheen_experiments` folders contain the scripts used to evaluate the Kmeans algorithm in both MN5 and Shaheen supercomputers.
+
+### KNN
+
+TBD: Description.
+
+Location:
+
+```bash
+cd examples/knn
+```
+
+Sequential execution:
+
+```bash
+./run_knn_R.sh
+```
+
+Parallel execution:
+
+```bash
+./run_knn_RCOMPSs.sh
+```
+
+Additionally, the `MN5_experiments` and `Shaheen_experiments` folders contain the scripts used to evaluate the KNN algorithm in both MN5 and Shaheen supercomputers.
+
+### Linear Regression
+
+TBD: Description.
+
+Location:
+
+```bash
+cd examples/linear_regression
+```
+
+Sequential execution:
+
+```bash
+./run_linear_regression_R.sh
+```
+
+Parallel execution:
+
+```bash
+./run_linear_regression_RCOMPSs.sh
+```
+
+Additionally, the `MN5_experiments` and `Shaheen_experiments` folders contain the scripts used to evaluate the Linear Regression algorithm in both MN5 and Shaheen supercomputers.
 
 License
 -------
