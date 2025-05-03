@@ -21,9 +21,7 @@ Please, check the [COMPSs installation instructions](https://compss-doc.readthed
 Examples
 --------
 
-**IMPORTANT:** It is mandatory to install COMPSs before running any of the examples.
-
-**IMPORTANT 2:** It is mandatory to export an environment variable named `COMPSS_HOME` with the COMPSs installation path. For example:
+**IMPORTANT:** Exporting an environment variable named `COMPSS_HOME` with the COMPSs installation path is mandatory. For example:
 
 ```bash
 export COMPSS_HOME=/opt/COMPSs
