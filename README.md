@@ -14,7 +14,7 @@ RCOMPSs is the result of a collaborative effort between the STSDS group at KAUST
 Installation
 ------------
 
-RCOMPSs is installed from the COMPSs installation from source code adding `--rcompss` to the `buildlocal` command.
+RCOMPSs is installed  as part of the COMPSs source installation by adding the `--rcompss` to the `buildlocal` command.
 
 Please, check the [COMPSs installation instructions](https://compss-doc.readthedocs.io/en/latest/Sections/01_Installation/02_Building_from_sources.html)
 
