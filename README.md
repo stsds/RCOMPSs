@@ -149,5 +149,5 @@ License
 Acknowledgement
 ---------------
 
-- Computer, Electrical and Mathematical Sciences and Engineering (CEMSE) Division, King Abdullah University of Science and Technology (KAUST), Thuwa, Saudi Arabia.
+- Computer, Electrical and Mathematical Sciences and Engineering (CEMSE) Division, King Abdullah University of Science and Technology (KAUST), Thuwal, Saudi Arabia.
 - Barcelona Supercomputing Center (BSC), Barcelona, Spain.
