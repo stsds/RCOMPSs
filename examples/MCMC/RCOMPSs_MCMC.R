@@ -2,7 +2,7 @@
 # All rights reserved.
 # RCOMPSs is a software package, provided by King Abdullah University of Science and Technology (KAUST) - STSDS Group.
 
-# @file job.R
+# @file RCOMPSs_MCMC.R
 # @brief This file contains the main application
 # @version 1.0
 # @author Xiran Zhang
@@ -18,21 +18,23 @@ if(use_RCOMPSs) {
 	mc.dec <- task(mcmc_metropolis, "task_MCMC.R", info_only = FALSE, return_value = TRUE, ser_method = "qs")
 }
 
-chains <- list()
-tic()
-if(use_RCOMPSs) {
-	for(i in 1:n_chains) {
-		# Task for each chain
-		chains[[i]] <- mc.dec(MCinput)
+for(j in 1:2){
+	chains <- list()
+	tic()
+	if(use_RCOMPSs) {
+		for(i in 1:n_chains) {
+			# Task for each chain
+			chains[[i]] <- mc.dec(MCinput)
+		}
+		chains <- compss_wait_on(chains)
+	} else {
+		# Fallback to sequential execution if RCOMPSs is not used
+		for(i in 1:n_chains) {
+			chains[[i]] <- mcmc_metropolis(MCinput)
+		}
 	}
-	chains <- compss_wait_on(chains)
-} else {
-	# Fallback to sequential execution if RCOMPSs is not used
-	for(i in 1:n_chains) {
-		chains[[i]] <- mcmc_metropolis(MCinput)
-	}
+	toc(paste0("RCOMPSs_", j))
 }
-toc("RCOMPSs")
 
 # Combine results
 all_samples <- do.call(c, chains)

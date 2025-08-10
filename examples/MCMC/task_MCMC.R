@@ -13,7 +13,7 @@ mcmc_metropolis <- function(arguments) {
   
   for (i in 1:n_iter) {
     if(i %% 1e4 == 0) {
-      # Print progress every 1000 iterations
+      # Print progress every 10000 iterations
       message(paste("Iteration", i, "of", n_iter))
     }
     proposed_value <- rnorm(1, mean = current_value, sd = proposal_sd)

@@ -7,7 +7,7 @@ n_samples <- 10000  # Number of samples
 
 # Parallel execution of multiple chains
 n_chains <- 50
-n_iter <- 20000
+n_iter <- 50000
 proposal_sd <- 0.5
 burnout <- 1000
 
