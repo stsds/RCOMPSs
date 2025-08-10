@@ -27,7 +27,7 @@ check_key_in_hashmap <- function(key, env) {
 #' @param ... Metadata.
 #' @return The decorated function
 #' @export
-task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = FALSE, ...) {
+task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = FALSE, ser_method = "RMVL", ...) {
   TIME1 <- proc.time()
 
   # Convert all the metadata into a list
@@ -241,7 +241,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
             if (need_serialization) {
               INI.TIME <- proc.time()
               arg_ser_filename <- paste0(MASTER_WORKING_DIR, "/", arguments_names[i], "_arg[", i, "]_", UID())
-              compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
+              compss_serialize(object = arguments[[i]], filepath = arg_ser_filename, method = ser_method)
               SER_END.TIME <- proc.time()
               SER.TIME <- SER_END.TIME - INI.TIME
               if (DEBUG) {
@@ -418,10 +418,16 @@ UID <- function() {
 #' Internal serialization function
 #'
 #' @export
-compss_serialize <- function(object, filepath) {
-  con <- RMVL::mvl_open(filepath, append = TRUE, create = TRUE)
-  RMVL::mvl_write_object(con, object, name = "obj")
-  RMVL::mvl_close(con)
+compss_serialize <- function(object, filepath, method) {
+  if (method == "RMVL") {
+    con <- RMVL::mvl_open(filepath, append = TRUE, create = TRUE)
+    RMVL::mvl_write_object(con, object, name = "obj")
+    RMVL::mvl_close(con)
+  } else if (method == "qs") {
+    qs::qsave(object, file = filepath, preset = "uncompressed")
+  } else {
+    stop("Unknown serialization method")
+  }
 }
 
 #' compss_unserialize
@@ -429,11 +435,17 @@ compss_serialize <- function(object, filepath) {
 #' Internal unserialization function
 #'
 #' @export
-compss_unserialize <- function(filepath) {
-  con <- RMVL::mvl_open(filepath)
-  object <- RMVL::mvl2R(con$obj)
-  RMVL::mvl_close(con)
-  return(object)
+compss_unserialize <- function(filepath, unser_method) {
+  if (unser_method == "RMVL") {
+    con <- RMVL::mvl_open(filepath)
+    object <- RMVL::mvl2R(con$obj)
+    RMVL::mvl_close(con)
+    return(object)
+  } else if (unser_method == "qs") {
+    return(qs::qread(filepath, nthreads = 1))
+  } else {
+    stop("Unknown serialization method")
+  }
 }
 
 #' compss_start
@@ -476,7 +488,7 @@ compss_wait_on <- function(future_obj) {
   # if(class(future_obj) == "future_object"){
   if (length(class(future_obj)) == 1 && class(future_obj) == "future_object") {
     Get_File(0L, future_obj$outputfile)
-    return_value <- compss_unserialize(future_obj$outputfile)
+    return_value <- compss_unserialize(future_obj$outputfile, "qs")
     return(return_value)
   } else if (length(class(future_obj)) == 1 && class(future_obj) == "list") {
     list_len <- length(future_obj)
@@ -494,7 +506,7 @@ compss_wait_on <- function(future_obj) {
       function(obj) {
         if (class(obj) == "future_object") {
           Get_File(0L, obj$outputfile)
-          return(compss_unserialize(obj$outputfile))
+          return(compss_unserialize(obj$outputfile, "qs"))
         } else {
           return(obj)
         }
