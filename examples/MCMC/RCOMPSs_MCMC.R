@@ -13,35 +13,35 @@ source("settings.R")
 source("task_MCMC.R")
 
 if(use_RCOMPSs) {
-	library(RCOMPSs)
-	compss_start()
-	mc.dec <- task(mcmc_metropolis, "task_MCMC.R", info_only = FALSE, return_value = TRUE, ser_method = "qs")
+  library(RCOMPSs)
+  compss_start()
+  mc.dec <- task(mcmc_metropolis, "task_MCMC.R", info_only = FALSE, return_value = TRUE)
 }
 
-for(j in 1:2){
-	chains <- list()
-	tic()
-	if(use_RCOMPSs) {
-		for(i in 1:n_chains) {
-			# Task for each chain
-			chains[[i]] <- mc.dec(MCinput)
-		}
-		chains <- compss_wait_on(chains)
-	} else {
-		# Fallback to sequential execution if RCOMPSs is not used
-		for(i in 1:n_chains) {
-			chains[[i]] <- mcmc_metropolis(MCinput)
-		}
-	}
-	toc(paste0("RCOMPSs_", j))
+for(j in 1:5){
+  chains <- list()
+  tic()
+  if(use_RCOMPSs) {
+    for(i in 1:n_chains) {
+      # Task for each chain
+      chains[[i]] <- mc.dec(MCinput)
+    }
+    chains <- compss_wait_on(chains)
+  } else {
+    # Fallback to sequential execution if RCOMPSs is not used
+    for(i in 1:n_chains) {
+      chains[[i]] <- mcmc_metropolis(MCinput)
+    }
+  }
+  toc(n_samples, n_iter, "RCOMPSs", j)
 }
 
 # Combine results
 all_samples <- do.call(c, chains)
 
 # Plot the results
-MCplot(all_samples, true_mean, "RCOMPSs")
+#MCplot(all_samples, true_mean, "RCOMPSs")
 
 if(use_RCOMPSs) {
-	compss_stop()
+  compss_stop()
 }

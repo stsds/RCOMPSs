@@ -141,7 +141,7 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
                   # close(con)
                   TIME_UNSER <- proc.time()
                   RCOMPSs::extrae_emit_event(9000100, 8)
-                  params_func_list[[i + 1]] <- RCOMPSs::compss_unserialize(path_value, "qs")
+                  params_func_list[[i + 1]] <- RCOMPSs::compss_unserialize(path_value)
                   RCOMPSs::extrae_emit_event(9000100, 0)
                   TIME_UNSER <- proc.time() - TIME_UNSER
                   cat("RCOMPSs::compss_unserialize TIME:", TIME_UNSER[3], "seconds\n")
@@ -177,7 +177,7 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
               # close(con)
               TIME_SER <- proc.time()
               RCOMPSs::extrae_emit_event(9000100, 9)
-              RCOMPSs::compss_serialize(result, path_return_value, "qs")
+              RCOMPSs::compss_serialize(result, path_return_value)
               RCOMPSs::extrae_emit_event(9000100, 0)
               TIME_SER <- proc.time() - TIME_SER
               cat("RCOMPSs::compss_serialize TIME:", TIME_SER[3], "seconds\n")
@@ -195,10 +195,10 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
             RCOMPSs::extrae_emit_event(9000100, 0)
           }
         },
-        error = function(e) {
+        error = function(err) {
           # Handle the error
-          cat("Error:", e$message, file = job_err)
-          print(paste("Error:", e$message))
+          cat("Error:", err$message, file = job_err)
+          print(paste("Error:", err$message))
           traceback()
           RCOMPSs::extrae_emit_event(9000100, 13)
           cat("END_TASK", task_id, 1, file = output_fifo, "\n")

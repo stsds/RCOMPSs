@@ -15,19 +15,19 @@ source("settings.R")
 source("task_MCMC.R")
 
 # Plan for parallel processing
-plan(multisession)  # or use plan(multicore) for Unix-like systems
+plan(multicore)
 
 # Use future_lapply for parallel processing
-for(j in 1:2) {
+for(j in 1:5) {
   tic()
   chains <- future_lapply(1:n_chains, function(x) {
-    mcmc_metropolis(MCinput)
-  })
-  toc(paste0("FUTURE_", j))
+                            mcmc_metropolis(MCinput)
+})
+  toc(n_samples, n_iter, "FUTURE", j)
 }
 
 # Combine results
 all_samples <- do.call(c, chains)
 
 # Plot the results
-MCplot(all_samples, true_mean, "future")
+#MCplot(all_samples, true_mean, "future")

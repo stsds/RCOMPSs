@@ -14,16 +14,16 @@ source("settings.R")
 source("task_MCMC.R")
 
 # Use mclapply for parallel processing
-for(j in 1:2) {
+for(j in 1:5) {
   tic()
   chains <- mclapply(1:n_chains, function(x) {
     mcmc_metropolis(MCinput)
   }, mc.cores = n_chains)
-  toc(paste0("PARALLEL_", j))
+  toc(n_samples, n_iter, "PARALLEL", j)
 }
 
 # Combine results
 all_samples <- do.call(c, chains)
 
 # Plot the results
-MCplot(all_samples, true_mean, "parallel")
+#MCplot(all_samples, true_mean, "parallel")

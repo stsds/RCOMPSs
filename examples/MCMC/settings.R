@@ -3,7 +3,7 @@ library(ggplot2)
 # Set the true parameters
 true_mean <- 5
 true_sd <- 2
-n_samples <- 10000  # Number of samples
+n_samples <- 10000
 
 # Parallel execution of multiple chains
 n_chains <- 50
@@ -25,10 +25,14 @@ MCinput[[6]] <- burnout
 tic <- function() {
   tic_start <<- base::Sys.time()
 }
-toc <- function(package_name) {
-  dt <- base::difftime(base::Sys.time(), tic_start)
+toc <- function(nsample, niter, package_name, rep) {
+  current_time <- base::Sys.time()
+  dt <- base::difftime(current_time, tic_start)
   dt <- round(dt, digits = 1L)
-  message(paste0(package_name, ": Elapsed time: "), format(dt))
+  message(paste0("n_sample = ", nsample, "; n_iter = ", niter, "; ", package_name, "; rep = ", rep, ": Elapsed time: "), format(dt))
+  dt <- base::difftime(current_time, tic_start, units = "secs")
+  dt <- round(dt, digits = 2L)
+  cat(paste0(package_name, ",", rep, ",", nsample, ",", niter, ",", dt, "\n"))
 }
 
 # Plotting function
