@@ -206,7 +206,7 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
       # - If the type is basic, we assign the corresponding number in <arguments_type>
       # - If the type is not basic, we assign the type as 10L - FILE and serialize the object
       for (i in 1:arguments_length) {
-        if (length(class(arguments[[i]])) == 1 && (class(arguments[[i]]) == "numeric" || class(arguments[[i]]) == "character")) {
+        if (length(class(arguments[[i]])) == 1 && length(arguments[[i]]) == 1 && (class(arguments[[i]]) == "numeric" || class(arguments[[i]]) == "character")) {
           arguments_type[i] <- parType_mapping(arguments[[i]])
         } else {
           arguments_type[i] <- 10L
