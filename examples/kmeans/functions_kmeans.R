@@ -76,7 +76,7 @@ recompute_centres <- function(partials, old_centres, arity) {
     partials <- do.call(merge, partials)
   }
   # For empty clusters, we give a random new mean
-  cl0 <- which(partials[,3] == 0)
+  cl0 <- which(partials[,dimension + 1] == 0)
   if(length(cl0) > 0){
     centres[cl0,] <- matrix(runif(length(cl0) * dimension), nrow = length(cl0), ncol = dimension)
     centres[-cl0,] <- partials[-cl0, 1:dimension] / partials[-cl0, dimension + 1]
@@ -173,53 +173,6 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
     cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
   return(centres)
-}
-
-#' generate_points
-#' 
-#' Generate points
-#' 
-#' @param points Number of points
-#' @param dim Number of dimensions
-#' @param mode Dataset generation mode
-#' @param seed Random seed
-#' @param num_of_centres Number of clusters
-#' @return Dataset fragment
-generate_points <- function(points, dim, mode, seed, num_of_centres = 2) {
-  # Random generation distributions
-  rand <- list(
-               "normal" = function(k, x) rnorm(k, mean = x, sd = 0.05),
-               "uniform" = function(k, x) runif(k, x - 0.1, x + 0.1)
-  )
-
-  # Set the random seed
-  set.seed(seed)
-
-  # Generate the random fragment
-  cluster_centres <- matrix(runif(num_of_centres * dim), ncol = dim)
-  # plot(cluster_centres, col = "red")
-  num_of_points_cluster <- points %/% num_of_centres
-  mat <- matrix(0, nrow = points, ncol = dim + 1)
-  for(i in 1:(num_of_centres - 1)){
-    for(j in 1:dim){
-      mat[((i-1) * num_of_points_cluster + 1):(num_of_points_cluster * i), j] <- rand[[mode]](num_of_points_cluster, cluster_centres[i,j])
-    }
-    mat[((i-1) * num_of_points_cluster + 1):(num_of_points_cluster * i), dim + 1] <- i
-  }
-  rest_of_points <- points - num_of_points_cluster * (num_of_centres - 1)
-  # cat("points =", points, "\n")
-  # cat("num_of_points_cluster =", num_of_points_cluster, "\n")
-  # cat("rest_of_points =", rest_of_points, "\n")
-  for(j in 1:dim){
-    mat[(points - rest_of_points + 1):points, j] <- rand[[mode]](rest_of_points, cluster_centres[num_of_centres, j])
-    mat[(points - rest_of_points + 1):points, dim + 1] <- num_of_centres
-  }
-  # at <- matrix(rand[[mode]](dim * points), ncol = dim)
-
-  # Normalize all points between 0 and 1
-  mat[,1:2] <- apply(mat[,1:2], 2, function(x) (x - min(x)) / (max(x) - min(x)))
-
-  return(mat)
 }
 
 parse_arguments <- function(Minimize) {
