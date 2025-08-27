@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#for n_sample in $(seq 200000 2200000 20000000); do
+for n_sample in $(seq 200000 2200000 20000000); do
 #for n_sample in $(seq 15600000 2200000 20000000); do
-for n_sample in $(seq 17800000 2200000 17800000); do
+#for n_sample in $(seq 17800000 2200000 17800000); do
 
     # Run each kmeans script
     # Rscript parallel_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations 2 --arity 50 --workers 50
@@ -18,7 +18,8 @@ for n_sample in $(seq 17800000 2200000 17800000); do
     # sleep 5
     # cd Comparisons
 
-    Rscript future_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations 2 --arity 50 --plan multicore --workers 50
+    #Rscript future_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations 2 --arity 50 --plan multicore --workers 50
+    Rscript mirai_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations 2 --arity 50 --plan multicore --workers 50
     #compss_clean_procs
     #cd ..
     #sleep 1

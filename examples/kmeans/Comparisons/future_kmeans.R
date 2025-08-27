@@ -1,13 +1,3 @@
-# Copyright (c) 2025- King Abdullah University of Science and Technology,
-# All rights reserved.
-# Converted to future-based parallelism (replacing RCOMPSs).
-
-# @file kmeans_future.R
-# @brief Main application of K-means clustering with future parallelization
-# @version 1.1 (future)
-# @author (original) Xiran Zhang; (conversion) Assistant
-# @date 2025-08-24
-
 library(future)
 library(future.apply)
 library(proxy)  # for proxy::dist
