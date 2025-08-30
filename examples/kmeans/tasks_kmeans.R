@@ -21,6 +21,8 @@ fill_fragment <- function(params_fill_fragment){
   centres <- params_fill_fragment[[1]]
   n <- params_fill_fragment[[2]]
   mode <- params_fill_fragment[[3]]
+  iseed <- params_fill_fragment[[4]]
+  set.seed(iseed)
 
   # Obtain necessary numbers
   ncluster <- nrow(centres)

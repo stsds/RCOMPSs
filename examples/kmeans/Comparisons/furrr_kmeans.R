@@ -9,9 +9,8 @@
 # @date 2025-08-24
 
 suppressPackageStartupMessages({
-library(future)
-library(furrr)
-library(proxy)  # for proxy::dist
+  library(future)
+  library(furrr)
 })
 
 DEBUG <- list(
@@ -103,15 +102,12 @@ merge <- function(...){
   }
 }
 
-converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
+converged <- function(old_centres, centres, epsilon) {
   if(DEBUG$converged) cat("Doing converged\n")
   if(is.null(old_centres)) return(FALSE)
   dist <- sum(rowSums((centres - old_centres)^2))
   if(dist < epsilon^2){
     cat("Converged!\n")
-    End <- TRUE
-  }else if(iteration >= max_iter){
-    cat("Max iteration reached!\n")
     End <- TRUE
   }else{
     End <- FALSE
@@ -156,20 +152,18 @@ recompute_centres <- function(partials, old_centres, arity, future_reduction_pla
   }else{
     centres <- partials[,1:dimension, drop = FALSE] / partials[,dimension + 1]
   }
-  return(centres)
+  centres
 }
 
 # ----------------------------
 # KMeans driver (future)
 # ----------------------------
 
-kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50,
-                        reduction_plan = NULL, iseed) {
+kmeans_frag <- function(centres, fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50,
+                        reduction_plan = NULL) {
   # Determine dimensions from first fragment
   dimensions <- ncol(fragment_list[[1]])
-  # Initialize centres
-  set.seed(iseed)
-  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  
   if(DEBUG$kmeans_frag){
     cat("Initialized centres:\n")
     print(centres)
@@ -178,8 +172,9 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
   old_centres <- NULL
   iteration <- 0
   num_frag <- length(fragment_list)
-  
-  while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
+  is_converged <- converged(old_centres, centres, epsilon)
+
+  while (!is_converged && iteration < iterations) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
     iteration_time <- proc.time()[3]
     old_centres <- centres
@@ -190,7 +185,7 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
     #}, future.seed = TRUE)
     partials <- future_map(seq_len(num_frag), function(i) {
       partial_sum(fragment = fragment_list[[i]], centres = old_centres)
-    }, .options = furrr_options(seed = iseed, packages = "proxy"))
+    }, .options = furrr_options(packages = "proxy"))
     
     # Reduce step (tree reduction), possibly with different plan
     centres <- recompute_centres(partials, old_centres, arity, future_reduction_plan = reduction_plan)
@@ -200,10 +195,11 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
       cat("centres:\n")
       print(centres)
     }
+    is_converged <- converged(old_centres, centres, epsilon)
     iteration_time <- proc.time()[3] - iteration_time
     cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
-  return(centres)
+  return(list(centres = centres, num_iter = iteration, converged = is_converged))
 }
 
 # ----------------------------
@@ -224,6 +220,7 @@ parse_arguments <- function(Minimize) {
   fragments <- 10
   mode <- "uniform"
   iterations <- 20
+  tot_rep <- 1
   epsilon <- 1e-9
   arity <- 5
   
@@ -236,35 +233,22 @@ parse_arguments <- function(Minimize) {
   
   if(length(args) >= 1){
     for (i in 1:length(args)) {
-      if (args[i] == "-s" || args[i] == "--seed") {
-        seed <- as.integer(args[i + 1])
-      } else if (args[i] == "-n" || args[i] == "--numpoints") {
-        numpoints <- as.integer(args[i + 1])
-      } else if (args[i] == "-d" || args[i] == "--dimensions") {
-        dimensions <- as.integer(args[i + 1])
-      } else if (args[i] == "-c" || args[i] == "--num_centres") {
-        num_centres <- as.integer(args[i + 1])
-      } else if (args[i] == "-f" || args[i] == "--fragments") {
-        fragments <- as.integer(args[i + 1])
-      } else if (args[i] == "-m" || args[i] == "--mode") {
-        mode <- args[i + 1]
-      } else if (args[i] == "-i" || args[i] == "--iterations") {
-        iterations <- as.integer(args[i + 1])
-      } else if (args[i] == "-e" || args[i] == "--epsilon") {
-        epsilon <- as.double(args[i + 1])
-      } else if (args[i] == "-a" || args[i] == "--arity") {
-        arity <- as.integer(args[i + 1])
-      } else if (args[i] == "-p" || args[i] == "--plot") {
-        needs_plot <- as.logical(args[i + 1])
-      } else if (args[i] == "-R" || args[i] == "--R-default") {
-        use_R_default <- TRUE
-      } else if (args[i] == "-h" || args[i] == "--help") {
-        is.asking_for_help <- TRUE
-      } else if (args[i] == "--plan") {
-        plan_name <- args[i + 1]
-      } else if (args[i] == "--workers") {
-        workers <- as.integer(args[i + 1])
-      }
+      key <- args[i]
+      if (key == "-s" || key == "--seed") seed <- as.integer(args[i + 1])
+      else if (key == "-n" || key == "--numpoints") numpoints <- as.integer(args[i + 1])
+      else if (key == "-d" || key == "--dimensions") dimensions <- as.integer(args[i + 1])
+      else if (key == "-c" || key == "--num_centres") num_centres <- as.integer(args[i + 1])
+      else if (key == "-f" || key == "--fragments") fragments <- as.integer(args[i + 1])
+      else if (key == "-m" || key == "--mode") mode <- args[i + 1]
+      else if (key == "-i" || key == "--iterations") iterations <- as.integer(args[i + 1])
+      else if (key == "--replicates") tot_rep <- as.integer(args[i+1])
+      else if (key == "-e" || key == "--epsilon") epsilon <- as.double(args[i + 1])
+      else if (key == "-a" || key == "--arity") arity <- as.integer(args[i + 1])
+      else if (key == "-p" || key == "--plot") needs_plot <- as.logical(args[i + 1])
+      else if (key == "-R" || key == "--R-default") use_R_default <- TRUE
+      else if (key == "-h" || key == "--help") is.asking_for_help <- TRUE
+      else if (key == "--plan") plan_name <- args[i + 1]
+      else if (key == "--workers") workers <- as.integer(args[i + 1])
     }
   }
   
@@ -278,6 +262,7 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments <fragments>      Number of fragments\n")
     cat("  -m, --mode <mode>                Mode for generating points\n")
     cat("  -i, --iterations <iterations>    Maximum number of iterations\n")
+    cat("      --replicates <tot_rep>       Total number of replicates\n")
     cat("  -e, --epsilon <epsilon>          Epsilon (convergence distance)\n")
     cat("  -a, --arity <arity>              Reduction arity (batch size in tree reduction)\n")
     cat("  -p, --plot <needs_plot>          Boolean: Plot? (not used here)\n")
@@ -301,6 +286,7 @@ parse_arguments <- function(Minimize) {
     num_fragments = fragments,
     mode = mode,
     iterations = iterations,
+    tot_rep = tot_rep,
     epsilon = epsilon,
     arity = arity,
     needs_plot = needs_plot,
@@ -319,6 +305,7 @@ print_parameters <- function(params) {
   cat(sprintf("  Number of fragments: %d\n", params$num_fragments))
   cat(sprintf("  Mode: %s\n", params$mode))
   cat(sprintf("  Iterations: %d\n", params$iterations))
+  cat(sprintf("  Replicates: %d\n", params$tot_rep))
   cat(sprintf("  Epsilon: %.e\n", params$epsilon))
   cat(sprintf("  Arity: %d\n", params$arity))
   cat("  needs_plot:", params$needs_plot, "\n")
@@ -356,8 +343,6 @@ if(!Minimize){
   cat("Done.\n")
 }
 
-set.seed(seed)
-
 # Configure future plan
 # Map step uses the global plan; you may choose a different plan for reduction if desired.
 if (!Minimize) cat("Configuring future plan ... ")
@@ -379,8 +364,16 @@ if (!Minimize) cat("Done.\n")
 # You can optionally set a different plan for reduction; here we keep NULL to reuse the global plan:
 reduction_plan <- NULL
 
-for(replicate in 1:6){
+set.seed(seed)
+
+for(replicate in 1:tot_rep){
   start_time <- proc.time()
+  # Initialize centres
+  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  if(DEBUG$kmeans_frag){
+    cat("Initialized centres:\n")
+    print(centres)
+  }
   
   # Generate the data
   if(!Minimize){
@@ -397,9 +390,10 @@ for(replicate in 1:6){
   #  fill_fragment(params_fill_fragment)
   #}, future.seed = TRUE)
   fragment_list <- future_map(seq_len(num_fragments), ~{
+    set.seed(seed + .x)
     params_fill_fragment <- list(true_centres, points_per_fragment, mode)
     fill_fragment(params_fill_fragment)
-  }, .options = furrr_options(seed = seed))
+  }, .options = furrr_options(seed = NULL))
 
   initialization_time <- proc.time()
   if(!Minimize){
@@ -411,15 +405,16 @@ for(replicate in 1:6){
     fragment_mat <- do.call(rbind, fragment_list)
     centres <- kmeans(fragment_mat, num_centres, iter.max = iterations)$centers
   }else{
-    centres <- kmeans_frag(
+    kmeans_res <- kmeans_frag(
+      centres = centres,
       fragment_list = fragment_list,
       num_centres = num_centres,
       iterations = iterations,
       epsilon = epsilon,
       arity = arity,
-      reduction_plan = reduction_plan,
-      iseed = seed
+      reduction_plan = reduction_plan
     )
+    centres <- kmeans_res[["centres"]]
   }
   
   kmeans_time <- proc.time()
@@ -454,7 +449,8 @@ for(replicate in 1:6){
         num_centres, ",",
         num_fragments, ",",
         mode, ",",
-        iterations, ",",
+        kmeans_res[["num_iter"]], ",",
+        kmeans_res[["converged"]], ",",
         epsilon, ",",
         arity, ",",
         type, ",",
@@ -462,7 +458,8 @@ for(replicate in 1:6){
         Initialization_time, ",",
         Kmeans_time, ",",
         Total_time, ",",
-        replicate,
+        replicate, ",",
+        tot_rep,
         "\n", sep = ""
     )
   }

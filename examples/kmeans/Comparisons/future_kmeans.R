@@ -1,6 +1,7 @@
+suppressPackageStartupMessages({
 library(future)
 library(future.apply)
-library(proxy)  # for proxy::dist
+})
 
 DEBUG <- list(
               partial_sum = FALSE,
@@ -91,15 +92,12 @@ merge <- function(...){
   }
 }
 
-converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
+converged <- function(old_centres, centres, epsilon) {
   if(DEBUG$converged) cat("Doing converged\n")
   if(is.null(old_centres)) return(FALSE)
   dist <- sum(rowSums((centres - old_centres)^2))
   if(dist < epsilon^2){
     cat("Converged!\n")
-    End <- TRUE
-  }else if(iteration >= max_iter){
-    cat("Max iteration reached!\n")
     End <- TRUE
   }else{
     End <- FALSE
@@ -135,6 +133,13 @@ recompute_centres <- function(partials, old_centres, arity, future_reduction_pla
   }else{
     centres <- partials[,1:dimension, drop = FALSE] / partials[,dimension + 1]
   }
+  if(DEBUG$recompute_centres >= 2){
+    cat("\npartials in recompute_centres after merge\n")
+    print(partials)
+    cat("dimension =", dimension, "\n")
+    cat("\ncentres\n")
+    print(centres)
+  }
   return(centres)
 }
 
@@ -156,6 +161,7 @@ parse_arguments <- function(Minimize) {
   fragments <- 10
   mode <- "uniform"
   iterations <- 20
+  tot_rep <- 1
   epsilon <- 1e-9
   arity <- 5
 
@@ -167,33 +173,21 @@ parse_arguments <- function(Minimize) {
 
   if(length(args) >= 1){
     for (i in 1:length(args)) {
-      if (args[i] == "-s" || args[i] == "--seed") {
-        seed <- as.integer(args[i + 1])
-      } else if (args[i] == "-n" || args[i] == "--numpoints") {
-        numpoints <- as.integer(args[i + 1])
-      } else if (args[i] == "-d" || args[i] == "--dimensions") {
-        dimensions <- as.integer(args[i + 1])
-      } else if (args[i] == "-c" || args[i] == "--num_centres") {
-        num_centres <- as.integer(args[i + 1])
-      } else if (args[i] == "-f" || args[i] == "--fragments") {
-        fragments <- as.integer(args[i + 1])
-      } else if (args[i] == "-m" || args[i] == "--mode") {
-        mode <- args[i + 1]
-      } else if (args[i] == "-i" || args[i] == "--iterations") {
-        iterations <- as.integer(args[i + 1])
-      } else if (args[i] == "-e" || args[i] == "--epsilon") {
-        epsilon <- as.double(args[i + 1])
-      } else if (args[i] == "-a" || args[i] == "--arity") {
-        arity <- as.integer(args[i + 1])
-      } else if (args[i] == "-p" || args[i] == "--plot") {
-        needs_plot <- as.logical(args[i + 1])
-      } else if (args[i] == "-h" || args[i] == "--help") {
-        is.asking_for_help <- TRUE
-      } else if (args[i] == "--plan") {
-        plan_name <- args[i + 1]
-      } else if (args[i] == "--workers") {
-        workers <- as.integer(args[i + 1])
-      }
+      key <- args[i]
+      if (key == "-s" || key == "--seed") seed <- as.integer(args[i + 1])
+      else if (key == "-n" || key == "--numpoints") numpoints <- as.integer(args[i + 1])
+      else if (key == "-d" || key == "--dimensions") dimensions <- as.integer(args[i + 1])
+      else if (key == "-c" || key == "--num_centres") num_centres <- as.integer(args[i + 1])
+      else if (key == "-f" || key == "--fragments") fragments <- as.integer(args[i + 1])
+      else if (key == "-m" || key == "--mode") mode <- args[i + 1]
+      else if (key == "-i" || key == "--iterations") iterations <- as.integer(args[i + 1])
+      else if (key == "--replicates") tot_rep <- as.integer(args[i + 1])
+      else if (key == "-e" || key == "--epsilon") epsilon <- as.double(args[i + 1])
+      else if (key == "-a" || key == "--arity") arity <- as.integer(args[i + 1])
+      else if (key == "-p" || key == "--plot") needs_plot <- as.logical(args[i + 1])
+      else if (key == "-h" || key == "--help") is.asking_for_help <- TRUE
+      else if (key == "--plan") plan_name <- args[i + 1]
+      else if (key == "--workers") workers <- as.integer(args[i + 1])
     }
   }
 
@@ -207,6 +201,7 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments <fragments>      Number of fragments\n")
     cat("  -m, --mode <mode>                Mode for generating points\n")
     cat("  -i, --iterations <iterations>    Maximum number of iterations\n")
+    cat("      --replicates <tot_rep>       Total number of replicates\n")
     cat("  -e, --epsilon <epsilon>          Epsilon (convergence distance)\n")
     cat("  -a, --arity <arity>              Reduction arity (batch size in tree reduction)\n")
     cat("  -p, --plot <needs_plot>          Boolean: Plot? (not used here)\n")
@@ -229,6 +224,7 @@ parse_arguments <- function(Minimize) {
        num_fragments = fragments,
        mode = mode,
        iterations = iterations,
+       tot_rep = tot_rep,
        epsilon = epsilon,
        arity = arity,
        needs_plot = needs_plot,
@@ -246,6 +242,7 @@ print_parameters <- function(params) {
   cat(sprintf("  Number of fragments: %d\n", params$num_fragments))
   cat(sprintf("  Mode: %s\n", params$mode))
   cat(sprintf("  Iterations: %d\n", params$iterations))
+  cat(sprintf("  Replicates: %d\n", params$tot_rep))
   cat(sprintf("  Epsilon: %.e\n", params$epsilon))
   cat(sprintf("  Arity: %d\n", params$arity))
   cat("  needs_plot:", params$needs_plot, "\n")
@@ -261,14 +258,7 @@ flush.console()
 Sys.sleep(1)
 
 args <- commandArgs(trailingOnly = TRUE)
-Minimize <- FALSE
-if(length(args) >= 1){
-  for (i in 1:length(args)) {
-    if (args[i] == "-M" || args[i] == "--Minimize") {
-      Minimize <- TRUE
-    }
-  }
-}
+Minimize <- any(args %in% c("-M","--Minimize"))
 
 if(!Minimize){
   cat("Getting parameters ... ")
@@ -304,8 +294,14 @@ if (!Minimize) cat("Done.\n")
 reduction_plan <- NULL
 
 set.seed(seed)
-for(replicate in 1:1){
+for(replicate in 1:tot_rep){
   start_time <- proc.time()
+  # Initialize centres
+  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  if(DEBUG$kmeans_frag){
+    cat("Initialized centres:\n")
+    print(centres)
+  }
 
   # Generate the data
   if(!Minimize){
@@ -319,9 +315,10 @@ for(replicate in 1:1){
   fragment_list <- vector("list", num_fragments)
   for (f in 1:num_fragments) {
     fragment_list[[f]] <- future({
+      set.seed(seed + f)
       params_fill_fragment <- list(true_centres, points_per_fragment, mode)
       fill_fragment(params_fill_fragment)
-    }, seed = seed)
+    }, seed = NULL)
   }
 
   initialization_time <- proc.time()
@@ -332,18 +329,12 @@ for(replicate in 1:1){
   # Run kmeans
 
   # kmeans_frag
-  # Initialize centres
-  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
-  if(DEBUG$kmeans_frag){
-    cat("Initialized centres:\n")
-    print(centres)
-  }
-
   old_centres <- NULL
   iteration <- 0
   num_frag <- length(fragment_list)
 
-  while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
+  is_converged <- converged(old_centres, centres, epsilon)
+  while (!is_converged && iteration < iterations) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
     iteration_time <- proc.time()[3]
     old_centres <- centres
@@ -365,9 +356,6 @@ for(replicate in 1:1){
       cat("getting values per fragment.\n")
     }
     partials <- value(partials)
-    #for(i in 1:length(partials)){
-    #  partials[[i]] <- value(partials[[i]])
-    #}
     if(DEBUG$kmeans_frag){
       cat("recompute_centres\n")
     }
@@ -378,6 +366,7 @@ for(replicate in 1:1){
       cat("centres:\n")
       print(centres)
     }
+    is_converged <- converged(old_centres, centres, epsilon)
     iteration_time <- proc.time()[3] - iteration_time
     cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
@@ -407,14 +396,15 @@ for(replicate in 1:1){
 
   type <- paste0("future_", plan_name)
   if(Minimize){
-    cat("KMEANS_RESULTS,",
+    cat("KMEANS_FUTURE,",
         seed, ",",
         numpoints, ",",
         dimensions, ",",
         num_centres, ",",
         num_fragments, ",",
         mode, ",",
-        iterations, ",",
+        iteration, ",",
+        is_converged, ",",
         epsilon, ",",
         arity, ",",
         type, ",",
@@ -422,8 +412,9 @@ for(replicate in 1:1){
         Initialization_time, ",",
         Kmeans_time, ",",
         Total_time, ",",
-        replicate,
-        "\n", sep = ""
+        replicate, ",",
+        tot_rep,
+         "\n", sep = ""
     )
   }
 }

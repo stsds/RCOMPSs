@@ -8,7 +8,7 @@
 # @author Xiran Zhang
 # @date 2025-04-28
 
-converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
+converged <- function(old_centres, centres, epsilon) {
   if(DEBUG$converged) {
     cat("Doing converged\n")
   }
@@ -18,9 +18,6 @@ converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
   dist <- sum(rowSums((centres - old_centres)^2))
   if(dist < epsilon^2){
     cat("Converged!\n")
-    End <- TRUE
-  }else if(iteration >= max_iter){
-    cat("Max iteration reached!\n")
     End <- TRUE
   }else{
     End <- FALSE
@@ -47,15 +44,15 @@ recompute_centres <- function(partials, old_centres, arity) {
   }
 
   while(length(partials) > arity) {
-    if(DEBUG$recompute_centres >= 2){
+    if(DEBUG$recompute_centres == 3){
       cat("\npartials in recompute_centres\n")
       print(partials)
     }
-    if(DEBUG$recompute_centres >= 1){
+    if(DEBUG$recompute_centres == 1){
       cat("length(partials) > arity\n")
     }
     partials_subset <- partials[1:arity]
-    if(DEBUG$recompute_centres >= 1){
+    if(DEBUG$recompute_centres == 1){
       cat("partials_subset\n")
       print(partials_subset)
     }
@@ -66,7 +63,7 @@ recompute_centres <- function(partials, old_centres, arity) {
       partials[[length(partials) + 1]] <- do.call(merge, partials_subset)
     }
   }
-  if(DEBUG$recompute_centres >= 1){
+  if(DEBUG$recompute_centres == 1){
     cat("length(partials) <= arity\n")
   }
   if(use_RCOMPSs){
@@ -81,9 +78,9 @@ recompute_centres <- function(partials, old_centres, arity) {
     centres[cl0,] <- matrix(runif(length(cl0) * dimension), nrow = length(cl0), ncol = dimension)
     centres[-cl0,] <- partials[-cl0, 1:dimension] / partials[-cl0, dimension + 1]
   }else{
-  centres <- partials[,1:dimension] / partials[,dimension + 1]
+    centres <- partials[,1:dimension] / partials[,dimension + 1]
   }
-  if(DEBUG$recompute_centres >= 2){
+  if(DEBUG$recompute_centres == 2){
     cat("\npartials in recompute_centres after merge\n")
     print(partials)
     cat("dimension =", dimension, "\n")
@@ -108,16 +105,8 @@ recompute_centres <- function(partials, old_centres, arity) {
 #' @param epsilon Epsilon (convergence distance)
 #' @param arity Reduction arity
 #' @return Final centres
-kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50) {
-  # Centres is usually a very small matrix, so it is affordable to have it in
-  # the master.
-  # TODO: The centres should be generated in a way that at least there is one point in the fragment that is close to the centre.
-  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
-  if(DEBUG$kmeans_frag){
-        cat("Initialized centres:\n")
-        print(centres)
-      }
-
+kmeans_frag <- function(centres, fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50) {
+  
   # Note: this implementation treats the centres as files, never as PSCOs.
   old_centres <- NULL
   iteration <- 0
@@ -126,7 +115,8 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
   dimensions <- ncol(fragment_list[[1]]) - 1                         # dimensions of the data
   num_frag <- length(fragment_list)              # number of fragments in total
 
-  while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
+  is_converged <- converged(old_centres, centres, epsilon)
+  while (!is_converged && iteration < iterations) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
     iteration_time <- proc.time()[3]
     old_centres <- centres
@@ -169,10 +159,11 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
       cat("centres:\n")
       print(centres)
     }
+    is_converged <- converged(old_centres, centres, epsilon)
     iteration_time <- proc.time()[3] - iteration_time
     cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
-  return(centres)
+  return(list(centres = centres, num_iter = iteration, converged = is_converged))
 }
 
 parse_arguments <- function(Minimize) {
@@ -192,6 +183,7 @@ parse_arguments <- function(Minimize) {
   fragments <- 10 
   mode <- "uniform"
   iterations <- 20
+  tot_rep <- 1
   epsilon <- 1e-9
   arity <- 5
 
@@ -238,6 +230,8 @@ parse_arguments <- function(Minimize) {
         iterations <- as.integer(args[i + 1])
       } else if (args[i] == "--iterations") {
         iterations <- as.integer(args[i + 1])
+      } else if (args[i] == "--replicates") {
+        tot_rep <- as.integer(args[i + 1])
       } else if (args[i] == "-e") {
         epsilon <- as.double(args[i + 1])
       } else if (args[i] == "--epsilon") {
@@ -276,6 +270,7 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments <fragments>      Number of fragments\n")
     cat("  -m, --mode <mode>                Mode for generating points\n")
     cat("  -i, --iterations <iterations>    Maximum number of iterations\n")
+    cat("      --replicates <tot_rep>       Total number of replicates\n")
     cat("  -e, --epsilon <epsilon>          Epsilon (convergence distance)\n")
     cat("  -a, --arity <arity>              Reduction arity\n")
     cat("  -p, --plot <needs_plot>          Boolean: Plot?\n")
@@ -301,6 +296,7 @@ parse_arguments <- function(Minimize) {
               num_fragments = fragments,
               mode = mode,
               iterations = iterations,
+              tot_rep = tot_rep,
               epsilon = epsilon,
               arity = arity,
               needs_plot = needs_plot,

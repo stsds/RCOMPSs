@@ -49,8 +49,6 @@ if(!Minimize){
   cat("Done.\n")
 }
 
-set.seed(seed)
-
 if(use_RCOMPSs){
   require(RCOMPSs)
 
@@ -87,9 +85,19 @@ if(use_RCOMPSs){
 # I.e it generates random data from some parameters that determine the size,
 # dimensionality and etc and returns the elapsed time.
 
-for(replicate in 1:1){
+set.seed(seed)
+
+for(replicate in 1:tot_rep){
 
   start_time <- proc.time()
+  # Centres is usually a very small matrix, so it is affordable to have it in
+  # the master.
+  # TODO: The centres should be generated in a way that at least there is one point in the fragment that is close to the centre.
+  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  if(DEBUG$kmeans_frag){
+        cat("Initialized centres:\n")
+        print(centres)
+      }
 
   # Generate the data
   if(!Minimize){
@@ -104,13 +112,13 @@ for(replicate in 1:1){
   fragment_list <- list()
   if(use_RCOMPSs){
     for (f in 1:num_fragments) {
-      params_fill_fragment <- list(true_centres, points_per_fragment, mode)
+      params_fill_fragment <- list(true_centres, points_per_fragment, mode, seed + f)
       fragment_list[[f]] <- task.fill_fragment(params_fill_fragment)
     }
     #fragment_list <- compss_wait_on(fragment_list)
   }else{
     for (f in 1:num_fragments) {
-      params_fill_fragment <- list(true_centres, points_per_fragment, mode)
+      params_fill_fragment <- list(true_centres, points_per_fragment, mode, seed + f)
       fragment_list[[f]] <- fill_fragment(params_fill_fragment)
     }
   }
@@ -125,13 +133,15 @@ for(replicate in 1:1){
     fragment_mat <- do.call(rbind, fragment_list)
     centres <- kmeans(fragment_mat[, 1:dimensions], num_centres, iterations)
   }else{
-    centres <- kmeans_frag(
+    kmeans_res <- kmeans_frag(
+                            centres = centres,
                            fragment_list = fragment_list,
                            num_centres = num_centres,
                            iterations = iterations,
                            epsilon = epsilon,
                            arity = arity
     )
+    centres <- kmeans_res[["centres"]]
   }
 
   kmeans_time <- proc.time()
@@ -166,14 +176,15 @@ for(replicate in 1:1){
     type <- "R_sequential"
   }
   if(Minimize){
-    cat("KMEANS_RESULTS,",
+    cat(paste0("KMEANS_", type, ","),
         seed, ",",
         numpoints, ",",
         dimensions, ",",
         num_centres, ",",
         num_fragments, ",",
         mode, ",",
-        iterations, ",",
+        kmeans_res[["num_iter"]], ",",
+        kmeans_res[["converged"]], ",",
         epsilon, ",",
         arity, ",",
         type, ",",
@@ -181,7 +192,8 @@ for(replicate in 1:1){
         Initialization_time, ",",
         Kmeans_time, ",",
         Total_time, ",",
-        replicate,
+        replicate, ",",
+        tot_rep,
         "\n", sep = ""
     )
   }
@@ -190,7 +202,7 @@ for(replicate in 1:1){
 
 if(use_RCOMPSs){
   if(needs_plot) fragment_list <- compss_wait_on(fragment_list)
-  compss_stop()
+  #compss_stop()
 }
 
 # Plot the data

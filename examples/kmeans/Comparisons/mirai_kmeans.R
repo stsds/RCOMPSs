@@ -167,11 +167,10 @@ for(replicate in 1:10){
   # Launch mirai tasks to generate fragments
   fragment_mirai <- vector("list", num_fragments)
   for (f in 1:num_fragments) {
-    frag_seed <- seed + 10000L + f
 
     fragment_mirai[[f]] <- mirai(
                                  .expr = {
-                                   set.seed(frag_seed)
+                                   set.seed(seed + f)
                                    ncluster <- nrow(centres)
                                    dim <- ncol(centres)
                                    rand <- list(

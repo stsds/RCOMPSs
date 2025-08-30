@@ -64,13 +64,11 @@ merge <- function(...){
   accum
 }
 
-converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
+converged <- function(old_centres, centres, epsilon) {
   if (is.null(old_centres)) return(FALSE)
   dist <- sum(rowSums((centres - old_centres)^2))
   if (dist < epsilon^2) {
     cat("Converged!\n"); TRUE
-  } else if (iteration >= max_iter) {
-    cat("Max iteration reached!\n"); TRUE
   } else {
     FALSE
   }
@@ -124,11 +122,10 @@ recompute_centres <- function(partials, old_centres, arity, workers = NULL) {
 
 # -------- KMeans (mclapply for map) --------
 
-kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50,
-                        workers = NULL, iseed) {
+kmeans_frag <- function(centres, fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50,
+                        workers = NULL) {
   dimensions <- ncol(fragment_list[[1]])
-  set.seed(iseed)
-  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+
   if(DEBUG$kmeans_frag){
     cat("Initialized centres:\n")
     print(centres)
@@ -137,8 +134,9 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
   mc.cores <- cores_from_arg(workers)
   iteration <- 0L
   old_centres <- NULL
+  is_converged <- converged(old_centres, centres, epsilon)
 
-  while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
+  while (!is_converged && iteration < iterations) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
     iteration_time <- proc.time()[3]
     old_centres <- centres
@@ -159,10 +157,11 @@ kmeans_frag <- function(fragment_list, num_centres = 10, iterations = 20, epsilo
       cat("centres:\n")
       print(centres)
     }
+    is_converged <- converged(old_centres, centres, epsilon)
     iteration_time <- proc.time()[3] - iteration_time
     cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
-  return(centres)
+  return(list(centres = centres, num_iter = iteration, converged = is_converged))
 }
 
 # -------- Arg parsing and main --------
@@ -176,6 +175,7 @@ parse_arguments <- function(Minimize) {
   fragments <- 10L
   mode <- "uniform"
   iterations <- 20L
+  tot_rep <- 1
   epsilon <- 1e-9
   arity <- 5L
   workers <- NA_integer_
@@ -192,6 +192,7 @@ parse_arguments <- function(Minimize) {
       else if (key %in% c("-f","--fragments")) fragments <- as.integer(args[i+1])
       else if (key %in% c("-m","--mode")) mode <- args[i+1]
       else if (key %in% c("-i","--iterations")) iterations <- as.integer(args[i+1])
+      else if (key == "--replicates") tot_rep <- as.integer(args[i+1])
       else if (key %in% c("-e","--epsilon")) epsilon <- as.double(args[i+1])
       else if (key %in% c("-a","--arity")) arity <- as.integer(args[i+1])
       else if (key == "--workers") workers <- as.integer(args[i+1])
@@ -209,6 +210,7 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments <f>\n")
     cat("  -m, --mode <uniform|normal>\n")
     cat("  -i, --iterations <it>\n")
+    cat("      --replicates <tot_rep>       Total number of replicates\n")
     cat("  -e, --epsilon <eps>\n")
     cat("  -a, --arity <arity>\n")
     cat("      --workers <N>   number of mclapply cores\n")
@@ -228,6 +230,7 @@ parse_arguments <- function(Minimize) {
     num_fragments = fragments,
     mode = mode,
     iterations = iterations,
+    tot_rep = tot_rep,
     epsilon = epsilon,
     arity = arity,
     workers = workers,
@@ -244,6 +247,7 @@ print_parameters <- function(p) {
   cat(sprintf("  Number of fragments: %d\n", p$num_fragments))
   cat(sprintf("  Mode: %s\n", p$mode))
   cat(sprintf("  Iterations: %d\n", p$iterations))
+  cat(sprintf("  Replicates: %d\n", p$tot_rep))
   cat(sprintf("  Epsilon: %.3e\n", p$epsilon))
   cat(sprintf("  Arity: %d\n", p$arity))
   cat(sprintf("  Workers (mclapply cores): %s\n", ifelse(is.na(p$workers), "auto", as.character(p$workers))))
@@ -260,8 +264,14 @@ attach(params)
 
 set.seed(seed)
 
-for(replicate in 1:6){
+for(replicate in 1:tot_rep){
   start_time <- proc.time()
+  # Initialize centres
+  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  if(DEBUG$kmeans_frag){
+    cat("Initialized centres:\n")
+    print(centres)
+  }
 
   # fill_fragment task: PARALLEL mclapply
   points_per_fragment <- max(1, numpoints %/% num_fragments)
@@ -269,8 +279,11 @@ for(replicate in 1:6){
 
   frag_args <- replicate(num_fragments, list(true_centres, points_per_fragment, mode), simplify = FALSE)
   fragment_list <- mclapply(
-    X = frag_args,
-    FUN = function(a) fill_fragment(a),
+    X = seq_len(num_fragments),
+    FUN = function(a){
+      set.seed(seed + a)
+      fill_fragment(frag_args[[a]])
+    },
     mc.cores = cores_from_arg(workers)
   )
 
@@ -280,15 +293,16 @@ for(replicate in 1:6){
     fragment_mat <- do.call(rbind, fragment_list)
     centres <- stats::kmeans(fragment_mat, centers = num_centres, iter.max = iterations)$centers
   } else {
-    centres <- kmeans_frag(
+    kmeans_res <- kmeans_frag(
+      centres = centres,
       fragment_list = fragment_list,
       num_centres = num_centres,
       iterations = iterations,
       epsilon = epsilon,
       arity = arity,
-      workers = workers,
-      iseed = seed
+      workers = workers
     )
+    centres <- kmeans_res[["centres"]]
   }
 
   kmeans_time <- proc.time()
@@ -322,14 +336,17 @@ for(replicate in 1:6){
         num_centres, ",",
         num_fragments, ",",
         mode, ",",
-        iterations, ",",
+        kmeans_res[["num_iter"]], ",",
+        kmeans_res[["converged"]], ",",
         epsilon, ",",
         arity, ",",
+        "parallel", ",",
         paste(R.version$major, R.version$minor, sep="."), ",",
         Initialization_time, ",",
         Kmeans_time, ",",
         Total_time, ",",
-        replicate,
+        replicate, ",",
+        tot_rep,
         "\n", sep = ""
     )
   }

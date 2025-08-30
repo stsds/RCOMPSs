@@ -1,6 +1,5 @@
 suppressPackageStartupMessages({
   library(future)
-  library(proxy)  # for proxy::dist
   library(bigmemory)
 })
 
@@ -66,44 +65,16 @@ merge <- function(...){
   }
 }
 
-converged <- function(old_centres, centres, epsilon, iteration, max_iter) {
+converged <- function(old_centres, centres, epsilon) {
   if(is.null(old_centres)) return(FALSE)
   dist <- sum(rowSums((centres - old_centres)^2))
   if(dist < epsilon^2){
     cat("Converged!\n")
     End <- TRUE
-  }else if(iteration >= max_iter){
-    cat("Max iteration reached!\n")
-    End <- TRUE
   }else{
     End <- FALSE
   }
   return(End)
-}
-
-# --------------------------------------------
-# <<< OPTIMIZED ASYNCHRONOUS FUNCTIONS >>>
-# --------------------------------------------
-
-#' Asynchronous Tree Reduction for Merging Partials
-#'
-#' Takes a list of futures and returns a single future that represents the
-#' final merged result of a reduction tree. This function is non-blocking.
-#'
-#' @param futures_list A list of future objects for the partial sums.
-#' @param arity The branching factor of the reduction tree.
-#' @return A single future object that will resolve to the final merged matrix.
-merge_partials_async <- function(futures_list, arity) {
-  level <- futures_list
-  while (length(level) > 1) {
-    groups <- split(level, ceiling(seq_along(level) / arity))
-    level <- lapply(groups, function(group_of_futures) {
-      future({
-        do.call(merge, value(group_of_futures))
-      }, seed = TRUE)
-    })
-  }
-  return(level[[1]])
 }
 
 #' Simplified Recompute Centres Function
@@ -149,19 +120,21 @@ parse_arguments <- function(Minimize) {
   
   if(length(args) >= 1){
     for (i in 1:length(args)) {
-      if (args[i] %in% c("-s", "--seed")) seed <- as.integer(args[i + 1])
-      else if (args[i] %in% c("-n", "--numpoints")) numpoints <- as.integer(args[i + 1])
-      else if (args[i] %in% c("-d", "--dimensions")) dimensions <- as.integer(args[i + 1])
-      else if (args[i] %in% c("-c", "--num_centres")) num_centres <- as.integer(args[i + 1])
-      else if (args[i] %in% c("-f", "--fragments")) fragments <- as.integer(args[i + 1])
-      else if (args[i] %in% c("-m", "--mode")) mode <- args[i + 1]
-      else if (args[i] %in% c("-i", "--iterations")) iterations <- as.integer(args[i + 1])
-      else if (args[i] %in% c("-e", "--epsilon")) epsilon <- as.double(args[i + 1])
-      else if (args[i] %in% c("-a", "--arity")) arity <- as.integer(args[i + 1])
-      else if (args[i] %in% c("-p", "--plot")) needs_plot <- as.logical(args[i + 1])
-      else if (args[i] %in% c("-h", "--help")) is.asking_for_help <- TRUE
-      else if (args[i] == "--plan") plan_name <- args[i + 1]
-      else if (args[i] == "--workers") workers <- as.integer(args[i + 1])
+      key <- args[i]
+      if (key %in% c("-s", "--seed")) seed <- as.integer(args[i + 1])
+      else if (key %in% c("-n", "--numpoints")) numpoints <- as.integer(args[i + 1])
+      else if (key %in% c("-d", "--dimensions")) dimensions <- as.integer(args[i + 1])
+      else if (key %in% c("-c", "--num_centres")) num_centres <- as.integer(args[i + 1])
+      else if (key %in% c("-f", "--fragments")) fragments <- as.integer(args[i + 1])
+      else if (key %in% c("-m", "--mode")) mode <- args[i + 1]
+      else if (key %in% c("-i", "--iterations")) iterations <- as.integer(args[i + 1])
+      else if (key == "--replicates") tot_rep <- as.integer(args[i + 1])
+      else if (key %in% c("-e", "--epsilon")) epsilon <- as.double(args[i + 1])
+      else if (key %in% c("-a", "--arity")) arity <- as.integer(args[i + 1])
+      else if (key %in% c("-p", "--plot")) needs_plot <- as.logical(args[i + 1])
+      else if (key %in% c("-h", "--help")) is.asking_for_help <- TRUE
+      else if (key == "--plan") plan_name <- args[i + 1]
+      else if (key == "--workers") workers <- as.integer(args[i + 1])
     }
   }
   
@@ -175,6 +148,7 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments <fragments>      Number of fragments\n")
     cat("  -m, --mode <mode>                Mode for generating points\n")
     cat("  -i, --iterations <iterations>    Maximum number of iterations\n")
+    cat("      --replicates <tot_rep>       Total number of replicates\n")
     cat("  -e, --epsilon <epsilon>          Epsilon (convergence distance)\n")
     cat("  -a, --arity <arity>              Reduction arity (batch size in tree reduction)\n")
     cat("  -p, --plot <needs_plot>          Boolean: Plot? (not used here)\n")
@@ -187,9 +161,20 @@ parse_arguments <- function(Minimize) {
   
   if(numpoints %% fragments) stop("Number of fragments must be a factor of number of points!\n")
   
-  list(seed=seed, numpoints=numpoints, dimensions=dimensions, num_centres=num_centres,
-       num_fragments=fragments, mode=mode, iterations=iterations, epsilon=epsilon,
-       arity=arity, needs_plot=needs_plot, plan_name=plan_name, workers=workers)
+  list(seed=seed, 
+  numpoints=numpoints, 
+  dimensions=dimensions, 
+  num_centres=num_centres,
+       num_fragments=fragments, 
+       mode=mode, 
+       iterations=iterations, 
+       tot_rep=tot_rep,
+       epsilon=epsilon,
+       arity=arity, 
+       needs_plot=needs_plot, 
+       plan_name=plan_name, 
+       workers=workers
+       )
 }
 
 print_parameters <- function(params) {
@@ -201,6 +186,7 @@ print_parameters <- function(params) {
   cat(sprintf("  Number of fragments: %d\n", params$num_fragments))
   cat(sprintf("  Mode: %s\n", params$mode))
   cat(sprintf("  Iterations: %d\n", params$iterations))
+  cat(sprintf("  Replicates: %d\n", params$tot_rep))
   cat(sprintf("  Epsilon: %.e\n", params$epsilon))
   cat(sprintf("  Arity: %d\n", params$arity))
   cat("  needs_plot:", params$needs_plot, "\n")
@@ -232,12 +218,31 @@ if (!Minimize) cat("Done.\n")
 
 # --- Main K-means Execution ---
 set.seed(seed)
-for(replicate in 1:10){
+for(replicate in 1:tot_rep){
   start_time <- proc.time()
+  # Initialize centres
+  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  if(DEBUG$kmeans_frag){
+    cat("Initialized centres:\n")
+    print(centres)
+  }
   
   # --- Pre-allocate the Shared Memory Matrix ---
   if(!Minimize) cat("Creating shared big.matrix for data generation...\n")
-  all_points <- big.matrix(nrow = numpoints, ncol = dimensions, type = "double")
+  #bm_base <- tempfile(paste0("bm", replicate, "_"))
+  #all_points <- bigmemory::filebacked.big.matrix(
+  #  nrow = numpoints, ncol = dimensions, type = "double",
+  #  backingfile = paste0(bm_base, ".bin"),
+  #  descriptorfile = paste0(bm_base, ".desc")
+  #)
+  bm_dir <- tempdir()  # or "path/to/writable/dir"
+  bm_base <- sprintf("bm_%s_%d", format(Sys.time(), "%Y%m%d%H%M%S"), replicate)
+  all_points <- bigmemory::filebacked.big.matrix(
+    nrow = numpoints, ncol = dimensions, type = "double",
+    backingpath = bm_dir,
+    backingfile = paste0(bm_base, ".bin"),
+    descriptorfile = paste0(bm_base, ".desc")
+  )
   all_points_desc <- describe(all_points) # A descriptor to find the matrix
   
   # --- Generate Data Fragments in Parallel ---
@@ -248,6 +253,7 @@ for(replicate in 1:10){
   fragment_futures <- vector("list", num_fragments)
   for (f in 1:num_fragments) {
     fragment_futures[[f]] <- future({
+      set.seed(seed + f)
       # Each worker attaches to the shared matrix
       points_mat <- attach.big.matrix(all_points_desc)
       # Generate the data fragment
@@ -257,10 +263,9 @@ for(replicate in 1:10){
       # Write the result directly to shared memory (side effect)
       points_mat[start_row:end_row, ] <- fragment_data
       return(NULL) # Return nothing to avoid data transfer
-    }, seed = TRUE)
+    }, seed = NULL)
   }
   # --- Initialize Centres and Loop Variables ---
-  centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
   old_centres <- NULL
   iteration <- 0
   
@@ -273,7 +278,8 @@ for(replicate in 1:10){
   # ------------------------------------------------------------------
   # <<< OPTIMIZED K-MEANS ITERATION LOOP >>>
   # ------------------------------------------------------------------
-  while (!converged(old_centres, centres, epsilon, iteration, iterations)) {
+  is_converged <- converged(old_centres, centres, epsilon)
+  while (!is_converged && iteration < iterations) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
     iteration_time <- proc.time()[3]
     old_centres <- centres
@@ -288,7 +294,7 @@ for(replicate in 1:10){
         end_row <- f * points_per_fragment
         fragment_data <- points_mat[start_row:end_row, ]
         partial_sum(fragment = fragment_data, old_centres)
-        }, seed = TRUE)
+        }, seed = NULL)
     }
     
     partials_list <- value(partials_futures)
@@ -297,6 +303,7 @@ for(replicate in 1:10){
     centres <- recompute_centres(partials_list, old_centres)
     
     iteration <- iteration + 1
+    is_converged <- converged(old_centres, centres, epsilon)
     iteration_time <- proc.time()[3] - iteration_time
     cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
@@ -334,7 +341,8 @@ for(replicate in 1:10){
         num_centres, ",",
         num_fragments, ",",
         mode, ",",
-        iterations, ",",
+        iteration, ",",
+        is_converged, ",",
         epsilon, ",",
         arity, ",",
         type, ",",
@@ -342,8 +350,19 @@ for(replicate in 1:10){
         Initialization_time, ",",
         Kmeans_time, ",",
         Total_time, ",",
-        replicate,
+        replicate, ",",
+        tot_rep,
         "\n", sep = ""
     )
   }
+
+  bigmemory::flush(all_points)
+rm(all_points, all_points_desc); gc()
+unlink(c(paste0(bm_base, ".bin"), paste0(bm_base, ".desc")), force = TRUE)
 }
+
+rm(list=ls())
+gc()
+future::plan(sequential)
+Sys.sleep(1)
+gc()
