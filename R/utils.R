@@ -27,7 +27,7 @@ check_key_in_hashmap <- function(key, env) {
 #' @param ... Metadata.
 #' @return The decorated function
 #' @export
-task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = FALSE, ...) {
+task <- function(f, filename, return_value = FALSE, return_type = "list", info_only = FALSE, DEBUG = FALSE, ...) {
   TIME1 <- proc.time()
 
   # Convert all the metadata into a list
@@ -376,9 +376,13 @@ task <- function(f, filename, return_value = FALSE, info_only = FALSE, DEBUG = F
       }
       # If there is a return value, return the future_object which should contain outputfile as the argument
       if (return_value) {
-        FO <- list(outputfile)
-        names(FO)[1] <- "outputfile"
-        class(FO) <- "future_object"
+        if(return_type == "element"){
+          FO <- outputfile
+        }else if(return_type == "list"){
+          FO <- list(outputfile)
+          names(FO)[1] <- "outputfile"
+          class(FO) <- "future_object"
+        }
         return(FO)
       }
     }
@@ -496,29 +500,29 @@ compss_wait_on <- function(future_obj) {
     return_value <- compss_unserialize(future_obj$outputfile)
     return(return_value)
   } else if (length(class(future_obj)) == 1 && class(future_obj) == "list") {
-    list_len <- length(future_obj)
-    # return_list <- list()
-    # for(i in 1:list_len){
-    #  if(class(future_obj[[i]]) == "future_object"){
-    #    Get_File(0L, future_obj[[i]]$outputfile)
-    #    return_list[[i]] <- compss_unserialize(future_obj[[i]]$outputfile)
-    #  }else{
-    #    return_list[[i]] <- future_obj[[i]]
-    #  }
-    # }
-    return_list <- lapply(
-      future_obj,
-      function(obj) {
+    return_list <- lapply(future_obj, function(obj) {
         if (class(obj) == "future_object") {
           Get_File(0L, obj$outputfile)
           return(compss_unserialize(obj$outputfile))
         } else {
           return(obj)
         }
-      }
-    )
+    })
     return(return_list)
-  } else {
+  } else if(class(future_obj) == "character") {
+    # try to sapply to all the length of future_obj. For each element, if the file exists, getfile and unserialize to return the value; if the file does not exist, return the original character
+    return_vector <- sapply(future_obj,
+      function(file) {
+        tryCatch({
+          Get_File(0L, file)
+          return(compss_unserialize(file))
+        }, error = function(e) {
+          warning("[compss_wait_on] File ", file, " does not exist. Returning the original character.\n")
+          return(file)
+        })
+    }, USE.NAMES = FALSE)
+    return(return_vector)
+  }else {
     warning("[compss_wait_on] class(future_obj):", class(future_obj), "\nNot doing anything!\n")
     return(future_obj)
   }
