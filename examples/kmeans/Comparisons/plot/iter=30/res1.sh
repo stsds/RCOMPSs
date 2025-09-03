@@ -1,7 +1,7 @@
 #!/bin/bash
 
 iterations=30
-replicate=1
+replicate=5
 seed=123
 
 # Specify which algorithms to execute

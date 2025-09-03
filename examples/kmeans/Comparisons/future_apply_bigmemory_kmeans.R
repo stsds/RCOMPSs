@@ -1,5 +1,6 @@
 suppressPackageStartupMessages({
   library(future)
+  library(future.apply)
   library(bigmemory)
 })
 
@@ -11,9 +12,9 @@ DEBUG <- list(
   kmeans_frag = FALSE
 )
 
-# ------------------------------------
-# Core Computation Utilities
-# ------------------------------------
+# ----------------------------
+# Core computation utilities
+# ----------------------------
 
 fill_fragment <- function(params_fill_fragment){
   centres <- params_fill_fragment[[1]]
@@ -36,7 +37,16 @@ fill_fragment <- function(params_fill_fragment){
 
 partial_sum <- function(fragment, centres) {
   ncl <- nrow(centres)
-  dimension <- ncol(fragment)
+  if(ncol(fragment) != ncol(centres)) {
+    stop("fragment and centres must have the same number of columns\nNow fragment has <", ncol(fragment), "> columns and centres has <", ncol(centres), "> columns\n", sep = "")
+  } else {
+    dimension <- ncol(fragment)
+  }
+  if(DEBUG$partial_sum) {
+    cat("Doing partial sum\n")
+    cat("nrow(centres) =", nrow(centres), "\n")
+    cat(paste0("dimension = ", dimension, "\n"))
+  }
   
   partials <- matrix(NA_real_, nrow = ncl, ncol = dimension + 1)
   close_centres <- apply(proxy::dist(fragment, centres, method = "euclidean"), 1, which.min)
@@ -58,14 +68,33 @@ partial_sum <- function(fragment, centres) {
 
 merge <- function(...){
   input <- list(...)
-  if(length(input) == 1){
+  input_len <- length(input)
+  if(DEBUG$merge) {
+    cat("Doing merge\n")
+    for(i in 1:input_len){
+      cat("Input", i, "\n")
+      print(input[[i]])
+    }
+  }
+  if(input_len == 1){
     return(input[[1]])
-  } else {
-    return(Reduce(`+`, input))
+  }else if(input_len >= 2){
+    accum <- input[[1]]
+    for(i in 2:input_len){
+      accum <- accum + input[[i]]
+    }
+    if(DEBUG$merge) {
+      cat("accum\n")
+      print(accum)
+    }
+    return(accum)
+  }else{
+    stop("Wrong input in `merge`!\n")
   }
 }
 
 converged <- function(old_centres, centres, epsilon) {
+  if(DEBUG$converged) cat("Doing converged\n")
   if(is.null(old_centres)) return(FALSE)
   dist <- sum(rowSums((centres - old_centres)^2))
   if(dist < epsilon^2){
@@ -77,62 +106,131 @@ converged <- function(old_centres, centres, epsilon) {
   return(End)
 }
 
-#' Simplified Recompute Centres Function
-#'
-#' Takes the *resolved* merged partials matrix and computes the new centres.
-#' This is the final, serial step after the asynchronous reduction is complete.
-#'
-#' @param merged_partials The matrix result from the merge reduction.
-#' @param old_centres The matrix of the previous iteration's centres.
-#' @return A matrix containing the new centres.
-recompute_centres <- function(merged_partials, old_centres) {
+# Parallel tree-reduction using future
+recompute_centres <- function(partials, old_centres, arity, future_reduction_plan = NULL) {
+  if(DEBUG$recompute_centres){
+    cat("\n\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
+    cat("Doing recompute centres\n")
+  }
   dimension <- ncol(old_centres)
   centres <- old_centres
   
-  cl0 <- which(merged_partials[, dimension + 1] == 0) # Find empty clusters
-  if (length(cl0) > 0) {
-    centres[cl0, ] <- matrix(runif(length(cl0) * dimension), nrow = length(cl0), ncol = dimension)
-    non_empty_clusters <- setdiff(seq_len(nrow(merged_partials)), cl0)
-    if (length(non_empty_clusters) > 0) {
-      centres[non_empty_clusters, ] <- merged_partials[non_empty_clusters, 1:dimension, drop = FALSE] / merged_partials[non_empty_clusters, dimension + 1]
+  # Optional: temporarily use a sub-plan for reduction if provided
+  if (!is.null(future_reduction_plan)) {
+    oplan <- future::plan()
+    on.exit(future::plan(oplan), add = TRUE)
+    future::plan(future_reduction_plan)
+  }
+  
+  # Reduce partials in batches of size <= arity using futures
+  while (length(partials) > 1) {
+    if (arity <= 1) arity <- 2
+    idx_groups <- split(seq_along(partials), ceiling(seq_along(partials) / arity))
+    # Launch merges in parallel for each group
+    merged <- future_lapply(idx_groups, function(ids) {
+      do.call(merge, partials[ids])
+    }, future.seed = TRUE)
+    partials <- merged
+  }
+  
+  partials <- partials[[1]]
+  # For empty clusters, assign random new mean; else average
+  cl0 <- which(partials[, dimension + 1] == 0)
+  if(length(cl0) > 0){
+    centres[cl0,] <- matrix(runif(length(cl0) * dimension), nrow = length(cl0), ncol = dimension)
+    if (length(setdiff(seq_len(nrow(partials)), cl0)) > 0) {
+      centres[-cl0,] <- partials[-cl0, 1:dimension, drop = FALSE] / partials[-cl0, dimension + 1]
     }
-  } else {
-    centres <- merged_partials[, 1:dimension, drop = FALSE] / merged_partials[, dimension + 1]
+  }else{
+    centres <- partials[,1:dimension, drop = FALSE] / partials[,dimension + 1]
   }
   return(centres)
 }
 
+# ----------------------------
+# KMeans driver (future)
+# ----------------------------
+
+kmeans_frag <- function(centres, fragment_list, num_centres = 10, iterations = 20, epsilon = 1e-9, arity = 50,
+                        reduction_plan = NULL) {
+  # Determine dimensions from first fragment
+  dimensions <- ncol(fragment_list[[1]])
+  
+  old_centres <- NULL
+  iteration <- 0
+  num_frag <- length(fragment_list)
+  is_converged <- converged(old_centres, centres, epsilon)
+  
+  while (!is_converged && iteration < iterations) {
+    cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
+    iteration_time <- proc.time()[3]
+    old_centres <- centres
+    
+    # Map step: partial sums per fragment, in parallel
+    partials <- future_lapply(seq_len(num_frag), function(i) {
+      partial_sum(fragment = fragment_list[[i]], centres = old_centres)
+    }, future.seed = TRUE)
+    
+    # Reduce step (tree reduction), possibly with different plan
+    centres <- recompute_centres(partials, old_centres, arity, future_reduction_plan = reduction_plan)
+    
+    iteration <- iteration + 1
+    if(DEBUG$kmeans_frag){
+      cat("centres:\n")
+      print(centres)
+    }
+    is_converged <- converged(old_centres, centres, epsilon)
+    iteration_time <- proc.time()[3] - iteration_time
+    cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
+  }
+  return(list(centres = centres, num_iter = iteration, converged = is_converged))
+}
 
 # ----------------------------
-# Argument parsing & Setup
-# (No changes needed here)
+# Argument parsing
 # ----------------------------
 
 parse_arguments <- function(Minimize) {
-  if(!Minimize) cat("Starting parse_arguments\n")
+  if(!Minimize){
+    cat("Starting parse_arguments\n")
+  }
+  
   args <- commandArgs(trailingOnly = TRUE)
   
-  # Default values
-  seed <- 1; numpoints <- 100; dimensions <- 2; num_centres <- 5
-  fragments <- 10; mode <- "uniform"; iterations <- 20
-  epsilon <- 1e-9; arity <- 5; plan_name <- "multisession"
-  workers <- NA_integer_; is.asking_for_help <- FALSE; needs_plot <- TRUE
+  seed <- 1
+  numpoints <- 100
+  dimensions <- 2
+  num_centres <- 5
+  fragments <- 10
+  mode <- "uniform"
+  iterations <- 20
+  tot_rep <- 1
+  epsilon <- 1e-9
+  arity <- 5
+  
+  # Parallel plan for future
+  plan_name <- "multisession"   # default that works on all OSes
+  workers <- NA_integer_        # NA -> future decides
+  use_R_default <- FALSE
+  is.asking_for_help <- FALSE
+  needs_plot <- TRUE
   
   if(length(args) >= 1){
     for (i in 1:length(args)) {
       key <- args[i]
-      if (key %in% c("-s", "--seed")) seed <- as.integer(args[i + 1])
-      else if (key %in% c("-n", "--numpoints")) numpoints <- as.integer(args[i + 1])
-      else if (key %in% c("-d", "--dimensions")) dimensions <- as.integer(args[i + 1])
-      else if (key %in% c("-c", "--num_centres")) num_centres <- as.integer(args[i + 1])
-      else if (key %in% c("-f", "--fragments")) fragments <- as.integer(args[i + 1])
-      else if (key %in% c("-m", "--mode")) mode <- args[i + 1]
-      else if (key %in% c("-i", "--iterations")) iterations <- as.integer(args[i + 1])
+      if (key == "-s" || key == "--seed") seed <- as.integer(args[i + 1])
+      else if (key == "-n" || key == "--numpoints") numpoints <- as.integer(args[i + 1])
+      else if (key == "-d" || key == "--dimensions") dimensions <- as.integer(args[i + 1])
+      else if (key == "-c" || key == "--num_centres") num_centres <- as.integer(args[i + 1])
+      else if (key == "-f" || key == "--fragments") fragments <- as.integer(args[i + 1])
+      else if (key == "-m" || key == "--mode") mode <- args[i + 1]
+      else if (key == "-i" || key == "--iterations") iterations <- as.integer(args[i + 1])
       else if (key == "--replicates") tot_rep <- as.integer(args[i + 1])
-      else if (key %in% c("-e", "--epsilon")) epsilon <- as.double(args[i + 1])
-      else if (key %in% c("-a", "--arity")) arity <- as.integer(args[i + 1])
-      else if (key %in% c("-p", "--plot")) needs_plot <- as.logical(args[i + 1])
-      else if (key %in% c("-h", "--help")) is.asking_for_help <- TRUE
+      else if (key == "-e" || key == "--epsilon") epsilon <- as.double(args[i + 1])
+      else if (key == "-a" || key == "--arity") arity <- as.integer(args[i + 1])
+      else if (key == "-p" || key == "--plot") needs_plot <- as.logical(args[i + 1])
+      else if (key == "-R" || key == "--R-default") use_R_default <- TRUE
+      else if (key == "-h" || key == "--help") is.asking_for_help <- TRUE
       else if (key == "--plan") plan_name <- args[i + 1]
       else if (key == "--workers") workers <- as.integer(args[i + 1])
     }
@@ -152,6 +250,7 @@ parse_arguments <- function(Minimize) {
     cat("  -e, --epsilon <epsilon>          Epsilon (convergence distance)\n")
     cat("  -a, --arity <arity>              Reduction arity (batch size in tree reduction)\n")
     cat("  -p, --plot <needs_plot>          Boolean: Plot? (not used here)\n")
+    cat("  -R, --R-default                  Use base kmeans on full matrix\n")
     cat("      --plan <name>                future plan: sequential|multisession|multicore|cluster\n")
     cat("      --workers <N>                Number of workers for the plan\n")
     cat("  -M, --Minimize                   Minimize printout\n")
@@ -159,22 +258,26 @@ parse_arguments <- function(Minimize) {
     q(status = 0)
   }
   
-  if(numpoints %% fragments) stop("Number of fragments must be a factor of number of points!\n")
+  if(numpoints %% fragments){
+    stop("Number of fragment is not a factor of number of points!\n")
+  }
   
-  list(seed=seed, 
-  numpoints=numpoints, 
-  dimensions=dimensions, 
-  num_centres=num_centres,
-       num_fragments=fragments, 
-       mode=mode, 
-       iterations=iterations, 
-       tot_rep=tot_rep,
-       epsilon=epsilon,
-       arity=arity, 
-       needs_plot=needs_plot, 
-       plan_name=plan_name, 
-       workers=workers
-       )
+  list(
+    seed = seed,
+    numpoints = numpoints,
+    dimensions = dimensions,
+    num_centres = num_centres,
+    num_fragments = fragments,
+    mode = mode,
+    iterations = iterations,
+    tot_rep = tot_rep,
+    epsilon = epsilon,
+    arity = arity,
+    needs_plot = needs_plot,
+    use_R_default = use_R_default,
+    plan_name = plan_name,
+    workers = workers
+  )
 }
 
 print_parameters <- function(params) {
@@ -190,6 +293,7 @@ print_parameters <- function(params) {
   cat(sprintf("  Epsilon: %.e\n", params$epsilon))
   cat(sprintf("  Arity: %d\n", params$arity))
   cat("  needs_plot:", params$needs_plot, "\n")
+  cat("  use_R_default:", params$use_R_default, "\n")
   cat(sprintf("  future plan: %s\n", params$plan_name))
   cat(sprintf("  workers: %s\n", ifelse(is.na(params$workers), "auto", as.character(params$workers))))
 }
@@ -198,26 +302,54 @@ print_parameters <- function(params) {
 # Main script
 # ----------------------------
 
-# --- Argument Parsing and Setup ---
-args <- commandArgs(trailingOnly = TRUE)
-Minimize <- any(args %in% c("-M", "--Minimize"))
-params <- parse_arguments(Minimize)
-if(!Minimize) print_parameters(params)
-attach(params)
+flush.console()
+Sys.sleep(1)
 
-# --- Configure Future Plan ---
+args <- commandArgs(trailingOnly = TRUE)
+Minimize <- FALSE
+if(length(args) >= 1){
+  for (i in 1:length(args)) {
+    if (args[i] == "-M" || args[i] == "--Minimize") {
+      Minimize <- TRUE
+    }
+  }
+}
+
+if(!Minimize){
+  cat("Getting parameters ... ")
+}
+params <- parse_arguments(Minimize)
+if(!Minimize){
+  print_parameters(params)
+}
+attach(params)
+if(!Minimize){
+  cat("Done.\n")
+}
+
+# Configure future plan
+# Map step uses the global plan; you may choose a different plan for reduction if desired.
 if (!Minimize) cat("Configuring future plan ... ")
 options(future.globals.maxSize = Inf)
 plan_obj <- switch(plan_name,
                    "sequential"   = plan(sequential),
                    "multisession" = if (is.na(workers)) plan(multisession) else plan(multisession, workers = workers),
                    "multicore"    = if (is.na(workers)) plan(multicore) else plan(multicore, workers = workers),
+                   "cluster"      = {
+                     if (is.na(workers)) workers <- parallel::detectCores(logical = TRUE)
+                     cl <- parallel::makeCluster(workers)
+                     on.exit(try(parallel::stopCluster(cl), silent = TRUE), add = TRUE)
+                     plan(cluster, workers = cl)
+                   },
                    { warning("Unknown plan name; defaulting to multisession."); plan(multisession) }
 )
 if (!Minimize) cat("Done.\n")
 
-# --- Main K-means Execution ---
+# You can optionally set a different plan for reduction; here we keep NULL to reuse the global plan:
+reduction_plan <- NULL
+
 set.seed(seed)
+
 for(replicate in 1:tot_rep){
   start_time <- proc.time()
   # Initialize centres
@@ -226,16 +358,10 @@ for(replicate in 1:tot_rep){
     cat("Initialized centres:\n")
     print(centres)
   }
-  
+
   # --- Pre-allocate the Shared Memory Matrix ---
   if(!Minimize) cat("Creating shared big.matrix for data generation...\n")
-  #bm_base <- tempfile(paste0("bm", replicate, "_"))
-  #all_points <- bigmemory::filebacked.big.matrix(
-  #  nrow = numpoints, ncol = dimensions, type = "double",
-  #  backingfile = paste0(bm_base, ".bin"),
-  #  descriptorfile = paste0(bm_base, ".desc")
-  #)
-  bm_dir <- tempdir()  # or "path/to/writable/dir"
+  bm_dir <- tempdir()
   bm_base <- sprintf("bm_%s_%d", format(Sys.time(), "%Y%m%d%H%M%S"), replicate)
   all_points <- bigmemory::filebacked.big.matrix(
     nrow = numpoints, ncol = dimensions, type = "double",
@@ -245,16 +371,23 @@ for(replicate in 1:tot_rep){
   )
   all_points_desc <- describe(all_points) # A descriptor to find the matrix
   
-  # --- Generate Data Fragments in Parallel ---
-  if(!Minimize) cat("Launching background data generation...\n")
-  points_per_fragment <- numpoints %/% num_fragments
-  true_centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
+  # Generate the data
+  if(!Minimize){
+    cat("Generating data replicate", replicate, "... ")
+  }
+  points_per_fragment <- max(1, numpoints %/% num_fragments)
+  true_centres <- matrix(runif(num_centres * dimensions),
+                         nrow = num_centres, ncol = dimensions)
   
-  fragment_futures <- vector("list", num_fragments)
-  for (f in 1:num_fragments) {
-    fragment_futures[[f]] <- future({
-      set.seed(seed + f)
-      # Each worker attaches to the shared matrix
+  # Generate fragments (this part could also be parallelized; we keep it sequential to preserve determinism)
+  fragment_list <- vector("list", num_fragments)
+  #for (f in 1:num_fragments) {
+  #  params_fill_fragment <- list(true_centres, points_per_fragment, mode)
+  #  fragment_list[[f]] <- fill_fragment(params_fill_fragment)
+  #}
+  fragment_list <- future_lapply(seq_len(num_fragments), function(f) {
+    set.seed(seed + f)
+    # Each worker attaches to the shared matrix
       points_mat <- attach.big.matrix(all_points_desc)
       # Generate the data fragment
       fragment_data <- fill_fragment(list(true_centres, points_per_fragment, mode))
@@ -263,55 +396,56 @@ for(replicate in 1:tot_rep){
       # Write the result directly to shared memory (side effect)
       points_mat[start_row:end_row, ] <- fragment_data
       return(NULL) # Return nothing to avoid data transfer
-    }, seed = NULL)
-  }
-  # --- Initialize Centres and Loop Variables ---
-  old_centres <- NULL
-  iteration <- 0
-  
-  # Resolve all fragments ONCE before the loop starts.
-  #fragment_list <- value(fragment_futures)
+    #params_fill_fragment <- list(true_centres, points_per_fragment, mode)
+    #fill_fragment(params_fill_fragment)
+  }, future.seed = NULL)
 
   initialization_time <- proc.time()
-  if(!Minimize) cat("Done.\n")
+  if(!Minimize){
+    cat("Done.\n")
+  }
   
-  # ------------------------------------------------------------------
-  # <<< OPTIMIZED K-MEANS ITERATION LOOP >>>
-  # ------------------------------------------------------------------
+  # Run kmeans
+  if(use_R_default){
+    fragment_mat <- do.call(rbind, fragment_list)
+    centres <- kmeans(fragment_mat, num_centres, iter.max = iterations)$centers
+  }else{
+    old_centres <- NULL
+  iteration <- 0
+  num_frag <- length(fragment_list)
   is_converged <- converged(old_centres, centres, epsilon)
+  
   while (!is_converged && iteration < iterations) {
     cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
     iteration_time <- proc.time()[3]
     old_centres <- centres
     
-    # 1. MAP: Create futures for all partial sums.
-    #    This is non-blocking. `partials_futures` is a list of promises.
-    partials_futures <- vector("list", num_fragments)
-    for (f in 1:num_fragments) {
-      value(fragment_futures[[f]])
-      partials_futures[[f]] <- future({
-        points_mat <- attach.big.matrix(all_points_desc)
+    # Map step: partial sums per fragment, in parallel
+    partials <- future_lapply(seq_len(num_frag), function(f) {
+      #partial_sum(fragment = fragment_list[[f]], centres = old_centres)
+      points_mat <- attach.big.matrix(all_points_desc)
         start_row <- ((f - 1) * points_per_fragment) + 1
         end_row <- f * points_per_fragment
         fragment_data <- points_mat[start_row:end_row, ]
         partial_sum(fragment = fragment_data, old_centres)
-        }, seed = NULL)
-    }
+    }, future.seed = TRUE)
     
-    partials_list <- value(partials_futures)
-
-    partials_list <- do.call(merge, partials_list)
-    centres <- recompute_centres(partials_list, old_centres)
+    # Reduce step (tree reduction), possibly with different plan
+    centres <- recompute_centres(partials, old_centres, arity, future_reduction_plan = reduction_plan)
     
     iteration <- iteration + 1
+    if(DEBUG$kmeans_frag){
+      cat("centres:\n")
+      print(centres)
+    }
     is_converged <- converged(old_centres, centres, epsilon)
     iteration_time <- proc.time()[3] - iteration_time
     cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
+  }
   
   kmeans_time <- proc.time()
   
-  # --- Results and Timing ---
   Initialization_time <- initialization_time[3] - start_time[3]
   Kmeans_time <- kmeans_time[3] - initialization_time[3]
   Total_time <- proc.time()[3] - start_time[3]
@@ -331,11 +465,11 @@ for(replicate in 1:tot_rep){
     cat("TRUE CENTRES\n")
     print(true_centres[ind_true_centres, , drop = FALSE])
     cat("-----------------------------------------\n")
-  } 
+  }
   
   type <- paste0("future_", plan_name)
   if(Minimize){
-    cat("KMEANS_FUTUREBIGMEMORY,",
+    cat("KMEANS_FUTUREAPPLY_BIGMEMORY,",
         seed, ",",
         numpoints, ",",
         dimensions, ",",
@@ -356,12 +490,10 @@ for(replicate in 1:tot_rep){
         "\n", sep = ""
     )
   }
-
   bigmemory::flush(all_points)
 rm(all_points, all_points_desc); gc()
 unlink(c(paste0(bm_base, ".bin"), paste0(bm_base, ".desc")), force = TRUE)
 }
-
 rm(list=ls())
 gc()
 future::plan(sequential)

@@ -13,26 +13,14 @@ Sys.sleep(1)
 
 args <- commandArgs(trailingOnly = TRUE)
 
-use_merge2 <- FALSE
-
-Minimize <- FALSE
-# Parse arguments
-if(length(args) >= 1){
-  for (i in 1:length(args)) {
-    if (args[i] == "-M") {
-      Minimize <- TRUE
-    } else if (args[i] == "--Minimize") {
-      Minimize <- TRUE
-    }
-  }
-}
+Minimize <- any(args %in% c("-M","--Minimize"))
 
 # Source necessary functions
 if(!Minimize){
   cat("Sourcing necessary functions ... ")
 }
-source("tasks_kmeans.R")
-source("functions_kmeans.R")
+source("RCOMPSs_bigmemory_tasks_kmeans.R")
+source("RCOMPSs_bigmemory_functions_kmeans.R")
 if(!Minimize){
   cat("Done.\n")
 }
@@ -67,10 +55,10 @@ if(use_RCOMPSs){
   if(!Minimize){
     cat("Defining the tasks ... ")
   }
-  task.fill_fragment <- task(fill_fragment, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-  task.partial_sum <- task(partial_sum, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-  task.merge <- task(merge, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
-  task.merge2 <- task(merge2, "tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.fill_fragment <- task(fill_fragment, "RCOMPSs_bigmemory_tasks_kmeans.R", info_only = FALSE, return_value = TRUE, return_type = "element", DEBUG = FALSE)
+  task.partial_sum <- task(partial_sum, "RCOMPSs_bigmemory_tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.merge <- task(merge, "RCOMPSs_bigmemory_tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
+  task.merge2 <- task(merge2, "RCOMPSs_bigmemory_tasks_kmeans.R", info_only = FALSE, return_value = TRUE, DEBUG = FALSE)
   if(!Minimize){
     cat("Done.\n")
   }
@@ -99,6 +87,18 @@ for(replicate in 1:tot_rep){
         print(centres)
       }
 
+      # --- Pre-allocate the Shared Memory Matrix ---
+  if(!Minimize) cat("Creating shared big.matrix for data generation...\n")
+  bm_dir <- tempdir()
+  bm_base <- sprintf("bm_%s_%d", format(Sys.time(), "%Y%m%d%H%M%S"), replicate)
+  all_points <- bigmemory::filebacked.big.matrix(
+    nrow = numpoints, ncol = dimensions, type = "double",
+    backingpath = bm_dir,
+    backingfile = paste0(bm_base, ".bin"),
+    descriptorfile = paste0(bm_base, ".desc")
+  )
+  all_points_desc <- bigmemory::describe(all_points) # A descriptor to find the matrix
+
   # Generate the data
   if(!Minimize){
     cat("Generating data replicate", replicate, "... ")
@@ -109,19 +109,12 @@ for(replicate in 1:tot_rep){
   true_centres <- matrix(runif(num_centres * dimensions), 
                          nrow = num_centres, ncol = dimensions)
 
-  fragment_list <- list()
-  if(use_RCOMPSs){
-    for (f in 1:num_fragments) {
-      params_fill_fragment <- list(true_centres, points_per_fragment, mode, seed + f)
-      fragment_list[[f]] <- task.fill_fragment(params_fill_fragment)
-    }
-    #fragment_list <- compss_wait_on(fragment_list)
-  }else{
-    for (f in 1:num_fragments) {
-      params_fill_fragment <- list(true_centres, points_per_fragment, mode, seed + f)
-      fragment_list[[f]] <- fill_fragment(params_fill_fragment)
-    }
-  }
+  fragment_indicator <- vector("logical", num_fragments)
+  fragment_indicator <- sapply(1:num_fragments, function(f) {
+    params_fill_fragment <- list(true_centres, points_per_fragment, mode, seed + f, all_points_desc, (f - 1) * points_per_fragment + 1, f * points_per_fragment)
+    task.fill_fragment(params_fill_fragment)
+  })
+
   initialization_time <- proc.time()
   if(!Minimize){
     cat("Done.\n")
@@ -129,20 +122,33 @@ for(replicate in 1:tot_rep){
   #print(fragment_mat)
 
   # Run kmeans
-  if(use_R_default){
-    fragment_mat <- do.call(rbind, fragment_list)
-    centres <- kmeans(fragment_mat[, 1:dimensions], num_centres, iterations)
-  }else{
-    kmeans_res <- kmeans_frag(
-                            centres = centres,
-                           fragment_list = fragment_list,
-                           num_centres = num_centres,
-                           iterations = iterations,
-                           epsilon = epsilon,
-                           arity = arity
-    )
-    rm(centres)
-    centres <- kmeans_res[["centres"]]
+  # Note: this implementation treats the centres as files, never as PSCOs.
+  old_centres <- NULL
+  iteration <- 0
+
+  is_converged <- converged(old_centres, centres, epsilon)
+  while (!is_converged && iteration < iterations) {
+    cat(paste0("Doing iteration #", iteration + 1, "/", iterations, ". "))
+    iteration_time <- proc.time()[3]
+    old_centres <- centres
+    
+    partials <- lapply(1:num_fragments, function(i) {
+      if(compss_wait_on(fragment_indicator[i])){
+          params_partial_sum <- list(bigmatrix_desc = all_points_desc, start_row = (i - 1) * points_per_fragment + 1, end_row = i * points_per_fragment, centres = old_centres)
+          task.partial_sum(params_partial_sum)
+      }
+    })
+
+    centres <- recompute_centres(partials, old_centres, arity)
+
+    iteration <- iteration + 1
+    if(DEBUG$kmeans_frag){
+      cat("centres:\n")
+      print(centres)
+    }
+    is_converged <- converged(old_centres, centres, epsilon)
+    iteration_time <- proc.time()[3] - iteration_time
+    cat(paste0("Iteration time: ", round(iteration_time, 3), "\n"))
   }
 
   kmeans_time <- proc.time()
@@ -177,15 +183,15 @@ for(replicate in 1:tot_rep){
     type <- "R_sequential"
   }
   if(Minimize){
-    cat(paste0("KMEANS_", type, ","),
+    cat("KMEANS_RCOMPSs_BIGMEMORY,",
         seed, ",",
         numpoints, ",",
         dimensions, ",",
         num_centres, ",",
         num_fragments, ",",
         mode, ",",
-        kmeans_res[["num_iter"]], ",",
-        kmeans_res[["converged"]], ",",
+        iteration, ",",
+        is_converged, ",",
         epsilon, ",",
         arity, ",",
         type, ",",
@@ -198,8 +204,9 @@ for(replicate in 1:tot_rep){
         "\n", sep = ""
     )
   }
-  rm(centres, true_centres, fragment_list, kmeans_res)
-  gc()
+  bigmemory::flush(all_points)
+  rm(all_points, all_points_desc); gc()
+  unlink(c(paste0(bm_base, ".bin"), paste0(bm_base, ".desc")), force = TRUE)
 }
 
 if(use_RCOMPSs){
@@ -216,3 +223,5 @@ if(needs_plot){
   points(centres, col = "red", pch = 8)
   dev.off()
 }
+rm(list=ls())
+gc()

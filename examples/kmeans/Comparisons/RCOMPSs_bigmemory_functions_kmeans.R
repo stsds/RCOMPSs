@@ -75,6 +75,7 @@ recompute_centres <- function(partials, old_centres, arity) {
   # For empty clusters, we give a random new mean
   cl0 <- which(partials[,dimension + 1] == 0)
   if(length(cl0) > 0){
+    print("Empty clusters found, reinitializing centres.")
     centres[cl0,] <- matrix(runif(length(cl0) * dimension), nrow = length(cl0), ncol = dimension)
     centres[-cl0,] <- partials[-cl0, 1:dimension] / partials[-cl0, dimension + 1]
   }else{
