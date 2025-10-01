@@ -11,7 +11,7 @@
 library(RCOMPSs)
 source("add.R")
 compss_start()
-add.dec <- task(add, "add.R", info_only = FALSE, return_value = TRUE)
+add.dec <- task(add, "add.R", info_only = FALSE, return_value = TRUE, ser_method = c("RMVL", "RMVL"), DEBUG = FALSE)
 a <- 4; b <- 5; c <- 6; d <- 7
 # Task (1)
 res1 <- add.dec(a, b)

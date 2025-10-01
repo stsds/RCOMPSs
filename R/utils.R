@@ -22,12 +22,14 @@ check_key_in_hashmap <- function(key, env) {
 #' @param f The function to be executed.
 #' @param filename Character. The file where the function is defined.
 #' @param return_value Boolean. Default value is FALSE. Whether there is a return value.
-#' @param f_dir Absolute directory of the file where f is defined.
 #' @param info_only Boolean. Whether the run is to print the information only.
 #' @param ... Metadata.
 #' @return The decorated function
 #' @export
-task <- function(f, filename, return_value = FALSE, return_type = "list", info_only = FALSE, DEBUG = FALSE, ...) {
+task <- function(f, filename, 
+                return_value = FALSE, return_type = "list", 
+                ser_method = c("qs", "qs"),
+                info_only = FALSE, DEBUG = FALSE, ...) {
   TIME1 <- proc.time()
 
   # Convert all the metadata into a list
@@ -240,8 +242,8 @@ task <- function(f, filename, return_value = FALSE, return_type = "list", info_o
             # }
             if (need_serialization) {
               INI.TIME <- proc.time()
-              arg_ser_filename <- paste0(MASTER_WORKING_DIR, "/", arguments_names[i], "_arg[", i, "]_", UID())
-              compss_serialize(object = arguments[[i]], filepath = arg_ser_filename)
+              arg_ser_filename <- paste0(MASTER_WORKING_DIR, "/", ser_method[1], "-", arguments_names[i], "_arg[", i, "]_", UID())
+              compss_serialize(object = arguments[[i]], filepath = arg_ser_filename, ser_method = ser_method[1])
               SER_END.TIME <- proc.time()
               SER.TIME <- SER_END.TIME - INI.TIME
               if (DEBUG) {
@@ -290,11 +292,11 @@ task <- function(f, filename, return_value = FALSE, return_type = "list", info_o
       num_of_returns <- 1L
       # Create an object for the return value
       # RETURN_VALUE <- list()
-      outputfile <- paste0(MASTER_WORKING_DIR, "/ReturnValue_", UID())
+      outputfile <- paste0(MASTER_WORKING_DIR, "/", ser_method[2], "-", "ReturnValue_", UID())
       # values
       arguments[[length(arguments) + 1]] <- outputfile
       # arguments_names
-      arguments_names[length(arguments)] <- "RETURN_VALUE"
+      arguments_names[length(arguments)] <- paste0(ser_method[2], "-RETURN_VALUE")
       # compss_types
       arguments_type <- c(arguments_type, 10L)
       # compss_directions: 0: in; 1: out (return value); 2: inout
@@ -344,7 +346,6 @@ task <- function(f, filename, return_value = FALSE, return_type = "list", info_o
         )
         assign(register_marker, TRUE, envir = globalenv())
       }
-
       # Call process_task here
       process_task(
         app_id = app_id,
@@ -422,14 +423,12 @@ UID <- function() {
 #' Internal serialization function
 #'
 #' @export
-compss_serialize <- function(object, filepath) {
-  # Get the env variable here from bash
-  ser_method <- Sys.getenv("RCOMPSs_SERMETHOD")
+compss_serialize <- function(object, filepath, ser_method) {
   if (ser_method == "RMVL") {
     con <- RMVL::mvl_open(filepath, append = TRUE, create = TRUE)
     RMVL::mvl_write_object(con, object, name = "obj")
     RMVL::mvl_close(con)
-  } else if (ser_method == "" || ser_method == "qs") { # Default
+  } else if (ser_method == "qs") {
     qs::qsave(object, file = filepath, preset = "uncompressed")
   } else {
     stop("Unknown serialization method")
@@ -442,14 +441,14 @@ compss_serialize <- function(object, filepath) {
 #'
 #' @export
 compss_unserialize <- function(filepath) {
-  # Get the env variable here from bash
-  unser_method <- Sys.getenv("RCOMPSs_SERMETHOD")
+  # Extract unser_method from the filename (e.g., /ABSOLUTEPATH/qs-filenamexxxx)
+  unser_method <- strsplit(basename(filepath), "-")[[1]][1]
   if (unser_method == "RMVL") {
     con <- RMVL::mvl_open(filepath)
     object <- RMVL::mvl2R(con$obj)
     RMVL::mvl_close(con)
     return(object)
-  } else if (unser_method == "" || unser_method == "qs") {  # Default
+  } else if (unser_method == "qs") {  # Default
     return(qs::qread(filepath, nthreads = 1))
   } else {
     stop("Unknown serialization method")
@@ -461,7 +460,7 @@ compss_unserialize <- function(filepath) {
 #' Start the COMPSs runtime system
 #'
 #' @export
-compss_start <- function(serialization_method = "qs") {
+compss_start <- function() {
   start_runtime()
   MASTER_WORKING_DIR <- Get_MasterWorkingDir()
   assign("MASTER_WORKING_DIR", MASTER_WORKING_DIR, envir = .GlobalEnv)

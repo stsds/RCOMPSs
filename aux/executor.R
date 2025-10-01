@@ -84,7 +84,7 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
           RCOMPSs::extrae_emit_event(9000100, 5)
           source(module)
           RCOMPSs::extrae_emit_event(9000100, 0)
-          cat("Finished     source(module)", file = job_out)
+          cat("Finished source(module)", file = job_out)
           # Call the function using get()
           if (exists(func)) {
             num_of_nodes <- as.integer(params[1])
@@ -165,19 +165,17 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
             RCOMPSs::extrae_emit_event(9000100, 0)
             TIME_CALL <- proc.time() - TIME_CALL
             cat("do.call TIME:", TIME_CALL[3], "seconds\n")
-            cat("num_of_returns:", num_of_returns, "\n")
             if (num_of_returns > 0) {
+              # Get the serialization method for the return value based on num_of_returns (Note that there can only be 1 return value in R functions)
+              RV_ser_method <- strsplit(params[first_arg_ind + 3], "-")[[1]][1]
+
               path_return_value <- as.character(params[first_arg_ind + 5])
               path_return_value <- strsplit(path_return_value, ":")[[1]]
               path_return_value <- path_return_value[length(path_return_value)]
-              # compss_serialize(object = result, filepath = path_return_value)
-              # con <- file(description = path_return_value, open = "wb")
-              # x <- serialize(object = result, connection = NULL)
-              # writeBin(x, con)
-              # close(con)
+              cat("The serialization method for the return value is:", ser_method, "\n")
               TIME_SER <- proc.time()
               RCOMPSs::extrae_emit_event(9000100, 9)
-              RCOMPSs::compss_serialize(result, path_return_value)
+              RCOMPSs::compss_serialize(result, path_return_value, RV_ser_method)
               RCOMPSs::extrae_emit_event(9000100, 0)
               TIME_SER <- proc.time() - TIME_SER
               cat("RCOMPSs::compss_serialize TIME:", TIME_SER[3], "seconds\n")
