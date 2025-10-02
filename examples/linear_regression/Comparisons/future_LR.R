@@ -1,12 +1,8 @@
 suppressPackageStartupMessages({
-  library(parallel)
+  library(future)
 })
 
-DEBUG <- list(
-  LR_fill_fragment = FALSE,
-  compute_model_parameters = FALSE,
-  merge = FALSE
-)
+DEBUG <- list()
 
 ## Tasks (pure R, vectorized)
 
@@ -27,62 +23,6 @@ LR_genpred <- function(params_LR_genpred){
   dimension <- params_LR_genpred$d
   x_pred <- matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
   return(x_pred)
-}
-
-compute_model_parameters <- function(ztz, zty) {
-  solve(ztz, zty)
-}
-
-compute_prediction <- function(x, parameters){
-  x <- cbind(1, x)
-  x %*% parameters
-}
-
-row_combine <- function(...){
-  do.call(rbind, list(...))
-}
-
-merge <- function(...){
-  input <- list(...)
-  input_len <- length(input)
-  if(input_len == 1){
-    return(input[[1]])
-  }else if(input_len >= 2){
-    accum <- input[[1]]
-    for(i in 2:input_len){
-      accum <- accum + input[[i]]
-    }
-    return(accum)
-  }else{
-    stop("Wrong input in `merge`!\n")
-  }
-}
-
-## Functions (parallelized)
-
-fit_linear_regression <- function(x_y, dx, arity = 2, cl = NULL) {
-  nfrag <- length(x_y)
-  ncores <- if (is.null(cl)) 1L else as.integer(cl)
-  ztz_list <- mclapply(seq_len(nfrag), function(i){
-    x <- x_y[[i]][,1:dx, drop = FALSE]
-    x <- cbind(1, x)
-    t(x) %*% x
-  }, mc.cores = ncores)
-  zty_list <- mclapply(seq_len(nfrag), function(i){
-    x <- x_y[[i]][,1:dx, drop = FALSE]
-    y <- x_y[[i]][,(dx+1):ncol(x_y[[i]]), drop = FALSE]
-    x <- cbind(1, x)
-    t(x) %*% y
-  }, mc.cores = ncores)
-  ztz <- do.call(merge, ztz_list)
-  zty <- do.call(merge, zty_list)
-  parameters <- compute_model_parameters(ztz, zty)
-  parameters
-}
-
-predict_linear_regression <- function(x, parameters, cl = NULL) {
-  ncores <- if (is.null(cl)) 1L else as.integer(cl)
-  mclapply(x, function(xi) compute_prediction(xi, parameters), mc.cores = ncores)
 }
 
 parse_arguments <- function(Minimize) {
@@ -196,9 +136,8 @@ if(!Minimize){
   cat("Done.\n")
 }
 
-auto_cores <- max(1L, detectCores(logical = TRUE) - 0L)
+auto_cores <- max(1L, future::availableCores() - 0L)
 ncores <- if (is.na(cores)) auto_cores else max(1L, as.integer(cores))
-cl <- ncores
 
 set.seed(seed)
 n <- num_fit
@@ -213,6 +152,8 @@ for(j in 1:D){
   }
 }
 
+plan(multisession, workers = ncores)
+
 for(replicate in 1:replicates){
   cat("Doing replicate", replicate, "...\n")
 
@@ -224,20 +165,62 @@ for(replicate in 1:replicates){
     stop("num_fit and num_pred must be divisible by their respective fragment counts.")
   }
 
-  X_Y <- mclapply(seq_along(num_fragments_fit), function(i) {
-    set.seed(seed + i)
-    fit_params <- list(dim = c(fit_chunk, d, D))
-    LR_fill_fragment(fit_params, true_coeff)
-  }, mc.cores = ncores)
+  # Parallel data generation using future
+  X_Y <- vector("list", length(num_fragments_fit))
+  for (i in seq_along(num_fragments_fit)) {
+    X_Y[[i]] <- future({
+      set.seed(seed + i)
+      fit_params <- list(dim = c(fit_chunk, d, D))
+      LR_fill_fragment(fit_params, true_coeff)
+    }, seed = NULL)
+  }
 
-  PRED <- mclapply(seq_along(num_fragments_pred), function(i) {
-    set.seed(seed + 10000L + i)
-    pred_params <- list(n = pred_chunk, d = d)
-    LR_genpred(pred_params)
-  }, mc.cores = ncores)
+  PRED <- vector("list", length(num_fragments_pred))
+  for (i in seq_along(num_fragments_pred)) {
+    PRED[[i]] <- future({
+      set.seed(seed + 10000L + i)
+      pred_params <- list(n = pred_chunk, d = d)
+      LR_genpred(pred_params)
+    }, seed = NULL)
+  }
 
-  model <- fit_linear_regression(X_Y, d, arity = arity, cl = ncores)
-  predictions <- predict_linear_regression(PRED, model, cl = ncores)
+  # Parallel computation of ztz and zty
+  ztz_futures <- vector("list", length(X_Y))
+  zty_futures <- vector("list", length(X_Y))
+  for (i in seq_along(X_Y)) {
+    if("Future" %in% class(X_Y[[i]])){
+      X_Y[[i]] <- value(X_Y[[i]])
+    }
+    ztz_futures[[i]] <- future({
+      x <- X_Y[[i]][, 1:d, drop = FALSE]
+      x <- cbind(1, x)
+      t(x) %*% x
+    })
+    zty_futures[[i]] <- future({
+      x <- X_Y[[i]][, 1:d, drop = FALSE]
+      y <- X_Y[[i]][, (d+1):ncol(X_Y[[i]]), drop = FALSE]
+      x <- cbind(1, x)
+      t(x) %*% y
+    })
+  }
+  ztz_list <- value(ztz_futures)
+  ztz <- Reduce("+", ztz_list)
+  zty_list <- value(zty_futures)
+  zty <- Reduce("+", zty_list)
+  parameters <- solve(ztz, zty)
+
+  # Parallel prediction
+  pred_futures <- vector("list", length(PRED))
+  for (i in seq_along(PRED)) {
+    if("Future" %in% class(PRED[[i]])){
+      PRED[[i]] <- value(PRED[[i]])
+    }
+    pred_futures[[i]] <- future({
+      x <- cbind(1, PRED[[i]])
+      x %*% parameters
+    })
+  }
+  predictions <- value(pred_futures)
 
   linear_regression_time <- proc.time()
   LR_time <- round(linear_regression_time[3] - start_time[3], 3)
@@ -276,7 +259,7 @@ for(replicate in 1:replicates){
     lm_time <- round(end_lm[3] - start_lm[3], 3)
     if(!Minimize){
       cat("\nTrue coefficients:\n"); print(round(true_coeff, 2))
-      cat("\nEstimated coefficients (parallel):\n"); print(round(model, 2))
+      cat("\nEstimated coefficients (parallel):\n"); print(round(parameters, 2))
       cat("\n`lm` coefficients (reformatted):\n"); print(round(beta_hat, 2))
       cat("\nSquared error between predictions and lm baseline: ",
           sum((predictions_mat - predictions_base)^2), "\n", sep = "")
@@ -291,8 +274,8 @@ for(replicate in 1:replicates){
   cat("-----------------------------------------\n")
 
   if(Minimize){
-    cat(paste0("LR_PARALLEL,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+    cat(paste0("LR_FUTURE,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
   }
 
-  rm(X_Y, model, predictions)
+  rm(X_Y, parameters, predictions)
 }

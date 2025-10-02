@@ -8,18 +8,14 @@
 # @author Xiran Zhang
 # @date 2025-04-28
 
-fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
+fit_linear_regression <- function(x_y, dx, arity = 2, use_RCOMPSs = FALSE) {
 
   nfrag <- length(x_y)
-  #x <- vector("list", nfrag)
-  #y <- vector("list", nfrag)
   ztz <- vector("list", nfrag)
   zty <- vector("list", nfrag)
   if(use_RCOMPSs){
     # Compute ztz and zty
     for(i in 1:nfrag) {
-      #x[[i]] <- task.select_columns(x_y[[i]], 1:dx)
-      #y[[i]] <- task.select_columns(x_y[[i]], (dx+1):(dx+dy))
       ztz[[i]] <- task.partial_ztz(x_y[[i]], dx)
       zty[[i]] <- task.partial_zty(x_y[[i]], dx)
     }
@@ -42,8 +38,6 @@ fit_linear_regression <- function(x_y, dx, dy, arity = 2, use_RCOMPSs = FALSE) {
   }else{
     # Compute ztz and zty
     for(i in 1:nfrag) {
-      #x[[i]] <- select_columns(x_y[[i]], 1:dx)
-      #y[[i]] <- select_columns(x_y[[i]], (dx+1):(dx+dy))
       ztz[[i]] <- partial_ztz(x_y[[i]], dx)
       zty[[i]] <- partial_zty(x_y[[i]], dx)
     }
@@ -139,6 +133,7 @@ parse_arguments <- function(Minimize) {
   num_fragments_fit <- 10
   num_fragments_pred <- 5
   arity <- 2
+  replicates <- 1
 
   # Execution using RCOMPSs
   use_RCOMPSs <- FALSE
@@ -150,52 +145,22 @@ parse_arguments <- function(Minimize) {
   compare_accuracy <- FALSE
 
   # Parse arguments
-  if(length(args) >= 1){
-    for (i in 1:length(args)) {
-      if (args[i] == "-s") {
-        seed <- as.integer(args[i + 1])
-      } else if (args[i] == "--seed") {
-        seed <- as.integer(args[i + 1])
-      } else if (args[i] == "-n") {
-        num_fit <- as.integer(args[i + 1])
-      } else if (args[i] == "--num_fit") {
-        num_fit <- as.integer(args[i + 1])
-      } else if (args[i] == "-N") {
-        num_pred <- as.integer(args[i + 1])
-      } else if (args[i] == "--num_pred") {
-        num_pred <- as.integer(args[i + 1])
-      } else if (args[i] == "-d") {
-        dimensions_x <- as.integer(args[i + 1])
-      } else if (args[i] == "--dimensions_x") {
-        dimensions_x <- as.integer(args[i + 1])
-      } else if (args[i] == "-D") {
-        dimensions_y <- as.integer(args[i + 1])
-      } else if (args[i] == "--dimensions_y") {
-        dimensions_y <- as.integer(args[i + 1])
-      } else if (args[i] == "-f") {
-        num_fragments_fit <- as.integer(args[i + 1])
-      } else if (args[i] == "--fragments_fit") {
-        num_fragments_fit <- as.integer(args[i + 1])
-      } else if (args[i] == "-F") {
-        num_fragments_pred <- as.integer(args[i + 1])
-      } else if (args[i] == "--fragments_pred") {
-        num_fragments_pred <- as.integer(args[i + 1])
-      } else if (args[i] == "-a") {
-        arity <- as.integer(args[i + 1])
-      } else if (args[i] == "--arity") {
-        arity <- as.integer(args[i + 1])
-      } else if (args[i] == "-C") {
-        use_RCOMPSs <- TRUE
-      } else if (args[i] == "--RCOMPSs") {
-        use_RCOMPSs <- TRUE
-      } else if (args[i] == "--compare_accuracy") {
-        compare_accuracy <- TRUE
-      } else if (args[i] == "-h") {
-        is.asking_for_help <- TRUE
-      } else if (args[i] == "--help") {
-        is.asking_for_help <- TRUE
-      }
-    }
+  for (i in seq_along(args)) {
+    val <- args[i + 1]
+    switch(args[i],
+      "-s" =, "--seed" = { seed <- as.integer(val) },
+      "-n" =, "--num_fit" = { num_fit <- as.integer(val) },
+      "-N" =, "--num_pred" = { num_pred <- as.integer(val) },
+      "-d" =, "--dimensions_x" = { dimensions_x <- as.integer(val) },
+      "-D" =, "--dimensions_y" = { dimensions_y <- as.integer(val) },
+      "-f" =, "--fragments_fit" = { num_fragments_fit <- as.integer(val) },
+      "-F" =, "--fragments_pred" = { num_fragments_pred <- as.integer(val) },
+      "-a" =, "--arity" = { arity <- as.integer(val) },
+      "-C" =, "--RCOMPSs" = { use_RCOMPSs <- TRUE },
+      "--replicates" = { replicates <- as.integer(val) },
+      "--compare_accuracy" = { compare_accuracy <- TRUE },
+      "-h" =, "--help" = { is.asking_for_help <- TRUE }
+    )
   }
 
   if(is.asking_for_help){
@@ -212,6 +177,7 @@ parse_arguments <- function(Minimize) {
     cat("  -C, --RCOMPSs <use_RCOMPSs>                Boolean: Use RCOMPSs parallelization?\n")
     cat("  -M, --Minimize <Minimize>                  Boolean: Minimize printout?\n")
     cat("  --compare_accuracy <compare_accuracy>      Boolean: Compare accuracy?\n")
+    cat("  --replicates <replicates>                  Number of replicates (default: 1)\n")
     cat("  -h, --help                                 Show this help message\n")
     q(status = 0)
   }
@@ -226,7 +192,8 @@ parse_arguments <- function(Minimize) {
               num_fragments_pred = num_fragments_pred,
               arity = arity,
               use_RCOMPSs = use_RCOMPSs,
-              compare_accuracy = compare_accuracy
+              compare_accuracy = compare_accuracy,
+              replicates = replicates
               ))
 }
 

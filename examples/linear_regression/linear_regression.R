@@ -75,7 +75,7 @@ for(j in 1:D){
   }
 }
 
-for(replicate in 1:1){
+for(replicate in 1:replicates){
   cat("Doing replicate", replicate, "...\n")
 
   if(replicate > 1) compare_accuracy <- FALSE
@@ -106,7 +106,7 @@ for(replicate in 1:1){
   }
 
   # Fit the model
-  model <- fit_linear_regression(X_Y, d, D, arity = arity, use_RCOMPSs = use_RCOMPSs)
+  model <- fit_linear_regression(X_Y, d, arity = arity, use_RCOMPSs = use_RCOMPSs)
 
   # Predict using the model
   predictions <- predict_linear_regression(PRED, model, arity, use_RCOMPSs)
@@ -148,10 +148,12 @@ for(replicate in 1:1){
     end_lm <- proc.time()
     lm_time <- round(end_lm[3] - start_lm[3], 3)
     # Results:
-    cat("\nTrue coefficients:\n"); print(round(true_coeff, 2))
-    cat("\nEstimated coefficients:\n"); print(round(model, 2))
-    cat("\n`lm` coefficients:\n"); print(round(coeff, 2))
-    cat("\nSquared error of the difference between `predictions` and `predictions_base` is:", sum((predictions - predictions_base)^2), "\n")
+    if(!Minimize){
+      cat("\nTrue coefficients:\n"); print(round(true_coeff, 2))
+      cat("\nEstimated coefficients:\n"); print(round(model, 2))
+      cat("\n`lm` coefficients:\n"); print(round(coeff, 2))
+      cat("\nSquared error of the difference between `predictions` and `predictions_base` is:", sum((predictions - predictions_base)^2), "\n")
+    }
 
     rm(X, Y, PRED, model_base, coeff, predictions_base)
   }
@@ -163,10 +165,16 @@ for(replicate in 1:1){
   if(compare_accuracy) cat("Base R lm time:", lm_time, "seconds\n")
   cat("-----------------------------------------\n")
   if(Minimize){
-	  cat("LR_RES,seed,num_fit,num_pred,dimensions_x,dimensions_y,num_fragments_fit,num_fragments_pred,arity,use_RCOMPSs,compare_accuracy,Minimize,LR_time,run\n")
-	  cat(paste0("LR_res,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", use_RCOMPSs, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+    if(use_RCOMPSs){
+      cat(paste0("LR_RCOMPSs,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+    }else{
+	    cat(paste0("LR_Sequential,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", 1, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+    }
+    if(compare_accuracy){
+      cat(paste0("LR_BaseR,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", 1, ",", compare_accuracy, ",", Minimize, ",", lm_time, ",", replicate, "\n"))
+    }
   }
   rm(X_Y, model, predictions)
 }
 
-if(use_RCOMPSs) compss_stop()
+#if(use_RCOMPSs) compss_stop()
