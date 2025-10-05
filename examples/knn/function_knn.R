@@ -68,6 +68,7 @@ parse_arguments <- function(Minimize) {
   fragments_test <- 5
   k <- 3
   arity <- 2
+  replicates <- 1
 
   # Execution using RCOMPSs
   use_RCOMPSs <- FALSE
@@ -85,66 +86,25 @@ parse_arguments <- function(Minimize) {
   needs_plot <- FALSE
 
   # Parse arguments
-  if(length(args) >= 1){
-    for (i in 1:length(args)) {
-      if (args[i] == "-s") {
-        seed <- as.integer(args[i + 1])
-      } else if (args[i] == "--seed") {
-        seed <- as.integer(args[i + 1])
-      } else if (args[i] == "-n") {
-        n_train <- as.integer(args[i + 1])
-      } else if (args[i] == "--n_train") {
-        n_train <- as.integer(args[i + 1])
-      } else if (args[i] == "-N"){
-        n_test <- as.integer(args[i + 1])
-      } else if (args[i] == "--n_test") {
-        n_test <- as.integer(args[i + 1])
-      } else if (args[i] == "-d") {
-        dimensions <- as.integer(args[i + 1])
-      } else if (args[i] == "--dimensions") {
-        dimensions <- as.integer(args[i + 1])
-      } else if (args[i] == "-c") {
-        num_class <- as.integer(args[i + 1])
-      } else if (args[i] == "--num_class") {
-        num_class <- as.integer(args[i + 1])
-      } else if (args[i] == "-f") {
-        fragments_train <- as.integer(args[i + 1])
-      } else if (args[i] == "--fragments_train") {
-        fragments_train <- as.integer(args[i + 1])
-      } else if (args[i] == "-F") {
-        fragments_test <- as.integer(args[i + 1])
-      } else if (args[i] == "--fragments_test") {
-        fragments_test <- as.integer(args[i + 1])
-      } else if (args[i] == "-k") {
-        k <- as.integer(args[i + 1])
-      } else if (args[i] == "--knn") {
-        k <- as.integer(args[i + 1])
-      } else if (args[i] == "-a") {
-        arity <- as.integer(args[i + 1])
-      } else if (args[i] == "--arity") {
-        arity <- as.integer(args[i + 1])
-      } else if (args[i] == "-m") {
-        confusion_matrix <- TRUE
-      } else if (args[i] == "--confusion_matrix") {
-        confusion_matrix <- TRUE
-      } else if (args[i] == "-p") {
-        needs_plot <- as.logical(args[i + 1])
-      } else if (args[i] == "--plot") {
-        needs_plot <- as.logical(args[i + 1])
-      } else if (args[i] == "-C") {
-        use_RCOMPSs <- TRUE
-      } else if (args[i] == "--RCOMPSs") {
-        use_RCOMPSs <- TRUE
-      } else if (args[i] == "-R") {
-        use_R_default <- TRUE
-      } else if (args[i] == "--R-default") {
-        use_R_default <- TRUE
-      } else if (args[i] == "-h") {
-        is.asking_for_help <- TRUE
-      } else if (args[i] == "--help") {
-        is.asking_for_help <- TRUE
-      }
-    }
+for (i in seq_along(args)) {
+    val <- args[i + 1]
+    switch(args[i],
+      "-s" =, "--seed" = { seed <- as.integer(val) },
+      "-n" =, "--n_train" = { n_train <- as.integer(val) },
+      "-N" =, "--n_test" = { n_test <- as.integer(val) },
+      "-d" =, "--dimensions" = { dimensions <- as.integer(val) },
+      "-c" =, "--num_class" = { num_class <- as.integer(val) },
+      "-f" =, "--fragments_train" = { fragments_train <- as.integer(val) },
+      "-F" =, "--fragments_test" = { fragments_test <- as.integer(val) },
+      "-k" =, "--knn" = { k <- as.integer(val) },
+      "-a" =, "--arity" = { arity <- as.integer(val) },
+      "-m" =, "--confusion_matrix" = { confusion_matrix <- TRUE },
+      "-p" =, "--plot" = { needs_plot <- as.logical(val) },
+      "-C" =, "--RCOMPSs" = { use_RCOMPSs <- TRUE },
+      "-R" =, "--R-default" = { use_R_default <- TRUE },
+      "-r" =, "--replicates" = { replicates <- as.integer(val) },
+      "-h" =, "--help" = { is.asking_for_help <- TRUE }
+    )
   }
 
   if(is.asking_for_help){
@@ -163,6 +123,7 @@ parse_arguments <- function(Minimize) {
     cat("  -m, --confusion_matrix <confusion_matrix> Flag: confusion_matrix?\n")
     cat("  -C, --RCOMPSs <use_RCOMPSs>               Flag: Use RCOMPSs parallelization?\n")
     cat("  -R, --R-default <use_R_default>           Flag: Use default knn function to compute?\n")
+    cat("  -r, --replicates <replicates>             Number of replicates\n")
     cat("  -h, --help                                Show this help message\n")
     q(status = 0)
   }
@@ -188,23 +149,25 @@ parse_arguments <- function(Minimize) {
               confusion_matrix = confusion_matrix,
               needs_plot = needs_plot,
               use_RCOMPSs = use_RCOMPSs,
-              use_R_default = use_R_default
+              use_R_default = use_R_default,
+              replicates = replicates
               ))
 }
 
 print_parameters <- function(params) {
   cat("Parameters:\n")
-  cat(sprintf("  Seed: %d\n", params$seed))
-  cat(sprintf("  Number of training points: %d\n", params$n_train))
-  cat(sprintf("  Number of testing points: %d\n", params$n_test))
-  cat(sprintf("  Dimensions: %d\n", params$dimensions))
-  cat(sprintf("  Number of class: %d\n", params$num_class))
-  cat(sprintf("  Number of fragments of training data: %d\n", params$num_fragments_train))
-  cat(sprintf("  Number of fragments of testing data: %d\n", params$num_fragments_test))
-  cat(sprintf("  K: %d\n", params$k))
-  cat(sprintf("  Arity: %d\n", params$arity))
+  cat("  Seed:", params$seed, "\n")
+  cat("  Number of training points:", params$n_train, "\n")
+  cat("  Number of testing points:", params$n_test, "\n")
+  cat("  Dimensions:", params$dimensions, "\n")
+  cat("  Number of class:", params$num_class, "\n")
+  cat("  Number of fragments of training data:", params$num_fragments_train, "\n")
+  cat("  Number of fragments of testing data:", params$num_fragments_test, "\n")
+  cat("  K:", params$k, "\n")
+  cat("  Arity:", params$arity, "\n")
   cat("  confusion_matrix:", params$confusion_matrix, "\n")
   cat("  needs_plot:", params$needs_plot, "\n")
   cat("  use_RCOMPSs:", params$use_RCOMPSs, "\n")
   cat("  use_R_default:", params$use_R_default, "\n")
+  cat("  Replicates:", params$replicates, "\n")
 }

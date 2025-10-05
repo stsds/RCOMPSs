@@ -82,7 +82,7 @@ if(use_RCOMPSs){
   }
 }
 
-for(replicate in 1:1){
+for(replicate in 1:replicates){
 
   start_time <- proc.time()
 
@@ -151,8 +151,11 @@ for(replicate in 1:1){
   cat("Total time:", Total_time, "seconds\n")
   cat("-----------------------------------------\n")
   if(Minimize){
-	  cat("KNN_RES,seed,n_train,n_test,dimensions,num_class,k,arity,confusion_matrix,needs_plot,use_RCOMPSs,use_R_default,Minimize,Initialization_time,KNN_time,Total_time,replicate\n")
-	  cat(paste0("KNN_res,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+    if(use_RCOMPSs){
+	    cat(paste0("KNN_RES_RCOMPSs,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+    }else{
+      cat(paste0("KNN_RES_Sequential,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+    }
   }
   if(!Minimize){
     PRED <- as.factor(as.numeric(PRED))
@@ -196,11 +199,13 @@ for(replicate in 1:1){
     p <- ggplot() +
       geom_point(aes(x = x, y = y, colour = class,
                      shape = "Training data"), size = 3) +
-geom_point(aes(x = x_test[,1], y = x_test[,2], color = PRED,
+    geom_point(aes(x = x_test[,1], y = x_test[,2], color = PRED,
                shape = "Testing data"))
-    ggsave("plot_knn.pdf", plot = p, device = "pdf", width = 8, height = 8)
+    ggsave("RCOMPSs_plot_knn.pdf", plot = p, device = "pdf", width = 8, height = 8)
   }
+
+  rm(params_train, params_test, x_train, x_test, res_KNN)
+  gc()
+  Sys.sleep(2)
 }
-if(use_RCOMPSs){
-  compss_stop()
-}
+if(use_RCOMPSs) compss_stop()
