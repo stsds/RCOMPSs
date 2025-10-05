@@ -1,24 +1,19 @@
 #!/bin/bash
 
-replicate=1
+replicate=3
 seed=123
 dim=100
 
 # Specify which algorithms to execute
 #algorithms=("parallel" "parallel_bigmemory" "future.apply" "future_apply_bigmemory" "future" "future_bigmemory" "RCOMPSs" "RCOMPSs_bigmemory")
-#algorithms=("parallel" "furrr" "future" "RCOMPSs")
-algorithms=("future")
+algorithms=("parallel" "furrr" "future" "RCOMPSs")
+#algorithms=("parallel")
+#algorithms=("RCOMPSs")
 
 cd /home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/linear_regression/Comparisons
 
-#for n_sample in $(seq 200000 2200000 17800000); do
-#for n_sample in $(seq 15600000 2200000 20000000); do
-
-#for n_sample in $(seq 15600000 2200000 17800000); do
-#for n_sample in $(seq 200000 4400000 88200000); do
-#for n_sample in $(seq 200000 8800000 88200000); do
-#for n_sample in $(seq 200000 8800000 9000000); do
-for n_sample in $(seq 200000 8800000 44200000); do
+for n_sample in $(seq 200000 2200000 17800000); do
+#for n_sample in $(seq 200000 8800000 44200000); do
 
     # Only run algorithms specified in the array
     for alg in "${algorithms[@]}"; do
@@ -73,7 +68,7 @@ for n_sample in $(seq 200000 8800000 44200000); do
             echo "RCOMPSs"
             compss_clean_procs
             sleep 2
-            runcompss --lang=r --cpu_affinity=disabled linear_regression.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit 50 --fragments_pred 50 --arity 50 --seed $seed --replicates $replicate --RCOMPSs
+            runcompss --lang=r --cpu_affinity=disabled --env_script=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/linear_regression/sequential_env.sh linear_regression.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit 50 --fragments_pred 50 --arity 50 --seed $seed --replicates $replicate --RCOMPSs
         fi
 
         if [ "$alg" == "Sequential" ] || [ "$alg" == "RCOMPSs" ]; then

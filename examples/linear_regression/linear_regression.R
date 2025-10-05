@@ -166,7 +166,7 @@ for(replicate in 1:replicates){
   cat("-----------------------------------------\n")
   if(Minimize){
     if(use_RCOMPSs){
-      cat(paste0("LR_RCOMPSs,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+      cat(paste0("LR_RCOMPSs,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", "ncores,", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
     }else{
 	    cat(paste0("LR_Sequential,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", 1, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
     }

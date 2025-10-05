@@ -209,6 +209,7 @@ for(j in 1:D){
 }
 
 plan(multisession, workers = ncores)
+options(future.globals.maxSize = Inf)
 for(replicate in 1:replicates){
   cat("Doing replicate", replicate, "...\n")
 

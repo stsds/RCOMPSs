@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Project>
+    <MasterNode/>
+    <ComputeNode Name="localhost">
+        <InstallDir>/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs_installation</InstallDir>
+        <WorkingDir>/tmp/COMPSsWorker/</WorkingDir>
+        <Application>
+            <EnvironmentScript>/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/compss_config.sh</EnvironmentScript>
+        </Application>
+    </ComputeNode>
+</Project>
