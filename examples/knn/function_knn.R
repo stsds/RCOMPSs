@@ -15,16 +15,16 @@ KNN <- function(train, test, k, use_RCOMPSs = FALSE){
   RES <- vector("list", num_frag_test)
   if(use_RCOMPSs){
     for(i in 1:num_frag_test){
-      RES[[i]] <- vector("list", num_frag_train)
+      RES_i <- vector("list", num_frag_train)
       for(j in 1:num_frag_train){
-        RES[[i]][[j]] <- task.KNN_frag(train[[j]], test[[i]], k)
+        RES_i[[j]] <- task.KNN_frag(train[[j]], test[[i]], k)
       }
-      while(length(RES[[i]]) > arity){
-        RES_subset <- RES[[i]][1:arity]
-        RES[[i]] <- RES[[i]][(arity + 1):length(RES[[i]])]
-        RES[[i]][[length(RES[[i]]) + 1]] <- do.call(task.KNN_merge, RES_subset)
+      while(length(RES_i) > arity){
+        RES_subset <- RES_i[1:arity]
+        RES_i <- RES_i[(arity + 1):length(RES_i)]
+        RES_i[[length(RES_i) + 1]] <- do.call(task.KNN_merge, RES_subset)
       }
-      RES[[i]] <- do.call(task.KNN_classify, RES[[i]])
+      RES[[i]] <- do.call(task.KNN_classify, RES_i)
     }
   }else{
     for(i in 1:num_frag_test){

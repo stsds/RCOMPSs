@@ -34,6 +34,25 @@ KNN_frag <- function(train, test, k){
   dist_cl <- cbind(res_dist, res_cl)
   return(dist_cl)
 }
+KNN_frag <- function(train, test, k){
+  dimensions <- ncol(train) - 1
+  x_train <- train[, 1:dimensions, drop = FALSE]
+  cl      <- train[, dimensions + 1]
+  x_test  <- test[, 1:dimensions, drop = FALSE]
+
+  nn <- RANN::nn2(data = x_train, query = x_test, k = k, searchtype = "standard")
+
+  # nn$nn.dists and nn$nn.idx are already n_test x k matrices
+  res_dist <- nn$nn.dists
+  idx_mat  <- nn$nn.idx
+
+  # map indices to class labels without apply
+  res_cl <- matrix(cl[as.vector(idx_mat)], nrow = nrow(idx_mat), ncol = ncol(idx_mat))
+  dist_cl <- cbind(res_dist, res_cl)
+  T3 <- proc.time()[3]
+
+  return(dist_cl)
+}
 
 KNN_merge <- function(...){
   input <- list(...)
@@ -247,7 +266,7 @@ for(replicate in 1:replicates){
   cat("Total time:", Total_time, "seconds\n")
   cat("-----------------------------------------\n")
   if(Minimize){
-    cat(paste0("KNN_RES_FURRR,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+    cat(paste0("KNN_RES_FURRR,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", num_fragments_train, ",", num_fragments_test, ",", confusion_matrix, ",", needs_plot, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
   }
   if(confusion_matrix){
     PRED <- as.factor(as.numeric(PRED))

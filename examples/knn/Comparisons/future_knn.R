@@ -22,15 +22,35 @@ KNN_fill_fragment <- function(params_fill_fragment){
   return(frag)
 }
 
+#KNN_frag <- function(train, test, k){
+#  dimensions <- ncol(train) - 1
+#  x_train <- train[,1:dimensions]
+#  cl <- train[,dimensions+1]
+#  x_test <- test[,1:dimensions]
+#  res_dist <- fields::rdist(x_test, x_train)
+#  res_cl <- t(apply(res_dist, 1, function(x) cl[order(x)[1:k]]))
+#  res_dist <- t(apply(res_dist, 1, function(x) sort(x)[1:k]))
+#  dist_cl <- cbind(res_dist, res_cl)
+#  return(dist_cl)
+#}
+
 KNN_frag <- function(train, test, k){
   dimensions <- ncol(train) - 1
-  x_train <- train[,1:dimensions]
-  cl <- train[,dimensions+1]
-  x_test <- test[,1:dimensions]
-  res_dist <- fields::rdist(x_test, x_train)
-  res_cl <- t(apply(res_dist, 1, function(x) cl[order(x)[1:k]]))
-  res_dist <- t(apply(res_dist, 1, function(x) sort(x)[1:k]))
+  x_train <- train[, 1:dimensions, drop = FALSE]
+  cl      <- train[, dimensions + 1]
+  x_test  <- test[, 1:dimensions, drop = FALSE]
+
+  nn <- RANN::nn2(data = x_train, query = x_test, k = k, searchtype = "standard")
+
+  # nn$nn.dists and nn$nn.idx are already n_test x k matrices
+  res_dist <- nn$nn.dists
+  idx_mat  <- nn$nn.idx
+
+  # map indices to class labels without apply
+  res_cl <- matrix(cl[as.vector(idx_mat)], nrow = nrow(idx_mat), ncol = ncol(idx_mat))
   dist_cl <- cbind(res_dist, res_cl)
+  T3 <- proc.time()[3]
+
   return(dist_cl)
 }
 
@@ -222,7 +242,7 @@ if(!Minimize){
 
 set.seed(seed)
 options(future.globals.maxSize = Inf)
-plan(multisession, workers = ncores)
+plan(multicore, workers = ncores)
 
 for(replicate in 1:replicates){
 
@@ -264,20 +284,33 @@ for(replicate in 1:replicates){
 
   # Parallel KNN computation using future for each task
   res_KNN_future <- vector("list", num_fragments_test)
-  for(i in seq_len(num_fragments_test)) {
+  x_train <- value(x_train_future)
+  #for(i in seq_len(num_fragments_test)) {
+  #  cat("Processing test fragment", i, "\n")
+  #  if("Future" %in% class(x_test_future[[i]])){
+  #    x_test[[i]] <- value(x_test_future[[i]])
+  #  }
+  #  #res_KNN_future[[i]] <- vector("list", num_fragments_train)
+  #  res_KNN_future[[i]] <- lapply(seq_len(num_fragments_train), function(j) {
+  #    future({
+  #      KNN_frag(x_train[[j]], x_test[[i]], k)
+  #    })
+  #  })
+  #}
+  #x_test <- value(x_test_future)
+  res_KNN_future <- lapply(seq_len(num_fragments_test), function(i) {
+    #cat("Processing test fragment", i, "\n")
     if("Future" %in% class(x_test_future[[i]])){
       x_test[[i]] <- value(x_test_future[[i]])
     }
-    res_KNN_future[[i]] <- vector("list", num_fragments_train)
-    for(j in seq_len(num_fragments_train)){
-      if("Future" %in% class(x_train_future[[j]])){
-        x_train[[j]] <- value(x_train_future[[j]])
-      }
-      res_KNN_future[[i]][[j]] <- future({
+    lapply(seq_len(num_fragments_train), function(j) {
+      #cat("  with train fragment", j, "\n")
+      future({
         KNN_frag(x_train[[j]], x_test[[i]], k)
       })
-    }
-  }
+    })
+  })
+
   if(!needs_plot) rm(x_train_future, x_train)  # Free memory if no plot is needed
   if(!needs_plot && !confusion_matrix) rm(x_test_future, x_test)   # Free memory if no plot is needed
 
@@ -322,7 +355,7 @@ for(replicate in 1:replicates){
   cat("Total time:", Total_time, "seconds\n")
   cat("-----------------------------------------\n")
   if(Minimize){
-    cat(paste0("KNN_RES_FUTURE,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+    cat(paste0("KNN_RES_FUTURE,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", num_fragments_train, ",", num_fragments_test, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
   }
   if(confusion_matrix){
     PRED <- as.factor(as.numeric(PRED))

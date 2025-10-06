@@ -152,9 +152,9 @@ for(replicate in 1:replicates){
   cat("-----------------------------------------\n")
   if(Minimize){
     if(use_RCOMPSs){
-	    cat(paste0("KNN_RES_RCOMPSs,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+	    cat(paste0("KNN_RES_RCOMPSs,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", num_fragments_train, ",", num_fragments_test, ",", confusion_matrix, ",", needs_plot, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
     }else{
-      cat(paste0("KNN_RES_Sequential,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+      cat(paste0("KNN_RES_Sequential,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", num_fragments_train, ",", num_fragments_test, ",", confusion_matrix, ",", needs_plot, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
     }
   }
   if(!Minimize){
@@ -208,4 +208,4 @@ for(replicate in 1:replicates){
   gc()
   Sys.sleep(2)
 }
-if(use_RCOMPSs) compss_stop()
+#if(use_RCOMPSs) compss_stop()
