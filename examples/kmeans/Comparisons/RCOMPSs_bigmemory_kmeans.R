@@ -83,9 +83,9 @@ for(replicate in 1:tot_rep){
   # TODO: The centres should be generated in a way that at least there is one point in the fragment that is close to the centre.
   centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
   if(DEBUG$kmeans_frag){
-        cat("Initialized centres:\n")
-        print(centres)
-      }
+    cat("Initialized centres:\n")
+    print(centres)
+  }
 
       # --- Pre-allocate the Shared Memory Matrix ---
   if(!Minimize) cat("Creating shared big.matrix for data generation...\n")
@@ -104,15 +104,17 @@ for(replicate in 1:tot_rep){
     cat("Generating data replicate", replicate, "... ")
   }
   # Prevent infinite loops
-  points_per_fragment <- max(1, numpoints %/% num_fragments)
+  points_per_fragment <- as.integer(max(1, numpoints %/% num_fragments))
   # Generate cluster central points
   true_centres <- matrix(runif(num_centres * dimensions), 
                          nrow = num_centres, ncol = dimensions)
 
   fragment_indicator <- vector("logical", num_fragments)
   fragment_indicator <- sapply(1:num_fragments, function(f) {
-    params_fill_fragment <- list(true_centres, points_per_fragment, mode, seed + f, all_points_desc, (f - 1) * points_per_fragment + 1, f * points_per_fragment)
-    task.fill_fragment(params_fill_fragment)
+    task.fill_fragment(true_centres, points_per_fragment, mode, iseed = as.integer(seed + f),
+                        bigmatrix_desc = all_points_desc, 
+                        start_row = as.integer((f - 1) * points_per_fragment + 1), 
+                        end_row = as.integer(f * points_per_fragment))
   })
 
   initialization_time <- proc.time()
@@ -134,8 +136,10 @@ for(replicate in 1:tot_rep){
     
     partials <- lapply(1:num_fragments, function(i) {
       if(compss_wait_on(fragment_indicator[i])){
-          params_partial_sum <- list(bigmatrix_desc = all_points_desc, start_row = (i - 1) * points_per_fragment + 1, end_row = i * points_per_fragment, centres = old_centres)
-          task.partial_sum(params_partial_sum)
+        task.partial_sum(bigmatrix_desc = all_points_desc, 
+                          start_row = as.integer((i - 1) * points_per_fragment + 1), 
+                          end_row = as.integer(i * points_per_fragment), 
+                          centres = old_centres)
       }
     })
 

@@ -8,6 +8,9 @@ seed=123
 #algorithms=("future_apply_bigmemory" "future_bigmemory" "RCOMPSs") # Example: ("furrr" "parallel" "future.apply")
 #algorithms=("parallel" "parallel_bigmemory") # Example: ("furrr" "parallel" "future.apply")
 algorithms=("parallel" "parallel_bigmemory" "future.apply" "future_apply_bigmemory" "future" "future_bigmemory" "RCOMPSs" "RCOMPSs_bigmemory")
+algorithms=("parallel")
+algorithms=("RCOMPSs")
+algorithms=("RCOMPSs_bigmemory")
 
 cd /home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/kmeans/Comparisons
 
@@ -60,20 +63,20 @@ for n_sample in $(seq 200000 17600000 88200000); do
             echo "RCOMPSs & bigmemory"
             compss_clean_procs
             sleep 2
-            runcompss --lang=r --cpu_affinity=disabled RCOMPSs_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates $replicate --arity 50 --plot FALSE --RCOMPSs --seed $seed
+            runcompss --lang=r --cpu_affinity=disabled --project=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/project.xml --resources=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/resources.xml RCOMPSs_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates $replicate --arity 50 --plot FALSE --RCOMPSs --seed $seed
             compss_clean_procs
         elif [ "$alg" == "Sequential" ]; then
             cd ..
             echo "Sequential"
             compss_clean_procs
             sleep 1
-            runcompss --lang=r --cpu_affinity=disabled kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates 1 --arity 50 --plot FALSE --seed $seed
+            runcompss --lang=r --cpu_affinity=disabled --project=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/project.xml --resources=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/resources.xml kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates 1 --arity 50 --plot FALSE --seed $seed
         elif [ "$alg" == "RCOMPSs" ]; then
             cd ..
             echo "RCOMPSs"
             compss_clean_procs
             sleep 2
-            runcompss --lang=r --cpu_affinity=disabled kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates $replicate --arity 50 --plot FALSE --RCOMPSs --seed $seed
+            runcompss --lang=r --cpu_affinity=disabled --project=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/project.xml --resources=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/resources.xml kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates $replicate --arity 50 --plot FALSE --RCOMPSs --seed $seed
         fi
 
         if [ "$alg" == "Sequential" ] || [ "$alg" == "RCOMPSs" ]; then

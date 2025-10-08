@@ -16,12 +16,7 @@ DEBUG <- list(
   kmeans_frag = FALSE
 )
 
-fill_fragment <- function(params_fill_fragment){
-
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
-  mode <- params_fill_fragment[[3]]
-  iseed <- params_fill_fragment[[4]]
+fill_fragment <- function(centres, n, mode, iseed){
   set.seed(iseed)
 
   # Obtain necessary numbers

@@ -16,15 +16,7 @@ DEBUG <- list(
   kmeans_frag = FALSE
 )
 
-fill_fragment <- function(params_fill_fragment){
-
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
-  mode <- params_fill_fragment[[3]]
-  iseed <- params_fill_fragment[[4]]
-  bigmatrix_desc <- params_fill_fragment[[5]]
-  start_row <- params_fill_fragment[[6]]
-  end_row <- params_fill_fragment[[7]]
+fill_fragment <- function(centres, n, mode, iseed, bigmatrix_desc, start_row, end_row) {
 
   set.seed(iseed)
   points_mat <- bigmemory::attach.big.matrix(bigmatrix_desc)
@@ -50,13 +42,8 @@ fill_fragment <- function(params_fill_fragment){
   return(TRUE)
 }
 
-partial_sum <- function(params_partial_sum) {
-
-  bigmatrix_desc <- params_partial_sum[[1]]
-  start_row <- params_partial_sum[[2]]
-  end_row <- params_partial_sum[[3]]
-  centres <- params_partial_sum[[4]]
-
+partial_sum <- function(bigmatrix_desc, start_row, end_row, centres) {
+  
   points_mat <- bigmemory::attach.big.matrix(bigmatrix_desc)
   fragment <- points_mat[start_row:end_row, ]
 
