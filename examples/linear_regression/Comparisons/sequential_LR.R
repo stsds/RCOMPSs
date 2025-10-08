@@ -1,8 +1,8 @@
-suppressPackageStartupMessages({
-  library(future)
-})
-
-DEBUG <- list()
+DEBUG <- list(
+  LR_fill_fragment = FALSE,
+  compute_model_parameters = FALSE,
+  merge = FALSE
+)
 
 ## Tasks (pure R, vectorized)
 
@@ -11,13 +11,70 @@ LR_fill_fragment <- function(num_frag, dimension_x, dimension_y, true_coeff){
   y_frag <- cbind(1, x_frag) %*% true_coeff
   M <- matrix(rnorm(num_frag * dimension_y), nrow = num_frag, ncol = dimension_y)
   y_frag <- y_frag + M
-  X_Y <- cbind(x_frag, y_frag)
-  return(X_Y)
+  cbind(x_frag, y_frag)
 }
 
 LR_genpred <- function(num_frag, dimension){
-  x_pred <- matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
-  return(x_pred)
+  matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
+}
+
+compute_model_parameters <- function(ztz, zty) {
+  solve(ztz, zty)
+}
+
+compute_prediction <- function(x, parameters){
+  x <- cbind(1, x)
+  x %*% parameters
+}
+
+row_combine <- function(...){
+  do.call(rbind, list(...))
+}
+
+merge <- function(...){
+  input <- list(...)
+  input_len <- length(input)
+  if(input_len == 1){
+    return(input[[1]])
+  }else if(input_len >= 2){
+    accum <- input[[1]]
+    for(i in 2:input_len){
+      accum <- accum + input[[i]]
+    }
+    return(accum)
+  }else{
+    stop("Wrong input in `merge`!\n")
+  }
+}
+
+## Functions (sequential)
+
+fit_linear_regression <- function(x_y, dx, arity = 2, cl = NULL) {
+  nfrag <- length(x_y)
+  T1 <- proc.time()[3]
+  ztz_list <- lapply(seq_len(nfrag), function(i){
+    x <- x_y[[i]][,1:dx, drop = FALSE]
+    x <- cbind(1, x)
+    t(x) %*% x
+  })
+  T2 <- proc.time()[3]
+  cat("partial_ztz time:", round(T2 - T1, 3), "seconds\n")
+  zty_list <- lapply(seq_len(nfrag), function(i){
+    x <- x_y[[i]][,1:dx, drop = FALSE]
+    y <- x_y[[i]][,(dx+1):ncol(x_y[[i]]), drop = FALSE]
+    x <- cbind(1, x)
+    t(x) %*% y
+  })
+  T3 <- proc.time()[3]
+  cat("partial_zty time:", round(T3 - T2, 3), "seconds\n")
+  ztz <- do.call(merge, ztz_list)
+  zty <- do.call(merge, zty_list)
+  parameters <- compute_model_parameters(ztz, zty)
+  parameters
+}
+
+predict_linear_regression <- function(x, parameters, cl = NULL) {
+  lapply(x, function(xi) compute_prediction(xi, parameters))
 }
 
 parse_arguments <- function(Minimize) {
@@ -36,7 +93,7 @@ parse_arguments <- function(Minimize) {
   arity <- 2
   use_RCOMPSs <- FALSE
   compare_accuracy <- FALSE
-  ncores <- NA_integer_
+  cores <- NA_integer_
   is.asking_for_help <- FALSE
   replicates <- 1
 
@@ -54,7 +111,7 @@ parse_arguments <- function(Minimize) {
       "-C" =, "--RCOMPSs" = { use_RCOMPSs <- TRUE },
       "--replicates" = { replicates <- as.integer(val) },
       "--compare_accuracy" = { compare_accuracy <- TRUE },
-      "--ncores" = { ncores <- as.integer(val) },
+      "--ncores" = { cores <- as.integer(val) },
       "-h" =, "--help" = { is.asking_for_help <- TRUE }
     )
   }
@@ -70,7 +127,7 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments_fit <num_fragments_fit>    Number of fragments (fit)\n")
     cat("  -F, --fragments_pred <num_fragments_pred>  Number of fragments (pred)\n")
     cat("  -a, --arity <arity>                        Arity of merge (kept for compat)\n")
-    cat("      --ncores <ncores>                        Parallel workers (default: all)\n")
+    cat("      --ncores <cores>                       Parallel workers (ignored in sequential mode)\n")
     cat("      --compare_accuracy                     Compare with base lm\n")
     cat("      --replicates <replicates>              Number of replicates (default: 1)\n")
     cat("  -h, --help                                 Show this help message\n")
@@ -88,7 +145,7 @@ parse_arguments <- function(Minimize) {
     arity = arity,
     use_RCOMPSs = FALSE,
     compare_accuracy = compare_accuracy,
-    ncores = ncores,
+    cores = cores,
     replicates = replicates
   )
 }
@@ -104,7 +161,7 @@ print_parameters <- function(params) {
   cat("  Number of fragments of the predicting data:", params$num_fragments_pred, "\n")
   cat("  Arity:", params$arity, "\n")
   cat("  Compare accuracy?", params$compare_accuracy, "\n")
-  cat("  Cores:", ifelse(is.na(params$ncores), "auto", params$ncores), "\n")
+  cat("  Cores (ignored):", ifelse(is.na(params$cores), "auto(ignored)", params$cores), "\n")
 }
 
 # Main
@@ -131,8 +188,9 @@ if(!Minimize){
   cat("Done.\n")
 }
 
-auto_cores <- max(1L, future::availableCores() - 0L)
-ncores <- if (is.na(ncores)) auto_cores else max(1L, as.integer(ncores))
+# sequential: use single core
+ncores <- 1L
+cat("Using", ncores, "core (sequential mode).\n")
 
 set.seed(seed)
 n <- num_fit
@@ -147,9 +205,6 @@ for(j in 1:D){
   }
 }
 
-plan(multicore, workers = ncores)
-options(future.globals.maxSize = Inf)
-
 for(replicate in 1:replicates){
   cat("Doing replicate", replicate, "...\n")
 
@@ -161,60 +216,28 @@ for(replicate in 1:replicates){
     stop("num_fit and num_pred must be divisible by their respective fragment counts.")
   }
 
-  # Parallel data generation using future
-  X_Y <- vector("list", length(num_fragments_fit))
-  for (i in seq_len(num_fragments_fit)) {
-    X_Y[[i]] <- future({
-      set.seed(seed + i)
-      LR_fill_fragment(num_frag = fit_chunk, dimension_x = d, dimension_y = D, true_coeff = true_coeff)
-    }, seed = NULL)
-  }
+  T1 <- proc.time()[3]
+  X_Y <- lapply(seq_len(num_fragments_fit), function(i) {
+    set.seed(seed + i)
+    LR_fill_fragment(num_frag = fit_chunk, dimension_x = d, dimension_y = D, true_coeff = true_coeff)
+  })
+  T2 <- proc.time()[3]
+  cat("LR_fill_fragment time:", round(T2 - T1, 3), "seconds\n")
 
-  PRED <- vector("list", length(num_fragments_pred))
-  for (i in seq_len(num_fragments_pred)) {
-    PRED[[i]] <- future({
-      set.seed(seed + 10000L + i)
-      LR_genpred(num_frag = pred_chunk, dimension = d)
-    }, seed = NULL)
-  }
+  PRED <- lapply(seq_len(num_fragments_pred), function(i) {
+    set.seed(seed + 10000L + i)
+    LR_genpred(num_frag = pred_chunk, dimension = d)
+  })
+  T3 <- proc.time()[3]
+  cat("LR_genpred time:", round(T3 - T2, 3), "seconds\n")
 
-  # Parallel computation of ztz and zty
-  ztz_futures <- vector("list", length(X_Y))
-  zty_futures <- vector("list", length(X_Y))
-  for (i in seq_along(X_Y)) {
-    if("Future" %in% class(X_Y[[i]])){
-      X_Y[[i]] <- value(X_Y[[i]])
-    }
-    ztz_futures[[i]] <- future({
-      x <- X_Y[[i]][, 1:d, drop = FALSE]
-      x <- cbind(1, x)
-      t(x) %*% x
-    })
-    zty_futures[[i]] <- future({
-      x <- X_Y[[i]][, 1:d, drop = FALSE]
-      y <- X_Y[[i]][, (d+1):ncol(X_Y[[i]]), drop = FALSE]
-      x <- cbind(1, x)
-      t(x) %*% y
-    })
-  }
-  ztz_list <- value(ztz_futures)
-  ztz <- Reduce("+", ztz_list)
-  zty_list <- value(zty_futures)
-  zty <- Reduce("+", zty_list)
-  parameters <- solve(ztz, zty)
-
-  # Parallel prediction
-  pred_futures <- vector("list", length(PRED))
-  for (i in seq_along(PRED)) {
-    if("Future" %in% class(PRED[[i]])){
-      PRED[[i]] <- value(PRED[[i]])
-    }
-    pred_futures[[i]] <- future({
-      x <- cbind(1, PRED[[i]])
-      x %*% parameters
-    })
-  }
-  predictions <- value(pred_futures)
+  model <- fit_linear_regression(X_Y, d, arity = arity, cl = NULL)
+  T4 <- proc.time()[3]
+  predictions <- lapply(PRED, function(xi){
+    compute_prediction(xi, model)
+  })
+  T5 <- proc.time()[3]
+  cat("compute_prediction time:", round(T5 - T4, 3), "seconds\n")
 
   linear_regression_time <- proc.time()
   LR_time <- round(linear_regression_time[3] - start_time[3], 3)
@@ -253,7 +276,7 @@ for(replicate in 1:replicates){
     lm_time <- round(end_lm[3] - start_lm[3], 3)
     if(!Minimize){
       cat("\nTrue coefficients:\n"); print(round(true_coeff, 2))
-      cat("\nEstimated coefficients (parallel):\n"); print(round(parameters, 2))
+      cat("\nEstimated coefficients (sequential):\n"); print(round(model, 2))
       cat("\n`lm` coefficients (reformatted):\n"); print(round(beta_hat, 2))
       cat("\nSquared error between predictions and lm baseline: ",
           sum((predictions_mat - predictions_base)^2), "\n", sep = "")
@@ -268,8 +291,8 @@ for(replicate in 1:replicates){
   cat("-----------------------------------------\n")
 
   if(Minimize){
-    cat(paste0("LR_RES_FUTURE,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", ncores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+    cat(paste0("LR_RES_SEQUENTIAL,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
   }
 
-  rm(X_Y, parameters, predictions)
+  rm(X_Y, model, predictions)
 }

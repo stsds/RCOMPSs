@@ -16,10 +16,7 @@ DEBUG <- list(
               merge = FALSE
 )
 
-LR_fill_fragment <- function(params_LR_fill_fragment, true_coeff){
-  num_frag <- params_LR_fill_fragment$dim[1]
-  dimension_x <- params_LR_fill_fragment$dim[2]
-  dimension_y <- params_LR_fill_fragment$dim[3]
+LR_fill_fragment <- function(num_frag, dimension_x, dimension_y, true_coeff){
   if(DEBUG$LR_fill_fragment){
     cat("Doing LR_fill_fragment ...\n")
     cat(paste0("num_frag = ", num_frag, "; dimension_x = ", dimension_x, "; dimension_y = ", dimension_y, "\n"))
@@ -34,23 +31,13 @@ LR_fill_fragment <- function(params_LR_fill_fragment, true_coeff){
   M <- matrix(rnorm(num_frag * dimension_y), nrow = num_frag, ncol = dimension_y)
   y_frag <- y_frag + M
 
-  X_Y <- cbind(x_frag, y_frag)
-  #X_Y <- list(x_frag = x_frag, y_frag = y_frag)
-  
-  return(X_Y)
+  cbind(x_frag, y_frag)
 }
 
-LR_genpred <- function(params_LR_genpred){
-  num_frag <- params_LR_genpred$n
-  dimension <- params_LR_genpred$d
+LR_genpred <- function(num_frag, dimension){
   # Generate random data for prediction
-  x_pred <- matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
-  return(x_pred)
+  matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
 }
-
-#select_columns <- function(M, ind){
-#  return(M[,ind])
-#}
 
 partial_ztz <- function(x_y, dx) {
   if(DEBUG$partial_ztz){
@@ -72,7 +59,6 @@ partial_ztz <- function(x_y, dx) {
   }
   return(ztz)
 }
-
 
 partial_zty <- function(x_y, dx) {
   if(DEBUG$partial_zty){

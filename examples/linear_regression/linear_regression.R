@@ -86,22 +86,18 @@ for(replicate in 1:replicates){
   X_Y <- vector("list", num_fragments_fit)
   PRED <- vector("list", num_fragments_pred)
   if(use_RCOMPSs){
-    params <- list(dim = c(n / num_fragments_fit, d, D))
     for(i in 1:num_fragments_fit){
-      X_Y[[i]] <- task.LR_fill_fragment(params, true_coeff)
+      X_Y[[i]] <- task.LR_fill_fragment(num_frag = as.integer(n / num_fragments_fit), dimension_x = d, dimension_y = D, true_coeff = true_coeff)
     }
-    params <- list(n = N / num_fragments_pred, d = d)
     for(j in 1:num_fragments_pred){
-      PRED[[j]] <- task.LR_genpred(params)
+      PRED[[j]] <- task.LR_genpred(num_frag = as.integer(N / num_fragments_pred), dimension = d)
     }
   }else{
-    params <- list(dim = c(n / num_fragments_fit, d, D))
     for(i in 1:num_fragments_fit){
-      X_Y[[i]] <- LR_fill_fragment(params, true_coeff)
+      X_Y[[i]] <- LR_fill_fragment(num_frag = as.integer(n / num_fragments_fit), dimension_x = d, dimension_y = D, true_coeff = true_coeff)
     }
-    params <- list(n = N / num_fragments_pred, d = d)
     for(j in 1:num_fragments_pred){
-      PRED[[j]] <- LR_genpred(params)
+      PRED[[j]] <- LR_genpred(num_frag = as.integer(N / num_fragments_pred), dimension = d)
     }
   }
 
@@ -166,12 +162,12 @@ for(replicate in 1:replicates){
   cat("-----------------------------------------\n")
   if(Minimize){
     if(use_RCOMPSs){
-      cat(paste0("LR_RCOMPSs,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", "ncores,", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+      cat(paste0("LR_RES_RCOMPSs,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", "ncores,", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
     }else{
-	    cat(paste0("LR_Sequential,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", 1, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+	    cat(paste0("LR_RES_Sequential,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", 1, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
     }
     if(compare_accuracy){
-      cat(paste0("LR_BaseR,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", 1, ",", compare_accuracy, ",", Minimize, ",", lm_time, ",", replicate, "\n"))
+      cat(paste0("LR_RES_BaseR,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", 1, ",", compare_accuracy, ",", Minimize, ",", lm_time, ",", replicate, "\n"))
     }
   }
   rm(X_Y, model, predictions)

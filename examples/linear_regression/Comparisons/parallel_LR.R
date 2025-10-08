@@ -10,23 +10,16 @@ DEBUG <- list(
 
 ## Tasks (pure R, vectorized)
 
-LR_fill_fragment <- function(params_LR_fill_fragment, true_coeff){
-  num_frag <- params_LR_fill_fragment$dim[1]
-  dimension_x <- params_LR_fill_fragment$dim[2]
-  dimension_y <- params_LR_fill_fragment$dim[3]
+LR_fill_fragment <- function(num_frag, dimension_x, dimension_y, true_coeff){
   x_frag <- matrix(runif(num_frag * dimension_x), nrow = num_frag, ncol = dimension_x)
   y_frag <- cbind(1, x_frag) %*% true_coeff
   M <- matrix(rnorm(num_frag * dimension_y), nrow = num_frag, ncol = dimension_y)
   y_frag <- y_frag + M
-  X_Y <- cbind(x_frag, y_frag)
-  return(X_Y)
+  cbind(x_frag, y_frag)
 }
 
-LR_genpred <- function(params_LR_genpred){
-  num_frag <- params_LR_genpred$n
-  dimension <- params_LR_genpred$d
-  x_pred <- matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
-  return(x_pred)
+LR_genpred <- function(num_frag, dimension){
+  matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
 }
 
 compute_model_parameters <- function(ztz, zty) {
@@ -60,9 +53,9 @@ merge <- function(...){
 
 ## Functions (parallelized)
 
-fit_linear_regression <- function(x_y, dx, arity = 2, cl = NULL) {
+fit_linear_regression <- function(x_y, dx, arity = 2, cl) {
   nfrag <- length(x_y)
-  ncores <- if (is.null(cl)) 1L else as.integer(cl)
+  ncores <- as.integer(cl)
   ztz_list <- mclapply(seq_len(nfrag), function(i){
     x <- x_y[[i]][,1:dx, drop = FALSE]
     x <- cbind(1, x)
@@ -80,7 +73,7 @@ fit_linear_regression <- function(x_y, dx, arity = 2, cl = NULL) {
   parameters
 }
 
-predict_linear_regression <- function(x, parameters, cl = NULL) {
+predict_linear_regression <- function(x, parameters, cl) {
   ncores <- if (is.null(cl)) 1L else as.integer(cl)
   mclapply(x, function(xi) compute_prediction(xi, parameters), mc.cores = ncores)
 }
@@ -119,7 +112,7 @@ parse_arguments <- function(Minimize) {
       "-C" =, "--RCOMPSs" = { use_RCOMPSs <- TRUE },
       "--replicates" = { replicates <- as.integer(val) },
       "--compare_accuracy" = { compare_accuracy <- TRUE },
-      "--cores" = { cores <- as.integer(val) },
+      "--ncores" = { cores <- as.integer(val) },
       "-h" =, "--help" = { is.asking_for_help <- TRUE }
     )
   }
@@ -135,7 +128,7 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments_fit <num_fragments_fit>    Number of fragments (fit)\n")
     cat("  -F, --fragments_pred <num_fragments_pred>  Number of fragments (pred)\n")
     cat("  -a, --arity <arity>                        Arity of merge (kept for compat)\n")
-    cat("      --cores <cores>                        Parallel workers (default: all)\n")
+    cat("      --ncores <cores>                       Parallel workers (default: all)\n")
     cat("      --compare_accuracy                     Compare with base lm\n")
     cat("      --replicates <replicates>              Number of replicates (default: 1)\n")
     cat("  -h, --help                                 Show this help message\n")
@@ -198,7 +191,6 @@ if(!Minimize){
 
 auto_cores <- max(1L, detectCores(logical = TRUE) - 0L)
 ncores <- if (is.na(cores)) auto_cores else max(1L, as.integer(cores))
-cl <- ncores
 
 set.seed(seed)
 n <- num_fit
@@ -224,20 +216,21 @@ for(replicate in 1:replicates){
     stop("num_fit and num_pred must be divisible by their respective fragment counts.")
   }
 
-  X_Y <- mclapply(seq_along(num_fragments_fit), function(i) {
+  X_Y <- mclapply(seq_len(num_fragments_fit), function(i) {
     set.seed(seed + i)
-    fit_params <- list(dim = c(fit_chunk, d, D))
-    LR_fill_fragment(fit_params, true_coeff)
+    LR_fill_fragment(num_frag = fit_chunk, dimension_x = d, dimension_y = D, true_coeff = true_coeff)
   }, mc.cores = ncores)
 
-  PRED <- mclapply(seq_along(num_fragments_pred), function(i) {
+  PRED <- mclapply(seq_len(num_fragments_pred), function(i) {
     set.seed(seed + 10000L + i)
-    pred_params <- list(n = pred_chunk, d = d)
-    LR_genpred(pred_params)
+    LR_genpred(num_frag = pred_chunk, dimension = d)
   }, mc.cores = ncores)
 
   model <- fit_linear_regression(X_Y, d, arity = arity, cl = ncores)
-  predictions <- predict_linear_regression(PRED, model, cl = ncores)
+  
+  predictions <- mclapply(PRED, function(xi){
+    compute_prediction(xi, model)
+  }, mc.cores = ncores)
 
   linear_regression_time <- proc.time()
   LR_time <- round(linear_regression_time[3] - start_time[3], 3)
@@ -291,7 +284,7 @@ for(replicate in 1:replicates){
   cat("-----------------------------------------\n")
 
   if(Minimize){
-    cat(paste0("LR_PARALLEL,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+    cat(paste0("LR_RES_PARALLEL,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
   }
 
   rm(X_Y, model, predictions)

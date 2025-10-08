@@ -1,19 +1,28 @@
 #!/bin/bash
 
-replicate=3
+replicate=1
+replicate_RCOMPSs=2
 seed=123
 dim=100
+clean_compss=true
+ncores=50
+fragments_fit=50
+fragments_pred=50
 
 # Specify which algorithms to execute
-#algorithms=("parallel" "parallel_bigmemory" "future.apply" "future_apply_bigmemory" "future" "future_bigmemory" "RCOMPSs" "RCOMPSs_bigmemory")
 algorithms=("parallel" "furrr" "future" "RCOMPSs")
-#algorithms=("parallel")
+#algorithms=("parallel" "RCOMPSs")
+#algorithms=("parallel" "Sequential")
 #algorithms=("RCOMPSs")
+#algorithms=("furrr")
+
+n_sample_range=(1000 5000 10000 50000 100000 500000 1000000 $(seq 5000000 5000000 50000000))
 
 cd /home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/linear_regression/Comparisons
 
-for n_sample in $(seq 200000 2200000 17800000); do
-#for n_sample in $(seq 200000 8800000 44200000); do
+compss_clean_procs
+
+for n_sample in "${n_sample_range[@]}"; do
 
     # Only run algorithms specified in the array
     for alg in "${algorithms[@]}"; do
@@ -21,61 +30,42 @@ for n_sample in $(seq 200000 2200000 17800000); do
         if [ "$alg" == "parallel" ]; then
             echo "parallel"
             for i in $(seq 1 $replicate); do
-                Rscript parallel_LR.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit 50 --fragments_pred 50 --arity 50 --cores 50 --seed $seed --replicates 1
-            done
-        elif [ "$alg" == "parallel_bigmemory" ]; then
-            echo "parallel & bigmemory"
-            for i in $(seq 1 $replicate); do
-                Rscript parallel_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates 1 --arity 50 --workers 50 --seed $seed
-            done
-        elif [ "$alg" == "future.apply" ]; then
-            echo "future.apply"
-            for i in $(seq 1 $replicate); do
-                Rscript future_apply_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates 1 --arity 50 --plan multicore --workers 50 --seed $seed
-            done
-        elif [ "$alg" == "future_apply_bigmemory" ]; then
-            echo "future.apply & bigmemory"
-            for i in $(seq 1 $replicate); do
-                Rscript future_apply_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates 1 --arity 50 --plan multicore --workers 50 --seed $seed
+                Rscript parallel_LR.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit $fragments_fit --fragments_pred $fragments_pred --arity 50 --ncores $ncores --seed $seed --replicates 1
             done
         elif [ "$alg" == "furrr" ]; then
             echo "furrr"
             for i in $(seq 1 $replicate); do
-                Rscript furrr_LR.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit 50 --fragments_pred 50 --arity 50 --cores 50 --seed $seed --replicates 1
+                Rscript furrr_LR.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit $fragments_fit --fragments_pred $fragments_pred --arity 50 --ncores $ncores --seed $seed --replicates 1
             done
         elif [ "$alg" == "future" ]; then
             echo "future"
             for i in $(seq 1 $replicate); do
-                Rscript future_LR.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit 50 --fragments_pred 50 --arity 50 --cores 50 --seed $seed --replicates 1
+                Rscript future_LR.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit $fragments_fit --fragments_pred $fragments_pred --arity 50 --ncores $ncores --seed $seed --replicates 1
             done
-        elif [ "$alg" == "future_bigmemory" ]; then
-            echo "future & bigmemory"
-            Rscript future_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates $replicate --arity 50 --plan multicore --workers 50 --seed $seed
-        elif [ "$alg" == "RCOMPSs_bigmemory" ]; then
-            echo "RCOMPSs & bigmemory"
-            compss_clean_procs
-            sleep 2
-            runcompss --lang=r --cpu_affinity=disabled RCOMPSs_bigmemory_kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates $replicate --arity 50 --plot FALSE --RCOMPSs --seed $seed
-            compss_clean_procs
         elif [ "$alg" == "Sequential" ]; then
-            cd ..
+            #cd ..
             echo "Sequential"
-            compss_clean_procs
-            sleep 1
-            runcompss --lang=r --cpu_affinity=disabled kmeans.R -M --numpoints $n_sample --dimensions 100 --num_centres 10 --fragments 50 --mode normal --iterations $iterations --replicates 1 --arity 50 --plot FALSE --seed $seed
+            #compss_clean_procs
+            #sleep 1
+            #runcompss --lang=r --cpu_affinity=disabled --project=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/project.xml --resources=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/resources.xml --env_script=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/linear_regression/sequential_env.sh linear_regression.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit $fragments_fit --fragments_pred $fragments_pred --arity 50 --seed $seed --replicates $replicate_RCOMPSs
+            Rscript sequential_LR.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit $fragments_fit --fragments_pred $fragments_pred --arity 50 --ncores $ncores --seed $seed --replicates 1
         elif [ "$alg" == "RCOMPSs" ]; then
             cd ..
             echo "RCOMPSs"
             compss_clean_procs
             sleep 2
-            runcompss --lang=r --cpu_affinity=disabled --env_script=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/linear_regression/sequential_env.sh linear_regression.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit 50 --fragments_pred 50 --arity 50 --seed $seed --replicates $replicate --RCOMPSs
+            #--env_script=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/linear_regression/sequential_env.sh 
+            runcompss --lang=r --cpu_affinity=disabled --project=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/project.xml --resources=/home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/aux/resources.xml linear_regression.R -M --num_fit $n_sample --num_pred $n_sample --dimensions_x $dim --dimensions_y $dim --fragments_fit $fragments_fit --fragments_pred $fragments_pred --arity 50 --seed $seed --replicates $replicate_RCOMPSs --RCOMPSs
         fi
 
-        if [ "$alg" == "Sequential" ] || [ "$alg" == "RCOMPSs" ]; then
+        if [ "$alg" == "RCOMPSs" ]; then
+            cd Comparisons
+        fi
+
+        if [ "$clean_compss" == true ]; then
             compss_clean_procs
             rm -rf /tmp/COMPSsWorker/*
             rm -rf /home/zhanx0q/.COMPSs/*
-            cd Comparisons
         fi
 
         sleep 5
@@ -83,6 +73,6 @@ for n_sample in $(seq 200000 2200000 17800000); do
     done
     
     compss_clean_procs
-    #sleep 120
+    sleep 10
 
 done

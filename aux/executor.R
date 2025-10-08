@@ -107,14 +107,22 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
             first_arg_ind <- num_of_nodes + 8
             for (i in 0:(leng_params_func - 1)) {
               if (params[first_arg_ind] == "0") {
+                # If the type of the current argument is logical
+                params_func_list[[i + 1]] <- as.logical(params[first_arg_ind + 5])
+                names(params_func_list)[i + 1] <- params[first_arg_ind + 3]
+                first_arg_ind <- first_arg_ind + 6
+              } else if (params[first_arg_ind] == "4") {
+                # If the type of the current argument is integer
                 params_func_list[[i + 1]] <- as.integer(params[first_arg_ind + 5])
                 names(params_func_list)[i + 1] <- params[first_arg_ind + 3]
                 first_arg_ind <- first_arg_ind + 6
               } else if (params[first_arg_ind] == "7") {
+                # If the type of the current argument is numeric
                 params_func_list[[i + 1]] <- as.numeric(params[first_arg_ind + 5])
                 names(params_func_list)[i + 1] <- params[first_arg_ind + 3]
                 first_arg_ind <- first_arg_ind + 6
               } else if (params[first_arg_ind] == "8") {
+                # If the type of the current argument is character
                 num_of_words <- as.integer(params[first_arg_ind + 5])
                 vec_words <- character(num_of_words)
                 for (j in 1:num_of_words) {
@@ -124,6 +132,7 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
                 names(params_func_list)[i + 1] <- params[first_arg_ind + 3]
                 first_arg_ind <- first_arg_ind + 6 + num_of_words
               } else if (params[first_arg_ind] == "10") {
+                # If the type of the current argument is not basic, we assign the type as 10L - FILE and unserialize the object
                 content_type <- as.character(params[first_arg_ind + 4])
                 # print(paste0("The content type is: ", content_type, "\n"))
                 path_value <- as.character(params[first_arg_ind + 5])
@@ -141,7 +150,7 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
                   # close(con)
                   TIME_UNSER <- proc.time()
                   RCOMPSs::extrae_emit_event(9000100, 8)
-                  params_func_list[[i + 1]] <- RCOMPSs::compss_unserialize(path_value)
+                  params_func_list[[i + 1]] <- RCOMPSs::compss_unserialize(path_value, mthreads = 1)
                   RCOMPSs::extrae_emit_event(9000100, 0)
                   TIME_UNSER <- proc.time() - TIME_UNSER
                   cat("RCOMPSs::compss_unserialize TIME:", TIME_UNSER[3], "seconds\n")
@@ -172,10 +181,10 @@ executor <- function(input_fifo_path, output_fifo_path, executor_id) {
               path_return_value <- as.character(params[first_arg_ind + 5])
               path_return_value <- strsplit(path_return_value, ":")[[1]]
               path_return_value <- path_return_value[length(path_return_value)]
-              cat("The serialization method for the return value is:", ser_method, "\n")
+              cat("The serialization method for the return value is:", RV_ser_method, "\n")
               TIME_SER <- proc.time()
               RCOMPSs::extrae_emit_event(9000100, 9)
-              RCOMPSs::compss_serialize(result, path_return_value, RV_ser_method)
+              RCOMPSs::compss_serialize(result, path_return_value, RV_ser_method, mthreads = 1)
               RCOMPSs::extrae_emit_event(9000100, 0)
               TIME_SER <- proc.time() - TIME_SER
               cat("RCOMPSs::compss_serialize TIME:", TIME_SER[3], "seconds\n")

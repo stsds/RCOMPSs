@@ -208,7 +208,7 @@ task <- function(f, filename,
       # - If the type is basic, we assign the corresponding number in <arguments_type>
       # - If the type is not basic, we assign the type as 10L - FILE and serialize the object
       for (i in 1:arguments_length) {
-        if (length(class(arguments[[i]])) == 1 && length(arguments[[i]]) == 1 && (class(arguments[[i]]) == "numeric" || class(arguments[[i]]) == "character")) {
+        if (length(class(arguments[[i]])) == 1 && length(arguments[[i]]) == 1 && (class(arguments[[i]]) %in% c("integer", "numeric", "character"))) {
           arguments_type[i] <- parType_mapping(arguments[[i]])
         } else {
           arguments_type[i] <- 10L
@@ -243,7 +243,7 @@ task <- function(f, filename,
             if (need_serialization) {
               INI.TIME <- proc.time()
               arg_ser_filename <- paste0(MASTER_WORKING_DIR, "/", ser_method[1], "-", arguments_names[i], "_arg[", i, "]_", UID())
-              compss_serialize(object = arguments[[i]], filepath = arg_ser_filename, ser_method = ser_method[1])
+              compss_serialize(object = arguments[[i]], filepath = arg_ser_filename, ser_method = ser_method[1], mthreads = 1)
               SER_END.TIME <- proc.time()
               SER.TIME <- SER_END.TIME - INI.TIME
               if (DEBUG) {
@@ -379,6 +379,7 @@ task <- function(f, filename,
       if (return_value) {
         if(return_type == "element"){
           FO <- outputfile
+          class(FO) <- "future_object_path"
         }else if(return_type == "list"){
           FO <- list(outputfile)
           names(FO)[1] <- "outputfile"
@@ -423,13 +424,13 @@ UID <- function() {
 #' Internal serialization function
 #'
 #' @export
-compss_serialize <- function(object, filepath, ser_method) {
+compss_serialize <- function(object, filepath, ser_method, mthreads = 1) {
   if (ser_method == "RMVL") {
     con <- RMVL::mvl_open(filepath, append = TRUE, create = TRUE)
     RMVL::mvl_write_object(con, object, name = "obj")
     RMVL::mvl_close(con)
   } else if (ser_method == "qs") {
-    qs::qsave(object, file = filepath, preset = "uncompressed")
+    qs::qsave(object, file = filepath, preset = "uncompressed", nthreads = mthreads)
   } else {
     stop("Unknown serialization method")
   }
@@ -440,7 +441,7 @@ compss_serialize <- function(object, filepath, ser_method) {
 #' Internal unserialization function
 #'
 #' @export
-compss_unserialize <- function(filepath) {
+compss_unserialize <- function(filepath, mthreads = 1) {
   # Extract unser_method from the filename (e.g., /ABSOLUTEPATH/qs-filenamexxxx)
   unser_method <- strsplit(basename(filepath), "-")[[1]][1]
   if (unser_method == "RMVL") {
@@ -449,7 +450,7 @@ compss_unserialize <- function(filepath) {
     RMVL::mvl_close(con)
     return(object)
   } else if (unser_method == "qs") {  # Default
-    return(qs::qread(filepath, nthreads = 1))
+    return(qs::qread(filepath, nthreads = mthreads))
   } else {
     stop("Unknown serialization method")
   }
@@ -492,29 +493,43 @@ compss_barrier <- function(no_more_tasks = FALSE) {
 #'
 #' @param future_obj
 #' @export
-compss_wait_on <- function(future_obj) {
+compss_wait_on <- function(future_obj, mthreads = 1, nthreads = 1) {
   # if(class(future_obj) == "future_object"){
   if (length(class(future_obj)) == 1 && class(future_obj) == "future_object") {
     Get_File(0L, future_obj$outputfile)
-    return_value <- compss_unserialize(future_obj$outputfile)
+    return_value <- compss_unserialize(future_obj$outputfile, mthreads)
     return(return_value)
   } else if (length(class(future_obj)) == 1 && class(future_obj) == "list") {
-    return_list <- lapply(future_obj, function(obj) {
+    if(nthreads == 1){
+      return_list <- lapply(future_obj, function(obj) {
         if (class(obj) == "future_object") {
           Get_File(0L, obj$outputfile)
-          return(compss_unserialize(obj$outputfile))
+          return(compss_unserialize(obj$outputfile, mthreads))
         } else {
           return(obj)
         }
-    })
+      })
+    } else {
+      if(!requireNamespace("parallel", quietly = TRUE)) {
+        stop("The package `parallel` is required for multi-threaded wait_on. Please install it.")
+      }
+      return_list <- parallel::mclapply(future_obj, function(obj) {
+        if (class(obj) == "future_object") {
+          Get_File(0L, obj$outputfile)
+          return(compss_unserialize(obj$outputfile, mthreads))
+        } else {
+          return(obj)
+        }
+      }, mc.cores = min(length(future_obj), nthreads), mc.preschedule = FALSE)
+    }
     return(return_list)
-  } else if(class(future_obj) == "character") {
+  } else if(length(class(future_obj)) == 1 && class(future_obj) == "future_object_path") {
     # try to sapply to all the length of future_obj. For each element, if the file exists, getfile and unserialize to return the value; if the file does not exist, return the original character
     return_vector <- sapply(future_obj,
       function(file) {
         tryCatch({
           Get_File(0L, file)
-          return(compss_unserialize(file))
+          return(compss_unserialize(file, mthreads))
         }, error = function(e) {
           warning("[compss_wait_on] File ", file, " does not exist. Returning the original character.\n")
           return(file)

@@ -11,10 +11,7 @@ DEBUG <- list(
 
 ## Tasks (pure R, vectorized)
 
-LR_fill_fragment <- function(params_LR_fill_fragment, true_coeff){
-  num_frag <- params_LR_fill_fragment$dim[1]
-  dimension_x <- params_LR_fill_fragment$dim[2]
-  dimension_y <- params_LR_fill_fragment$dim[3]
+LR_fill_fragment <- function(num_frag, dimension_x, dimension_y, true_coeff){
   x_frag <- matrix(runif(num_frag * dimension_x), nrow = num_frag, ncol = dimension_x)
   y_frag <- cbind(1, x_frag) %*% true_coeff
   M <- matrix(rnorm(num_frag * dimension_y), nrow = num_frag, ncol = dimension_y)
@@ -23,9 +20,7 @@ LR_fill_fragment <- function(params_LR_fill_fragment, true_coeff){
   return(X_Y)
 }
 
-LR_genpred <- function(params_LR_genpred){
-  num_frag <- params_LR_genpred$n
-  dimension <- params_LR_genpred$d
+LR_genpred <- function(num_frag, dimension){
   x_pred <- matrix(runif(num_frag * dimension), nrow = num_frag, ncol = dimension)
   return(x_pred)
 }
@@ -67,13 +62,13 @@ fit_linear_regression <- function(x_y, dx, arity = 2) {
     x <- x_y[[i]][,1:dx, drop = FALSE]
     x <- cbind(1, x)
     t(x) %*% x
-  }, .options = furrr_options(seed = TRUE))
+  }, .options = furrr_options(seed = NULL))
   zty_list <- future_map(seq_len(nfrag), function(i){
     x <- x_y[[i]][,1:dx, drop = FALSE]
     y <- x_y[[i]][,(dx+1):ncol(x_y[[i]]), drop = FALSE]
     x <- cbind(1, x)
     t(x) %*% y
-  }, .options = furrr_options(seed = TRUE))
+  }, .options = furrr_options(seed = NULL))
   ztz <- do.call(merge, ztz_list)
   zty <- do.call(merge, zty_list)
   parameters <- compute_model_parameters(ztz, zty)
@@ -96,7 +91,7 @@ parse_arguments <- function(Minimize) {
   arity <- 2
   use_RCOMPSs <- FALSE
   compare_accuracy <- FALSE
-  cores <- NA_integer_
+  ncores <- NA_integer_
   is.asking_for_help <- FALSE
   replicates <- 1
 
@@ -112,9 +107,9 @@ parse_arguments <- function(Minimize) {
       "-F" =, "--fragments_pred" = { num_fragments_pred <- as.integer(val) },
       "-a" =, "--arity" = { arity <- as.integer(val) },
       "-C" =, "--RCOMPSs" = { use_RCOMPSs <- TRUE },
-      "--replicates" = { replicates <- as.integer(val) },
-      "--compare_accuracy" = { compare_accuracy <- TRUE },
-      "--cores" = { cores <- as.integer(val) },
+      "-r" =, "--replicates" = { replicates <- as.integer(val) },
+              "--compare_accuracy" = { compare_accuracy <- TRUE },
+              "--ncores" = { ncores <- as.integer(val) },
       "-h" =, "--help" = { is.asking_for_help <- TRUE }
     )
   }
@@ -130,9 +125,9 @@ parse_arguments <- function(Minimize) {
     cat("  -f, --fragments_fit <num_fragments_fit>    Number of fragments (fit)\n")
     cat("  -F, --fragments_pred <num_fragments_pred>  Number of fragments (pred)\n")
     cat("  -a, --arity <arity>                        Arity of merge (kept for compat)\n")
-    cat("      --cores <cores>                        Parallel workers (default: all)\n")
+    cat("      --ncores <ncores>                      Parallel workers (default: all)\n")
     cat("      --compare_accuracy                     Compare with base lm\n")
-    cat("      --replicates <replicates>              Number of replicates (default: 1)\n")
+    cat("  -r, --replicates <replicates>              Number of replicates (default: 1)\n")
     cat("  -h, --help                                 Show this help message\n")
     q(status = 0)
   }
@@ -148,7 +143,7 @@ parse_arguments <- function(Minimize) {
     arity = arity,
     use_RCOMPSs = FALSE,
     compare_accuracy = compare_accuracy,
-    cores = cores,
+    ncores = ncores,
     replicates = replicates
   )
 }
@@ -164,7 +159,7 @@ print_parameters <- function(params) {
   cat("  Number of fragments of the predicting data:", params$num_fragments_pred, "\n")
   cat("  Arity:", params$arity, "\n")
   cat("  Compare accuracy?", params$compare_accuracy, "\n")
-  cat("  Cores:", ifelse(is.na(params$cores), "auto", params$cores), "\n")
+  cat("  Cores:", ifelse(is.na(params$ncores), "auto", params$ncores), "\n")
 }
 
 # Main
@@ -192,8 +187,7 @@ if(!Minimize){
 }
 
 auto_cores <- max(1L, future::availableCores() - 0L)
-ncores <- if (is.na(cores)) auto_cores else max(1L, as.integer(cores))
-cl <- ncores
+ncores <- if (is.na(ncores)) auto_cores else max(1L, as.integer(ncores))
 
 set.seed(seed)
 n <- num_fit
@@ -208,8 +202,9 @@ for(j in 1:D){
   }
 }
 
-plan(multisession, workers = ncores)
+plan(multicore, workers = ncores)
 options(future.globals.maxSize = Inf)
+
 for(replicate in 1:replicates){
   cat("Doing replicate", replicate, "...\n")
 
@@ -221,24 +216,21 @@ for(replicate in 1:replicates){
     stop("num_fit and num_pred must be divisible by their respective fragment counts.")
   }
 
-  X_Y <- future_map(seq_along(num_fragments_fit), ~{
+  X_Y <- future_map(seq_len(num_fragments_fit), ~{
     set.seed(seed + .x)
-    fit_params <- list(dim = c(fit_chunk, d, D))
-    LR_fill_fragment(fit_params, true_coeff)
-  }, .options = furrr_options(seed = TRUE))
+    LR_fill_fragment(num_frag = fit_chunk, dimension_x = d, dimension_y = D, true_coeff = true_coeff)
+  }, .options = furrr_options(seed = NULL))
 
-  PRED <- future_map(seq_along(num_fragments_pred), ~{
+  PRED <- future_map(seq_len(num_fragments_pred), ~{
     set.seed(seed + 10000L + .x)
-    pred_params <- list(n = pred_chunk, d = d)
-    LR_genpred(pred_params)
-  }, .options = furrr_options(seed = TRUE))
+    LR_genpred(num_frag = pred_chunk, dimension = d)
+  }, .options = furrr_options(seed = NULL))
 
   model <- fit_linear_regression(X_Y, d, arity = arity)
   predictions <- future_map(PRED, function(xi){
     xi <- cbind(1, xi)
     xi %*% model
-  }, .options = furrr_options(seed = TRUE))
-
+  }, .options = furrr_options(seed = NULL))
 
   linear_regression_time <- proc.time()
   LR_time <- round(linear_regression_time[3] - start_time[3], 3)
@@ -292,7 +284,7 @@ for(replicate in 1:replicates){
   cat("-----------------------------------------\n")
 
   if(Minimize){
-    cat(paste0("LR_FURRR,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", cores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
+    cat(paste0("LR_RES_FURRR,", seed, ",", num_fit, ",", num_pred, ",", dimensions_x, ",", dimensions_y, ",", num_fragments_fit, ",", num_fragments_pred, ",", arity, ",", ncores, ",", compare_accuracy, ",", Minimize, ",", LR_time, ",", replicate, "\n"))
   }
 
   rm(X_Y, model, predictions)
