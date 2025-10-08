@@ -1,20 +1,23 @@
 #!/bin/bash
 
-replicate=1
-replicate_RCOMPSs=2
+replicate=2
+replicate_RCOMPSs=3
 seed=123
 dim=100
 k=10
 a=50
+ncores=50
 fragments_train=50 # $((n_train / 4000))
 fragments_test=50 # $((n_test / 4000))
 clean_compss=true
-n_test_range=(1000 100000 $(seq 500000 500000 2000000))
+#n_test_range=(1000 100000 $(seq 500000 500000 2000000))
+n_test_range=($(seq 2000000 500000 10000000))
+#n_test_range=$(seq 15000 500000 15000)
 
 
 # Specify which algorithms to execute
 #algorithms=("parallel" "parallel_bigmemory" "future.apply" "future_apply_bigmemory" "future" "future_bigmemory" "RCOMPSs" "RCOMPSs_bigmemory")
-algorithms=("parallel" "furrr" "future" "RCOMPSs" "Sequential")
+#algorithms=("parallel" "furrr" "future" "RCOMPSs" "Sequential")
 algorithms=("parallel" "furrr" "future" "RCOMPSs")
 #algorithms=("parallel" "RCOMPSs")
 #algorithms=("parallel" "Sequential")
@@ -38,17 +41,17 @@ for n_test in "${n_test_range[@]}"; do
     if [ "$alg" == "parallel" ]; then
       echo "parallel"
       for i in $(seq 1 $replicate); do
-        Rscript parallel_knn.R -M --n_train $n_train --n_test $n_test --dimensions $dim --num_class 5 --fragments_train $fragments_train --fragments_test $fragments_test --knn=$k --arity $a --ncores 50 --seed $seed --replicates 1
+        Rscript parallel_knn.R -M --n_train $n_train --n_test $n_test --dimensions $dim --num_class 5 --fragments_train $fragments_train --fragments_test $fragments_test --knn=$k --arity $a --ncores $ncores --seed $seed --replicates 1
       done
     elif [ "$alg" == "furrr" ]; then
       echo "furrr"
       for i in $(seq 1 $replicate); do
-        Rscript furrr_knn.R -M --n_train $n_train --n_test $n_test --dimensions $dim --num_class 5 --fragments_train $fragments_train --fragments_test $fragments_test --knn=$k --arity $a --ncores 50 --seed $seed --replicates 1
+        Rscript furrr_knn.R -M --n_train $n_train --n_test $n_test --dimensions $dim --num_class 5 --fragments_train $fragments_train --fragments_test $fragments_test --knn=$k --arity $a --ncores $ncores --seed $seed --replicates 1
       done
     elif [ "$alg" == "future" ]; then
       echo "future"
       for i in $(seq 1 $replicate); do
-        Rscript future_knn.R -M --n_train $n_train --n_test $n_test --dimensions $dim --num_class 5 --fragments_train $fragments_train --fragments_test $fragments_test --knn=$k --arity $a --ncores 50 --seed $seed --replicates 1
+        Rscript future_knn.R -M --n_train $n_train --n_test $n_test --dimensions $dim --num_class 5 --fragments_train $fragments_train --fragments_test $fragments_test --knn=$k --arity $a --ncores $ncores --seed $seed --replicates 1
       done
     elif [ "$alg" == "Sequential" ]; then
       cd ..
@@ -76,6 +79,6 @@ for n_test in "${n_test_range[@]}"; do
   done
 
   compss_clean_procs
-  sleep 15
+  sleep 60
 
 done

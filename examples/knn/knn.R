@@ -91,29 +91,27 @@ for(replicate in 1:replicates){
     cat("Generating data replicate", replicate, "... ")
   }
 
-  points_per_fragment_train <- max(1, n_train %/% num_fragments_train)
-  points_per_fragment_test <- max(1, n_test %/% num_fragments_test)
+  points_per_fragment_train <- as.integer(max(1, n_train %/% num_fragments_train))
+  points_per_fragment_test <- as.integer(max(1, n_test %/% num_fragments_test))
   # Generate cluster central points
   true_centres <- matrix(runif(num_class * dimensions),
                          nrow = num_class, ncol = dimensions)
 
-  params_train <- list(centres = true_centres, n = points_per_fragment_train)
-  params_test <- list(centres = true_centres, n = points_per_fragment_test)
   x_train <- vector("list", num_fragments_train)
   x_test <- vector("list", num_fragments_test)
   if(use_RCOMPSs){
     for(f in 1:num_fragments_train){
-      x_train[[f]] <- task.KNN_fill_fragment(params_train)
+      x_train[[f]] <- task.KNN_fill_fragment(centres = true_centres, n = points_per_fragment_train)
     }
     for(f in 1:num_fragments_test){
-      x_test[[f]] <- task.KNN_fill_fragment(params_test)
+      x_test[[f]] <- task.KNN_fill_fragment(centres = true_centres, n = points_per_fragment_test)
     }
   }else{
     for(f in 1:num_fragments_train){
-      x_train[[f]] <- KNN_fill_fragment(params_train)
+      x_train[[f]] <- KNN_fill_fragment(centres = true_centres, n = points_per_fragment_train)
     }
     for(f in 1:num_fragments_test){
-      x_test[[f]] <- KNN_fill_fragment(params_test)
+      x_test[[f]] <- KNN_fill_fragment(centres = true_centres, n = points_per_fragment_test)
     }
   }
 
@@ -204,7 +202,7 @@ for(replicate in 1:replicates){
     ggsave("RCOMPSs_plot_knn.pdf", plot = p, device = "pdf", width = 8, height = 8)
   }
 
-  rm(params_train, params_test, x_train, x_test, res_KNN)
+  rm(x_train, x_test, res_KNN)
   gc()
   Sys.sleep(2)
 }

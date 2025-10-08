@@ -174,7 +174,7 @@ if(!Minimize){
 
 set.seed(seed)
 options(future.globals.maxSize = Inf)
-plan(multisession, workers = ncores)
+plan(multicore, workers = ncores)
 
 for(replicate in 1:replicates){
 

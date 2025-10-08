@@ -113,12 +113,6 @@ parse_arguments <- function(Minimize) {
   arity <- 2
   replicates <- 1
 
-  # Execution using RCOMPSs
-  use_RCOMPSs <- FALSE
-
-  # Execution using default R function
-  use_R_default <- FALSE
-
   # asking for help
   is.asking_for_help <- FALSE
 
@@ -143,8 +137,6 @@ for (i in seq_along(args)) {
       "-a" =, "--arity" = { arity <- as.integer(val) },
       "-m" =, "--confusion_matrix" = { confusion_matrix <- TRUE },
       "-p" =, "--plot" = { needs_plot <- as.logical(val) },
-      "-C" =, "--RCOMPSs" = { use_RCOMPSs <- TRUE },
-      "-R" =, "--R-default" = { use_R_default <- TRUE },
       "-r" =, "--replicates" = { replicates <- as.integer(val) },
               "--ncores" = { ncores <- as.integer(val) },
       "-h" =, "--help" = { is.asking_for_help <- TRUE }
@@ -165,8 +157,6 @@ for (i in seq_along(args)) {
     cat("  -a, --arity <arity>                       Reduction arity\n")
     cat("  -p, --plot <needs_plot>                   Boolean: Plot?\n")
     cat("  -m, --confusion_matrix <confusion_matrix> Flag: confusion_matrix?\n")
-    cat("  -C, --RCOMPSs <use_RCOMPSs>               Flag: Use RCOMPSs parallelization?\n")
-    cat("  -R, --R-default <use_R_default>           Flag: Use default knn function to compute?\n")
     cat("  -r, --replicates <replicates>             Number of replicates\n")
     cat("  --ncores <ncores>                         Number of cores to use\n")
     cat("  -h, --help                                Show this help message\n")
@@ -193,8 +183,6 @@ for (i in seq_along(args)) {
               arity = arity,
               confusion_matrix = confusion_matrix,
               needs_plot = needs_plot,
-              use_RCOMPSs = use_RCOMPSs,
-              use_R_default = use_R_default,
               replicates = replicates,
               ncores = ncores
               ))
@@ -213,8 +201,6 @@ print_parameters <- function(params) {
   cat("  Arity:", params$arity, "\n")
   cat("  confusion_matrix:", params$confusion_matrix, "\n")
   cat("  needs_plot:", params$needs_plot, "\n")
-  cat("  use_RCOMPSs:", params$use_RCOMPSs, "\n")
-  cat("  use_R_default:", params$use_R_default, "\n")
   cat("  Replicates:", params$replicates, "\n")
 }
 
@@ -355,7 +341,7 @@ for(replicate in 1:replicates){
   cat("Total time:", Total_time, "seconds\n")
   cat("-----------------------------------------\n")
   if(Minimize){
-    cat(paste0("KNN_RES_FUTURE,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", num_fragments_train, ",", num_fragments_test, ",", confusion_matrix, ",", needs_plot, ",", use_RCOMPSs, ",", use_R_default, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
+    cat(paste0("KNN_RES_FUTURE,", seed, ",", n_train, ",", n_test, ",", dimensions, ",", num_class, ",", k, ",", arity, ",", num_fragments_train, ",", num_fragments_test, ",", confusion_matrix, ",", needs_plot, ",", Minimize, ",", Initialization_time, ",", KNN_time, ",", Total_time, ",", replicate, "\n"))
   }
   if(confusion_matrix){
     PRED <- as.factor(as.numeric(PRED))

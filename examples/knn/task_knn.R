@@ -15,10 +15,7 @@ DEBUG <- list(
               KNN_classify = FALSE
 )
 
-KNN_fill_fragment <- function(params_fill_fragment){
-
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
+KNN_fill_fragment <- function(centres, n){
 
   # Obtain necessary numbers
   nclass <- nrow(centres)
