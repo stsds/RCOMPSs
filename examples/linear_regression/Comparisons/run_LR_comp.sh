@@ -16,7 +16,7 @@ algorithms=("parallel" "furrr" "future" "RCOMPSs")
 #algorithms=("RCOMPSs")
 #algorithms=("furrr")
 
-n_sample_range=(1000 5000 10000 50000 100000 500000 1000000 $(seq 5000000 5000000 50000000))
+n_sample_range=(1000 5000 10000 50000 100000 500000 1000000 $(seq 5000000 5000000 40000000))
 
 cd /home/zhanx0q/1Projects/2023-2Summer/RCOMPSs/2025/COMPSs/Bindings/RCOMPSs/examples/linear_regression/Comparisons
 
