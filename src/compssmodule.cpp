@@ -13,7 +13,10 @@
 **/
 
 #include <Rcpp.h>
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
+#include <unistd.h>
 #include <GS_compss.h>
 #include <extrae.h>
 using namespace Rcpp;
@@ -22,7 +25,7 @@ using namespace Rcpp;
 
 //' Printout for debugging
 //' @param str_to_print String to print if DEBUG_MODE is 1
-void debug(std::string str_to_print)
+void log_debug(std::string str_to_print)
 {
   if (DEBUG_MODE)
   {
@@ -30,11 +33,177 @@ void debug(std::string str_to_print)
   }
 }
 
+//' Bool to String converter
+//' @param value Bool to convert to String
+std::string boolToString(bool value) {
+  return value ? "true" : "false";
+}
+
+//' Start a COMPSs-Runtime instance within interactive session
+// [[Rcpp::export]]
+void start_runtime_interactive(
+  bool debug = false,
+  bool graph = false,
+  bool trace = false
+  // int monitor = -1,
+  // std::string project_xml = "",
+  // std::string resources_xml = "",
+  // bool summary = false,
+  // std::string task_execution = "compss",
+  // std::string storage_conf = "null",
+  // std::string streaming_backend = "NONE",
+  // std::string streaming_master_name = "null",
+  // std::string streaming_master_port = "null",
+  // int task_count = 50,
+  // std::string app_name = "InteractiveMode",
+  // std::string uuid = "",
+  // std::string log_dir = "",
+  // std::string master_working_dir = "/home/javier/.COMPSs/Interactive_01/tmpFiles",  // TODO: this should depend on the user home
+  // std::string extrae_cfg = "null",
+  // std::string extrae_final_directory = "null",
+  // std::string comm = "NIO",
+  // std::string conn = "es.bsc.compss.connectors.DefaultSSHConnector",
+  // std::string master_name = "",
+  // std::string master_port = "",
+  // std::string scheduler = "es.bsc.compss.scheduler.lookahead.locality.LocalityTS",
+  // std::string scheduler_config = "",
+  // std::string jvm_workers = "-Xms1024m,-Xmx1024m,-Xmn400m",
+  // std::string cpu_affinity = "automatic",
+  // std::string gpu_affinity = "automatic",
+  // std::string fpga_affinity = "automatic",
+  // std::string fpga_reprogram = "",
+  // std::string profile_input = "",
+  // std::string profile_output = "",
+  // bool external_adaptation = false,
+  // bool shutdown_in_node_failure=false,
+  // int io_executors = 0,
+  // std::string env_script = "",
+  // bool reuse_on_block = true,
+  // bool nested_enabled = false,
+  // bool tracing_task_dependencies = false,
+  // std::string trace_label = "None",
+  // int wcl = 0,
+  // bool ear = false,
+  // bool data_provenance = false,
+  // std::string checkpoint_policy = "es.bsc.compss.checkpoint.policies.NoCheckpoint",
+  // std::string checkpoint_params = "",
+  // std::string checkpoint_folder = ""
+)
+{
+  log_debug("Generate configuration file");
+
+  char cwd[PATH_MAX];
+  if (getcwd(cwd, sizeof(cwd)) == nullptr) {
+      perror("Failed to get the current directory");
+      return;
+  }
+  std::string fileName = "compss_jvm.cfg";
+  std::string separator = "/";
+  std::string fullPath = cwd + separator + fileName;
+
+  std::string COMPSS_HOME = std::getenv("COMPSS_HOME");
+  if (COMPSS_HOME.empty()) {
+    perror("ERROR: 'COMPSS_HOME' environment variable is not defined.");
+  }
+  std::string JAVA_HOME = std::getenv("JAVA_HOME");
+  if (JAVA_HOME.empty()) {
+    perror("ERROR: 'JAVA_HOME' environment variable is not defined.");
+  }
+  std::string uuid = "123456-" + to_string(rand());
+
+  std::ofstream configFile(fileName);
+  configFile << "-Djdk.lang.Process.launchMechanism=fork\n";
+  configFile << "-XX:+PerfDisableSharedMem\n";
+  configFile << "-XX:-UsePerfData\n";
+  configFile << "-XX:+UseG1GC\n";
+  configFile << "-XX:+UseThreadPriorities\n";
+  configFile << "-XX:ThreadPriorityPolicy=0\n";
+  configFile << "-javaagent:" << COMPSS_HOME << "/Runtime/compss-engine.jar\n";
+  configFile << "-Dcompss.to.file=false\n";
+  configFile << "-Dcompss.appName=Interactive\n";  // << app_name << "\n";
+  configFile << "-Dcompss.data_provenance=false\n";  // << boolToString(data_provenance) << "\n";
+  configFile << "-Dcompss.uuid=" << uuid << "\n";
+  configFile << "-Dcompss.shutdown_in_node_failure=false\n";  // << boolToString(shutdown_in_node_failure) << "\n";
+  configFile << "-Dcompss.master.workingDir=/home/javier/.COMPSs/Interactive_01/tmpFiles\n";  // << master_working_dir << "\n";
+  configFile << "-Dcompss.log.dir=/home/javier/.COMPSs/Interactive_01/tmpFiles\n";  // << log_dir << "\n";
+  configFile << "-Dlog4j.configurationFile=" << COMPSS_HOME << "/Runtime/configuration/log/COMPSsMaster-log4j.info\n";
+  configFile << "-Dcompss.graph=" << boolToString(graph) << "\n";
+  configFile << "-Dcompss.monitor=0\n";  // << monitor << "\n";
+  configFile << "-Dcompss.summary=false\n";  // << boolToString(summary) << "\n";
+  configFile << "-Dcompss.worker.cp=" << cwd << ":" << COMPSS_HOME << "/Runtime/compss-engine.jar\n";
+  configFile << "-Dcompss.worker.appdir=" << cwd << "\n";
+  configFile << "-Dcompss.worker.jvm_opts=-Xms1024m,-Xmx1024m,-Xmn400m\n"; // << jvm_workers << "\n";
+  configFile << "-Dcompss.worker.cpu_affinity=automatic\n";  // << cpu_affinity << "\n";
+  configFile << "-Dcompss.worker.gpu_affinity=automatic\n";  // << gpu_affinity << "\n";
+  configFile << "-Dcompss.worker.fpga_affinity=automatic\n";  // << fpga_affinity << "\n";
+  configFile << "-Dcompss.worker.fpga_reprogram=\n";  // << fpga_reprogram << "\n";
+  configFile << "-Dcompss.worker.io_executors=0\n";  // << io_executors << "\n";
+  configFile << "-Dcompss.worker.env_script=\n";  // << env_script << "\n";
+  configFile << "-Dcompss.comm=es.bsc.compss.nio.master.NIOAdaptor\n";  // << comm << "\n";
+  configFile << "-Dcompss.masterName=\n";  // << master_name << "\n";
+  configFile << "-Dcompss.masterPort=\n";  // << master_port << "\n";
+  configFile << "-Dgat.adaptor.path=" << COMPSS_HOME << "/Dependencies/JAVA_GAT/lib/adaptors\n";
+  configFile << "-Dgat.debug=" << boolToString(debug) << "\n";
+  configFile << "-Dgat.broker.adaptor=sshtrilead\n";
+  configFile << "-Dgat.file.adaptor=sshtrilead\n";
+  configFile << "-Dcompss.execution.reuseOnBlock=true\n";  // << boolToString(reuse_on_block) << "\n";
+  configFile << "-Dcompss.execution.nested.enabled=false\n";  // << boolToString(nested_enabled) << "\n";
+  configFile << "-Dcompss.scheduler=es.bsc.compss.scheduler.lookahead.locality.LocalityTS\n";  // << scheduler << "\n";
+  configFile << "-Dcompss.scheduler.config=\n";  // << scheduler_config << "\n";
+  configFile << "-Dcompss.profile.input=\n";  // << profile_input << "\n";
+  configFile << "-Dcompss.profile.output=\n";  // << profile_output << "\n";
+  configFile << "-Dcompss.project.file=" << COMPSS_HOME << "/Runtime/configuration/xml/projects/default_project.xml\n";  // << project_xml << "\n";
+  configFile << "-Dcompss.resources.file=" << COMPSS_HOME << "/Runtime/configuration/xml/resources/default_resources.xml\n";  // << resources_xml << "\n";
+  configFile << "-Dcompss.project.schema=" << COMPSS_HOME << "/Runtime/configuration/xml/projects/project_schema.xsd\n";
+  configFile << "-Dcompss.resources.schema=" << COMPSS_HOME << "/Runtime/configuration/xml/resources/resources_schema.xsd\n";
+  configFile << "-Dcompss.conn=es.bsc.compss.connectors.DefaultSSHConnector\n";  // << conn << "\n";
+  configFile << "-Dcompss.external.adaptation=false\n";  // << boolToString(external_adaptation) << "\n";
+  configFile << "-Dcompss.checkpoint.policy=es.bsc.compss.checkpoint.policies.NoCheckpoint\n";  // << checkpoint_policy << "\n";
+  configFile << "-Dcompss.checkpoint.params=\n";  // << checkpoint_params << "\n";
+  configFile << "-Dcompss.checkpoint.folder=\n";  // << checkpoint_folder << "\n";
+  configFile << "-Dcompss.lang=R\n";
+  configFile << "-Dcompss.core.count=50\n";  // << task_count << "\n";
+  configFile << "-Djava.class.path=" << COMPSS_HOME << "/Runtime/compss-engine.jar\n";
+  configFile << "-Djava.library.path=" << COMPSS_HOME << "/Bindings/bindings-common/lib/:" <<  JAVA_HOME << "/lib/server/:/usr/lib64/mpi/gcc/openmpi/lib64/\n";
+  configFile << "-Dcompss.worker.pythonpath=\n";
+  configFile << "-Dcompss.python.interpreter=R\n";
+  configFile << "-Dcompss.python.version=3\n";
+  configFile << "-Dcompss.python.virtualenvironment=null\n";
+  configFile << "-Dcompss.python.propagate_virtualenvironment=true\n";
+  configFile << "-Dcompss.python.mpi_worker=false\n";
+  configFile << "-Dcompss.python.worker_cache=false\n";
+  configFile << "-Dcompss.python.cache_profiler=false\n";
+  configFile << "-Dcompss.streaming=NONE\n";  // << streaming_backend << "\n";
+  configFile << "-Dcompss.streaming.masterName=null\n";  // << streaming_master_name << "\n";
+  configFile << "-Dcompss.streaming.masterPort=null\n";  // << streaming_master_port << "\n";
+  configFile << "-Dcompss.task.execution=compss\n";  // << task_execution << "\n";
+  configFile << "-Dcompss.storage.conf=null\n";  // << storage_conf << "\n";
+  configFile << "-Dcompss.tracing=" << boolToString(trace) << "\n";
+  configFile << "-Dcompss.tracing.task.dependencies=false\n";  // << boolToString(tracing_task_dependencies) << "\n";
+  configFile << "-Dcompss.extrae.working_dir=null\n";  // << extrae_final_directory << "\n";
+  configFile << "-Dcompss.extrae.file=null\n";  // << extrae_cfg << "\n";
+  configFile << "-Dcompss.extrae.file.python=null\n";
+  configFile << "-Dcompss.trace.label=None\n";  // << trace_label << "\n";
+  configFile << "-Dcompss.wcl=0\n";  // << wcl << "\n";
+  configFile << "-Dcompss.ear=false\n";  // << boolToString(ear) << "\n";
+  configFile.close();
+
+  log_debug("Export configuration file");
+  if (setenv("JVM_OPTIONS_FILE", fileName.c_str(), 1) != 0) {
+    perror("Error exporting JVM_OPTIONS_FILE");
+  } else {
+    std::cout << " - Successfully exported JVM_OPTIONS_FILE: " << fileName << std::endl;
+  }
+
+  log_debug("Start interactive runtime");
+  GS_On();
+}
+
 //' Start a COMPSs-Runtime instance
 // [[Rcpp::export]]
 void start_runtime()
 {
-  debug("Start runtime");
+  log_debug("Start runtime");
   GS_On();
 }
 
@@ -46,9 +215,9 @@ void start_runtime()
 // [[Rcpp::export]]
 void stop_runtime(int code)
 {
-  debug("Stop runtime with code: " + std::to_string(code));
+  log_debug("Stop runtime with code: " + std::to_string(code));
   GS_Off(code);
-  debug("RCOMPSs stopped");
+  log_debug("RCOMPSs stopped");
 }
 
 //' register_core_element
@@ -72,7 +241,7 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
                            CharacterVector prolog, CharacterVector epilog,
                            CharacterVector container, CharacterVector typeArgs)
 {
-  debug("Register core element");
+  log_debug("Register core element");
 
   char *CESignatureCStr = &CESignature[0];
   char *ImplSignatureCStr = &ImplSignature[0];
@@ -81,12 +250,12 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
   char *ImplLocalCStr = &ImplLocal[0];
   char *ImplIOCStr = &ImplIO[0];
 
-  debug("- Core Element Signature: " + CESignature);
-  debug("- Implementation Signature: " + ImplSignature);
-  debug("- Implementation Constraints: " + ImplConstraints);
-  debug("- Implementation Type: " + ImplType);
-  debug("- Implementation Local: " + ImplLocal);
-  debug("- Implementation IO: " + ImplIO);
+  log_debug("- Core Element Signature: " + CESignature);
+  log_debug("- Implementation Signature: " + ImplSignature);
+  log_debug("- Implementation Constraints: " + ImplConstraints);
+  log_debug("- Implementation Type: " + ImplType);
+  log_debug("- Implementation Local: " + ImplLocal);
+  log_debug("- Implementation IO: " + ImplIO);
 
   char **pro;
   char **epi;
@@ -94,7 +263,7 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
   char **ImplTypeArgs;
 
   int num_params = typeArgs.size();
-  debug("- Implementation Type num args: " + std::to_string(num_params));
+  log_debug("- Implementation Type num args: " + std::to_string(num_params));
 
   pro = new char *[3];
   epi = new char *[3];
@@ -109,7 +278,7 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
   pro[1] = &prolog1[0];
   pro[2] = &prolog2[0];
 
-  debug("- Prolog: " + prolog0 + "; " + prolog1 + "; " + prolog2);
+  log_debug("- Prolog: " + prolog0 + "; " + prolog1 + "; " + prolog2);
 
   std::string epilog0 = Rcpp::as<std::string>(epilog[0]);
   std::string epilog1 = Rcpp::as<std::string>(epilog[1]);
@@ -118,7 +287,7 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
   epi[1] = &epilog1[0];
   epi[2] = &epilog2[0];
 
-  debug("- Epilog: " + epilog0 + "; " + epilog1 + "; " + epilog2);
+  log_debug("- Epilog: " + epilog0 + "; " + epilog1 + "; " + epilog2);
 
   std::string container0 = Rcpp::as<std::string>(container[0]);
   std::string container1 = Rcpp::as<std::string>(container[1]);
@@ -127,7 +296,7 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
   cont[1] = &container1[0];
   cont[2] = &container2[0];
 
-  debug("- Container: " + container0 + "; " + container1 + "; " + container2);
+  log_debug("- Container: " + container0 + "; " + container1 + "; " + container2);
 
   std::vector<std::string> stypeArgStorage; // Store the type arguments to ensure their lifetime
   stypeArgStorage.reserve(num_params);
@@ -137,7 +306,7 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
     typeArg = Rcpp::as<std::string>(typeArgs[i]);
     stypeArgStorage.push_back(typeArg);
     ImplTypeArgs[i] = &(stypeArgStorage[i][0]);
-    debug("- Implementation Type Args: " + typeArg);
+    log_debug("- Implementation Type Args: " + typeArg);
   }
 
   // Invoke the C library
@@ -158,7 +327,7 @@ void register_core_element(std::string CESignature, std::string ImplSignature,
   delete[] epi;
   delete[] cont;
 
-  debug("Core element registered");
+  log_debug("Core element registered");
 }
 
 int _get_type_size(int type)
@@ -166,16 +335,16 @@ int _get_type_size(int type)
   switch (type)
   {
   case 0:
-    debug("- Type: logical");
+    log_debug("- Type: logical");
     return sizeof(int);
   case 4:
-    debug("- Type: integer");
+    log_debug("- Type: integer");
     return sizeof(int);
   case 7:
-    debug("- Type: double");
+    log_debug("- Type: double");
     return sizeof(double);
   }
-  debug("Type not implemented yet");
+  log_debug("Type not implemented yet");
   exit(3);
   return -1;
 }
@@ -195,21 +364,21 @@ void process_task(long int app_id, std::string signature, std::string on_failure
                   CharacterVector weights, IntegerVector keep_renames)
 {
 
-  debug("Process task:");
-  debug("- App id: " + std::to_string(app_id));
-  debug("- Signature: " + signature);
-  debug("- On Failure: " + on_failure);
-  debug("- Time Out: " + std::to_string(time_out));
-  debug("- Priority: " + std::to_string(priority));
-  debug("- Reduce: " + std::to_string(reduce));
-  debug("- Chunk size: " + std::to_string(chunk_size));
-  debug("- MPI Num nodes: " + std::to_string(num_nodes));
-  debug("- Replicated: " + std::to_string(replicated));
-  debug("- Distributed: " + std::to_string(distributed));
-  debug("- Has target: " + std::to_string(has_target));
+  log_debug("Process task:");
+  log_debug("- App id: " + std::to_string(app_id));
+  log_debug("- Signature: " + signature);
+  log_debug("- On Failure: " + on_failure);
+  log_debug("- Time Out: " + std::to_string(time_out));
+  log_debug("- Priority: " + std::to_string(priority));
+  log_debug("- Reduce: " + std::to_string(reduce));
+  log_debug("- Chunk size: " + std::to_string(chunk_size));
+  log_debug("- MPI Num nodes: " + std::to_string(num_nodes));
+  log_debug("- Replicated: " + std::to_string(replicated));
+  log_debug("- Distributed: " + std::to_string(distributed));
+  log_debug("- Has target: " + std::to_string(has_target));
 
   int num_pars = values.size();
-  debug("+ Number of parameters: " + std::to_string(num_pars));
+  log_debug("+ Number of parameters: " + std::to_string(num_pars));
   int num_fields = 9;
   std::vector<void *> unrolled_parameters(num_fields * num_pars, NULL);
   std::vector<void *> p_value(num_pars, NULL);
@@ -241,7 +410,7 @@ void process_task(long int app_id, std::string signature, std::string on_failure
   int num_of_string_args = 0;
   for (int i = 0; i < num_pars; i++)
   {
-    debug("Processing parameter " + std::to_string(i));
+    log_debug("Processing parameter " + std::to_string(i));
     int size_i;
     if (compss_types[i] == 0 || compss_types[i] == 4 || compss_types[i] == 7)
     {
@@ -280,7 +449,7 @@ void process_task(long int app_id, std::string signature, std::string on_failure
       num_of_string_args++;
       break;
     default:
-      debug("Non-supported type!");
+      log_debug("Non-supported type!");
     }
 
     // Format the values in unrolled_parameters
@@ -353,7 +522,7 @@ void process_task(long int app_id, std::string signature, std::string on_failure
   char *signature_char = &signature[0];
   char *on_failure_char = &on_failure[0];
 
-  debug("Calling GS_ExecuteTaskNew...");
+  log_debug("Calling GS_ExecuteTaskNew...");
   // Call the C++ function with the parameters
   GS_ExecuteTaskNew(
       app_id,
@@ -372,7 +541,7 @@ void process_task(long int app_id, std::string signature, std::string on_failure
       &unrolled_parameters[0] // hide the fact that params is a std::vector
   );
 
-  debug("Returning from process_task...");
+  log_debug("Returning from process_task...");
 }
 
 //' barrier
@@ -382,18 +551,18 @@ void process_task(long int app_id, std::string signature, std::string on_failure
 // [[Rcpp::export]]
 void barrier(long int app_id, bool no_more_tasks)
 {
-  debug("Barrier\n");
-  debug("- App id: " + std::to_string(app_id));
+  log_debug("Barrier\n");
+  log_debug("- App id: " + std::to_string(app_id));
   if (no_more_tasks)
   {
-    debug("- No more tasks?: TRUE");
+    log_debug("- No more tasks?: true");
   }
   else
   {
-    debug("- No more tasks?: FALSE");
+    log_debug("- No more tasks?: FALSE");
   }
   GS_BarrierNew(app_id, no_more_tasks);
-  debug("Barrier end\n");
+  log_debug("Barrier end\n");
 }
 
 //' Get_File
@@ -403,13 +572,13 @@ void barrier(long int app_id, bool no_more_tasks)
 // [[Rcpp::export]]
 void Get_File(long int app_id, std::string outputfileName)
 {
-  debug("\nGet_File");
-  debug("- App id: " + std::to_string(app_id));
-  debug("- Output filename: " + outputfileName);
+  log_debug("\nGet_File");
+  log_debug("- App id: " + std::to_string(app_id));
+  log_debug("- Output filename: " + outputfileName);
   char *outputfileName_char;
   outputfileName_char = &outputfileName[0];
   GS_Get_File(app_id, outputfileName_char);
-  debug("Get_File end\n");
+  log_debug("Get_File end\n");
 }
 
 //' Get_MasterWorkingDir
@@ -419,11 +588,11 @@ void Get_File(long int app_id, std::string outputfileName)
 // [[Rcpp::export]]
 Rcpp::CharacterVector Get_MasterWorkingDir()
 {
-  debug("Get_MasterWorkingDir\n");
+  log_debug("Get_MasterWorkingDir\n");
   char *master_working_path;
   GS_Get_MasterWorkingDir(&master_working_path);
   Rcpp::CharacterVector result = Rcpp::CharacterVector::create(master_working_path);
-  debug("Get_MasterWorkingDir end\n");
+  log_debug("Get_MasterWorkingDir end\n");
   return result;
 }
 
@@ -434,36 +603,36 @@ Rcpp::CharacterVector Get_MasterWorkingDir()
 // [[Rcpp::export]]
 void Extrae_event_and_counters(extrae_type_t group, extrae_value_t id)
 {
-  debug("\nExtrae_event_and_counters");
-  debug("- Group: " + std::to_string(group));
-  debug("- id: " + std::to_string(id));
+  log_debug("\nExtrae_event_and_counters");
+  log_debug("- Group: " + std::to_string(group));
+  log_debug("- id: " + std::to_string(id));
   Extrae_eventandcounters(group, id);
-  debug("Extrae_event_and_counters end\n");
+  log_debug("Extrae_event_and_counters end\n");
 }
 
 //' Extrae_ini
 // [[Rcpp::export]]
 void Extrae_ini()
 {
-  debug("\nExtrae_ini");
+  log_debug("\nExtrae_ini");
   Extrae_init();
-  debug("Extrae_init end\n");
+  log_debug("Extrae_init end\n");
 }
 
 //' Extrae_flu
 // [[Rcpp::export]]
 void Extrae_flu()
 {
-  debug("\nExtrae_flu");
+  log_debug("\nExtrae_flu");
   Extrae_flush();
-  debug("Extrae_flu end\n");
+  log_debug("Extrae_flu end\n");
 }
 
 //' Extrae_fin
 // [[Rcpp::export]]
 void Extrae_fin()
 {
-  debug("\nExtrae_fin");
+  log_debug("\nExtrae_fin");
   Extrae_fini();
-  debug("Extrae_fin end\n");
+  log_debug("Extrae_fin end\n");
 }
