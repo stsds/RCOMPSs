@@ -10,8 +10,8 @@ ncores=50
 fragments_train=50 # $((n_train / 4000))
 fragments_test=50 # $((n_test / 4000))
 clean_compss=true
-#n_test_range=(1000 100000 $(seq 500000 500000 2000000))
-n_test_range=($(seq 2000000 500000 10000000))
+n_test_range=(10000 100000 $(seq 500000 500000 10000000))
+#n_test_range=($(seq 2000000 500000 10000000))
 #n_test_range=$(seq 15000 500000 15000)
 
 
@@ -74,11 +74,11 @@ for n_test in "${n_test_range[@]}"; do
       cd Comparisons
     fi
 
-    sleep 5
+    sleep 60
 
   done
 
   compss_clean_procs
-  sleep 60
+  sleep 10
 
 done

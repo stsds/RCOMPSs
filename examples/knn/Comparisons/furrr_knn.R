@@ -10,9 +10,7 @@ DEBUG <- list(
   KNN_classify = FALSE
 )
 
-KNN_fill_fragment <- function(params_fill_fragment){
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
+KNN_fill_fragment <- function(centres, n){
   nclass <- nrow(centres)
   dim <- ncol(centres)
   frag <- matrix(nrow = n, ncol = dim + 1)
@@ -34,6 +32,7 @@ KNN_frag <- function(train, test, k){
   dist_cl <- cbind(res_dist, res_cl)
   return(dist_cl)
 }
+
 KNN_frag <- function(train, test, k){
   dimensions <- ncol(train) - 1
   x_train <- train[, 1:dimensions, drop = FALSE]
@@ -189,17 +188,14 @@ for(replicate in 1:replicates){
   true_centres <- matrix(runif(num_class * dimensions),
                          nrow = num_class, ncol = dimensions)
 
-  params_train <- list(centres = true_centres, n = points_per_fragment_train)
-  params_test <- list(centres = true_centres, n = points_per_fragment_test)
-
   # Parallel data generation with future_map
   x_train <- future_map(seq_len(num_fragments_train), function(f){
     set.seed(seed + f)
-    KNN_fill_fragment(params_train)
+    KNN_fill_fragment(centres = true_centres, n = points_per_fragment_train)
   }, .options = furrr_options(packages = "furrr", seed = NULL))
   x_test <- future_map(seq_len(num_fragments_test), function(f) {
     set.seed(seed + 10000L + f)
-    KNN_fill_fragment(params_test)
+    KNN_fill_fragment(centres = true_centres, n = points_per_fragment_test)
   }, .options = furrr_options(packages = "furrr", seed = NULL))
 
   initialization_time <- proc.time()

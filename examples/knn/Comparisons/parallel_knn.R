@@ -9,10 +9,7 @@ DEBUG <- list(
               KNN_classify = FALSE
 )
 
-KNN_fill_fragment <- function(params_fill_fragment){
-
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
+KNN_fill_fragment <- function(centres, n){
 
   # Obtain necessary numbers
   nclass <- nrow(centres)
@@ -265,18 +262,16 @@ for(replicate in 1:replicates){
   true_centres <- matrix(runif(num_class * dimensions),
                          nrow = num_class, ncol = dimensions)
 
-  params_train <- list(centres = true_centres, n = points_per_fragment_train)
-  params_test <- list(centres = true_centres, n = points_per_fragment_test)
   # Parallel data generation
   x_train <- mclapply(seq_len(num_fragments_train), function(f){
     set.seed(seed + f)
-    KNN_fill_fragment(params_train)
+    KNN_fill_fragment(centres = true_centres, n = points_per_fragment_train)
   }, mc.cores = ncores)
   x_test <- mclapply(seq_len(num_fragments_test), function(f) {
     set.seed(seed + 10000L + f)
-    KNN_fill_fragment(params_test)
+    KNN_fill_fragment(centres = true_centres, n = points_per_fragment_test)
   }, mc.cores = ncores)
-  rm(params_train, params_test, points_per_fragment_train,  points_per_fragment_test, true_centres)
+  rm(points_per_fragment_train,  points_per_fragment_test, true_centres)
 
   initialization_time <- proc.time()
   if(!Minimize) cat("Data generated.\n")

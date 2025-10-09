@@ -68,7 +68,7 @@ for n_sample in "${n_sample_range[@]}"; do
             rm -rf /home/zhanx0q/.COMPSs/*
         fi
 
-        sleep 5
+        sleep 60
 
     done
     

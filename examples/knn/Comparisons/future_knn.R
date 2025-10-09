@@ -9,9 +9,7 @@ DEBUG <- list(
   KNN_classify = FALSE
 )
 
-KNN_fill_fragment <- function(params_fill_fragment){
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
+KNN_fill_fragment <- function(centres, n){
   nclass <- nrow(centres)
   dim <- ncol(centres)
   frag <- matrix(nrow = n, ncol = dim + 1)
@@ -21,18 +19,6 @@ KNN_fill_fragment <- function(params_fill_fragment){
   frag[,1:dim] <- frag[,1:dim] + centres[group_ind, ]
   return(frag)
 }
-
-#KNN_frag <- function(train, test, k){
-#  dimensions <- ncol(train) - 1
-#  x_train <- train[,1:dimensions]
-#  cl <- train[,dimensions+1]
-#  x_test <- test[,1:dimensions]
-#  res_dist <- fields::rdist(x_test, x_train)
-#  res_cl <- t(apply(res_dist, 1, function(x) cl[order(x)[1:k]]))
-#  res_dist <- t(apply(res_dist, 1, function(x) sort(x)[1:k]))
-#  dist_cl <- cbind(res_dist, res_cl)
-#  return(dist_cl)
-#}
 
 KNN_frag <- function(train, test, k){
   dimensions <- ncol(train) - 1
@@ -241,9 +227,6 @@ for(replicate in 1:replicates){
   points_per_fragment_train <- max(1, n_train %/% num_fragments_train)
   points_per_fragment_test <- max(1, n_test %/% num_fragments_test)
   true_centres <- matrix(runif(num_class * dimensions), nrow = num_class, ncol = dimensions)
-  params_train <- list(centres = true_centres, n = points_per_fragment_train)
-  params_test <- list(centres = true_centres, n = points_per_fragment_test)
-
 
   # Parallel data generation using future
   x_train <- vector("list", num_fragments_train)
@@ -251,7 +234,7 @@ for(replicate in 1:replicates){
   for(f in seq_len(num_fragments_train)){
     x_train_future[[f]] <- future({
       set.seed(seed + f)
-      KNN_fill_fragment(params_train)
+      KNN_fill_fragment(centres = true_centres, n = points_per_fragment_train)
     }, seed = NULL)
   }
   x_test <- vector("list", num_fragments_test)
@@ -259,7 +242,7 @@ for(replicate in 1:replicates){
   for(f in seq_len(num_fragments_test)){
     x_test_future[[f]] <- future({
       set.seed(seed + f)
-      KNN_fill_fragment(params_test)
+      KNN_fill_fragment(centres = true_centres, n = points_per_fragment_test)
     }, seed = NULL)
   }
 
