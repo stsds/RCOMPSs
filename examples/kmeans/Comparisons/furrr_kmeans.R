@@ -25,11 +25,7 @@ DEBUG <- list(
 # Core computation utilities
 # ----------------------------
 
-fill_fragment <- function(params_fill_fragment){
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
-  mode <- params_fill_fragment[[3]]
-  
+fill_fragment <- function(centres, n, mode) {
   ncluster <- nrow(centres)
   dim <- ncol(centres)
   
@@ -383,16 +379,10 @@ for(replicate in 1:tot_rep){
   true_centres <- matrix(runif(num_centres * dimensions),
                          nrow = num_centres, ncol = dimensions)
   
-  # Generate fragments (this part could also be parallelized; we keep it sequential to preserve determinism)
-  #fragment_list <- vector("list", num_fragments)
-  #fragment_list <- future_lapply(seq_len(num_fragments), function(f) {
-  #  params_fill_fragment <- list(true_centres, points_per_fragment, mode)
-  #  fill_fragment(params_fill_fragment)
-  #}, future.seed = TRUE)
+  # Generate fragments
   fragment_list <- future_map(seq_len(num_fragments), ~{
     set.seed(seed + .x)
-    params_fill_fragment <- list(true_centres, points_per_fragment, mode)
-    fill_fragment(params_fill_fragment)
+    fill_fragment(true_centres, points_per_fragment, mode)
   }, .options = furrr_options(seed = NULL))
 
   initialization_time <- proc.time()

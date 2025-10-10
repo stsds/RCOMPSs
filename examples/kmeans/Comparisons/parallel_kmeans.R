@@ -13,10 +13,7 @@ DEBUG <- list(
 
 # -------- Core tasks --------
 
-fill_fragment <- function(params_fill_fragment){
-  centres <- params_fill_fragment[[1]]
-  n <- params_fill_fragment[[2]]
-  mode <- params_fill_fragment[[3]]
+fill_fragment <- function(centres, n, mode) {
 
   ncluster <- nrow(centres)
   dim <- ncol(centres)
@@ -277,12 +274,11 @@ for(replicate in 1:tot_rep){
   points_per_fragment <- max(1, numpoints %/% num_fragments)
   true_centres <- matrix(runif(num_centres * dimensions), nrow = num_centres, ncol = dimensions)
 
-  frag_args <- replicate(num_fragments, list(true_centres, points_per_fragment, mode), simplify = FALSE)
   fragment_list <- mclapply(
     X = seq_len(num_fragments),
     FUN = function(a){
       set.seed(seed + a)
-      fill_fragment(frag_args[[a]])
+      fill_fragment(true_centres, points_per_fragment, mode)
     },
     mc.cores = cores_from_arg(workers)
   )
