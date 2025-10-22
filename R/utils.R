@@ -456,6 +456,25 @@ compss_unserialize <- function(filepath, mthreads = 1) {
   }
 }
 
+#' compss_start_interactive
+#'
+#' Start the COMPSs runtime system in interactive mode
+#'
+#' @param debug Boolean.
+#' @param graph Boolean.
+#' @param trace Boolean.
+#' @export
+compss_start_interactive <- function(debug = FALSE, graph = FALSE, trace = FALSE) {
+  current_directory <- getwd()
+  jvm_filename <- "compss_jvm.cfg"
+  jvm_full_path <- file.path(current_directory, jvm_filename)
+  assign("JVM_OPTIONS_FILE", jvm_full_path, envir = .GlobalEnv)
+  assign("LD_LIBRARY_PATH", "/opt/COMPSs/Bindings/RCOMPSs/dummy_extrae/", envir = .GlobalEnv)
+  start_runtime_interactive(debug, graph, trace)
+  MASTER_WORKING_DIR <- Get_MasterWorkingDir()
+  assign("MASTER_WORKING_DIR", MASTER_WORKING_DIR, envir = .GlobalEnv)
+}
+
 #' compss_start
 #'
 #' Start the COMPSs runtime system

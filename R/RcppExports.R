@@ -6,6 +6,17 @@
 NULL
 
 #' Start a COMPSs-Runtime instance
+#'
+#' Register a core element
+#'
+#' @param debug Boolean to enable debug mode
+#' @param graph Boolean to enable the graph generation
+#' @param trace Boolean to enable the trace generation
+start_runtime_interactive <- function(debug, graph, trace) {
+    invisible(.Call(`_RCOMPSs_start_runtime_interactive`, debug, graph, trace))
+}
+
+#' Start a COMPSs-Runtime instance
 start_runtime <- function() {
     invisible(.Call(`_RCOMPSs_start_runtime`))
 }

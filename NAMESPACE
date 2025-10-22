@@ -2,6 +2,7 @@
 
 export(compss_barrier)
 export(compss_start)
+export(compss_start_interactive)
 export(compss_stop)
 export(compss_wait_on)
 export(compss_serialize)

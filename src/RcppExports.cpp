@@ -11,6 +11,112 @@ Rcpp::Rostream<true> &Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false> &Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+
+// start_runtime_interactive
+void start_runtime_interactive(bool debug, bool graph, bool trace);
+RcppExport SEXP _RCOMPSs_start_runtime_interactive(SEXP debugSEXP, SEXP graphSEXP, SEXP traceSEXP)
+{
+    BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+
+    Rcpp::traits::input_parameter<bool>::type debug(debugSEXP);
+    Rcpp::traits::input_parameter<bool>::type graph(graphSEXP);
+    Rcpp::traits::input_parameter<bool>::type trace(traceSEXP);
+    // Rcpp::traits::input_parameter<int>::type monitor(monitorSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type project_xml(project_xmlSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type resources_xml(resources_xmlSEXP);
+    // Rcpp::traits::input_parameter<bool>::type summary(summarySEXP);
+    // Rcpp::traits::input_parameter<std::string>::type task_execution(task_executionSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type storage_conf(storage_confSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type streaming_backend(streaming_backendSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type streaming_master_name(streaming_master_nameSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type streaming_master_port(streaming_master_portSEXP);
+    // Rcpp::traits::input_parameter<int>::type task_count(task_countSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type app_name(app_nameSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type uuid(uuidSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type log_dir(log_dirSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type master_working_dir(master_working_dirSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type extrae_cfg(extrae_cfgSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type extrae_final_directory(extrae_final_directorySEXP);
+    // Rcpp::traits::input_parameter<std::string>::type comm(commSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type conn(connSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type master_name(master_nameSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type master_port(master_portSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type scheduler(schedulerSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type scheduler_config(scheduler_configSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type jvm_workers(jvm_workersSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type cpu_affinity(cpu_affinitySEXP);
+    // Rcpp::traits::input_parameter<std::string>::type gpu_affinity(gpu_affinitySEXP);
+    // Rcpp::traits::input_parameter<std::string>::type fpga_affinity(fpga_affinitySEXP);
+    // Rcpp::traits::input_parameter<std::string>::type fpga_reprogram(fpga_reprogramSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type profile_input(profile_inputSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type profile_output(profile_outputSEXP);
+    // Rcpp::traits::input_parameter<bool>::type external_adaptation(external_adaptationSEXP);
+    // Rcpp::traits::input_parameter<bool>::type shutdown_in_node_failure(shutdown_in_node_failureSEXP);
+    // Rcpp::traits::input_parameter<int>::type io_executors(io_executorsSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type env_script(env_scriptSEXP);
+    // Rcpp::traits::input_parameter<bool>::type reuse_on_block(reuse_on_blockSEXP);
+    // Rcpp::traits::input_parameter<bool>::type nested_enabled(nested_enabledSEXP);
+    // Rcpp::traits::input_parameter<bool>::type tracing_task_dependencies(tracing_task_dependenciesSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type trace_label(trace_labelSEXP);
+    // Rcpp::traits::input_parameter<int>::type wcl(wclSEXP);
+    // Rcpp::traits::input_parameter<bool>::type ear(earSEXP);
+    // Rcpp::traits::input_parameter<bool>::type data_provenance(data_provenanceSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type checkpoint_policy(checkpoint_policySEXP);
+    // Rcpp::traits::input_parameter<std::string>::type checkpoint_params(checkpoint_paramsSEXP);
+    // Rcpp::traits::input_parameter<std::string>::type checkpoint_folder(checkpoint_folderSEXP);
+
+    // debug,
+    // graph,
+    // trace,
+    // monitor,
+    // project_xml,
+    // resources_xml,
+    // summary,
+    // task_execution,
+    // storage_conf,
+    // streaming_backend,
+    // streaming_master_name,
+    // streaming_master_port,
+    // task_count,
+    // app_name,
+    // uuid,
+    // log_dir,
+    // master_working_dir,
+    // extrae_cfg,
+    // extrae_final_directory,
+    // comm,
+    // conn,
+    // master_name,
+    // master_port,
+    // scheduler,
+    // scheduler_config,
+    // jvm_workers,
+    // cpu_affinity,
+    // gpu_affinity,
+    // fpga_affinity,
+    // fpga_reprogram,
+    // profile_input,
+    // profile_output,
+    // bool external_adaptation,
+    // bool shutdown_in_node_failure,
+    // io_executors,
+    // env_script,
+    // reuse_on_block,
+    // nested_enabled,
+    // tracing_task_dependencies,
+    // trace_label,
+    // wcl,
+    // ear,
+    // data_provenance,
+    // checkpoint_policy,
+    // checkpoint_params,
+    // checkpoint_folder
+
+    start_runtime_interactive(debug, graph, trace);
+    return R_NilValue;
+    END_RCPP
+}
 // start_runtime
 void start_runtime();
 RcppExport SEXP _RCOMPSs_start_runtime()
@@ -162,6 +268,7 @@ RcppExport SEXP _RCOMPSs_Extrae_fin()
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_RCOMPSs_start_runtime_interactive", (DL_FUNC)&_RCOMPSs_start_runtime_interactive, 0},
     {"_RCOMPSs_start_runtime", (DL_FUNC)&_RCOMPSs_start_runtime, 0},
     {"_RCOMPSs_stop_runtime", (DL_FUNC)&_RCOMPSs_stop_runtime, 1},
     {"_RCOMPSs_register_core_element", (DL_FUNC)&_RCOMPSs_register_core_element, 10},
