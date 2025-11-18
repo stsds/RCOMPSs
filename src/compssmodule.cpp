@@ -14,6 +14,7 @@
 
 #include <Rcpp.h>
 #include <cstdlib>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <unistd.h>
