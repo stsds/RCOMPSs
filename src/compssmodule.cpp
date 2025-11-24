@@ -110,7 +110,7 @@ void start_runtime_interactive(
   if (JAVA_HOME.empty()) {
     perror("ERROR: 'JAVA_HOME' environment variable is not defined.");
   }
-  std::string uuid = "123456-" + to_string(rand());
+  std::string uuid = "123456-" + std::to_string(rand());
 
   std::ofstream configFile(fileName);
   configFile << "-Djdk.lang.Process.launchMechanism=fork\n";
