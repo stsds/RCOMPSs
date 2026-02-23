@@ -16,6 +16,7 @@
 #include <iostream>
 #include <GS_compss.h>
 #include <extrae.h>
+#include <cstdint>
 using namespace Rcpp;
 
 #define DEBUG_MODE 0
