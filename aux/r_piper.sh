@@ -43,6 +43,10 @@ get_args() {
   controlCMDpipe=${1}
   controlRESULTpipe=${2}
   shift 2
+
+  WORKER_DIR="$(dirname "${controlCMDpipe}")"
+  LOG_DIR="${WORKER_DIR}/log"
+  LOG_FILE="${LOG_DIR}/r_piper_debug.log"
 }
 
 # pipe_processor() {
@@ -61,7 +65,17 @@ get_args() {
 executor_processor() {
   local pipe_pairs=$1
   echo "[R EXECUTOR] Launching R_worker"
-  Rscript --max-connections=2048 ${SCRIPT_DIR}/piper_worker.R ${SCRIPT_DIR} ${pipe_pairs}
+  log_debug "Launching rcompss_worker with pipes: ${pipe_pairs}"
+  local worker_bin="${SCRIPT_DIR}/rcompss_worker"
+  if [ ! -x "${worker_bin}" ]; then
+    echo "[R EXECUTOR] ERROR: ${worker_bin} not found or not executable"
+    log_debug "ERROR: ${worker_bin} not found or not executable"
+    exit 1
+  fi
+  ensure_r_home
+  log_debug "R_HOME=${R_HOME:-<unset>}"
+  "${worker_bin}" "${SCRIPT_DIR}" ${pipe_pairs} >>"${LOG_FILE}" 2>&1
+  log_debug "rcompss_worker exited with code $?"
   i=0
   while [ $i -lt "${numPipesCMD}" ]; do
     echo "${QUIT_TAG}" >${RESULTpipes[$i]}
@@ -80,6 +94,21 @@ export_vars() {
   done
 }
 
+log_debug() {
+  if [ -n "${LOG_FILE:-}" ]; then
+    mkdir -p "$(dirname "${LOG_FILE}")"
+    echo "[r_piper] $(date '+%Y-%m-%d %H:%M:%S') $*" >>"${LOG_FILE}"
+  fi
+}
+
+ensure_r_home() {
+  if [ -z "${R_HOME:-}" ]; then
+    if command -v R >/dev/null 2>&1; then
+      export R_HOME="$(R RHOME)"
+    fi
+  fi
+}
+
 execute_task() {
   local tid=$1
   local sandBox=$2
@@ -96,6 +125,7 @@ execute_task() {
 
   export_vars "$1"
   shift 1
+  ensure_r_home
 
   # Real task execution
   # shellcheck disable=SC2068

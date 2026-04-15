@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+ABSOLUTE_PATH="$(pwd)"
+BUILD_DIR="${ABSOLUTE_PATH}/cmake-build"
+
+rm -rf "${BUILD_DIR}"
+
+# -----------------------------------------------------------------------------
+# Configure build (prefer CUDA when available)
+#
+# Rationale:
+# - nvcc from Ubuntu's nvidia-cuda-toolkit can fail with newer default GCC/G++
+#   (e.g., GCC 13) due to libstdc++ header mismatches.
+# - Force a compatible host compiler (g++-10) when building with CUDA.
+# - install.sh calls this script, so make it work without extra user flags.
+# -----------------------------------------------------------------------------
+
+CMAKE_ARGS=(
+  -DCMAKE_BUILD_TYPE=Release
+)
+
+if command -v nvcc >/dev/null 2>&1; then
+  # Request GPU build and pin CUDA toolchain.
+  CMAKE_ARGS+=(
+    -DRCOMPSs_GPU=ON
+    -DCMAKE_CUDA_COMPILER="$(command -v nvcc)"
+  )
+
+  # Prefer GCC/G++ 10 as nvcc host compiler if available.
+  if command -v g++-10 >/dev/null 2>&1; then
+    CMAKE_ARGS+=(
+      -DCMAKE_CUDA_HOST_COMPILER="$(command -v g++-10)"
+      -DCMAKE_CXX_COMPILER="$(command -v g++-10)"
+      -DCMAKE_C_COMPILER="$(command -v gcc-10 || true)"
+    )
+  fi
+else
+  # No nvcc in PATH -> force CPU-only build to avoid confusing partial GPU config.
+  CMAKE_ARGS+=(
+    -DRCOMPSs_GPU=OFF
+  )
+fi
+
+cmake -S "${ABSOLUTE_PATH}" -B "${BUILD_DIR}" "${CMAKE_ARGS[@]}"
+
+cmake --build "${BUILD_DIR}" -j "$(nproc)"
+

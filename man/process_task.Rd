@@ -6,8 +6,8 @@
 \usage{
 process_task(
   app_id,
-  signature,
-  on_failure,
+  signatureSEXP,
+  on_failureSEXP,
   time_out,
   priority,
   num_nodes,
