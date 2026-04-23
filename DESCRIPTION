@@ -9,7 +9,7 @@ Description: RCOMPSs is a programming model that simplifies the parallel executi
 License: BSD3
 Imports: Rcpp, RMVL, foreach, parallel, doParallel
 LinkingTo: Rcpp
-RoxygenNote: 7.2.3
-Suggests: testthat (>= 3.0.0)
+RoxygenNote: 7.3.3
+Suggests: qs, testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Encoding: UTF-8

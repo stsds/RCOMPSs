@@ -3,7 +3,7 @@
 # Pair: test_gpu_blas_solver_set2_functions.R (tasks) + this file (driver).
 #
 # Typical run:
-#   runcompss --lang=r --resources=test_resources_gpu.xml --tracing test_gpu_blas_solver_set2_main.R
+#   runcompss --lang=r --resources=test_resources_1gpu.xml --tracing test_gpu_blas_solver_set2_main.R
 
 library(RCOMPSs)
 

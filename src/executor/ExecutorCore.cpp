@@ -112,9 +112,6 @@ void ExecutorCore::initR() {
     throw;
   }
 
-  // Ensure qs and RMVL packages are loaded (they're in Imports but may not be auto-loaded)
-  // This ensures they're available for unserialization
-  // Use requireNamespace() which is more reliable than library() for embedded R
   Rcpp::Function requireNamespace_func("requireNamespace");
   try {
     bool qs_loaded = Rcpp::as<bool>(requireNamespace_func("qs", Rcpp::_["quietly"] = true));
@@ -142,9 +139,9 @@ void ExecutorCore::initR() {
   do_call_func_ = std::make_unique<Rcpp::Function>(
       Rcpp::Function("do.call"));
   compss_unserialize_ = std::make_unique<Rcpp::Function>(
-      (*rcompss_ns_)["compss_unserialize"]);
+      (*rcompss_ns_)["rcompss_unserialize"]);
   compss_serialize_ = std::make_unique<Rcpp::Function>(
-      (*rcompss_ns_)["compss_serialize"]);
+      (*rcompss_ns_)["rcompss_serialize"]);
 }
 
 void ExecutorCore::shutdownR() {
@@ -168,8 +165,6 @@ bool ExecutorCore::parseTaskMessage(const std::string& line,
     return false;
   }
 
-  // Extract CPU and GPU affinity (3rd and 2nd from last, respectively)
-  // These need to be removed from params before processing
   if (tokens.size() >= 3) {
     message.gpus = tokens[tokens.size() - 2];  // 2nd from last
     message.cpus = tokens[tokens.size() - 3];  // 3rd from last
@@ -186,8 +181,7 @@ bool ExecutorCore::parseTaskMessage(const std::string& line,
   message.debug = tokens[7];
   message.module = tokens[10];
   message.func = tokens[11];
-  // Assign params but exclude the last 3 tokens (CPU, GPU, and potentially another field)
-  // The params should end before CPU/GPU info
+
   size_t params_end = tokens.size() - 3;
   if (params_end > 13) {
     message.params.assign(tokens.begin() + 13, tokens.begin() + params_end);
@@ -206,9 +200,6 @@ std::string ExecutorCore::stripValueSuffix(const std::string& raw_value) const {
 }
 
 namespace {
-// COMPSs may emit an IN parameter named "<ser>-RETURN_VALUE" (serialized default for a
-// matching formal). That is binding metadata, not a user argument — drop it before
-// do.call so tasks can use function() like gpu_vector_add without fake formals.
 bool rcompssIsReturnValuePlaceholderArgName(const std::string& name) {
   static constexpr char kSuffix[] = "-RETURN_VALUE";
   constexpr size_t kLen = sizeof(kSuffix) - 1U;
@@ -277,8 +268,6 @@ Rcpp::List ExecutorCore::buildFunctionArgs(const std::vector<std::string>& param
         Rcpp::Rcerr << "[DEBUG EXECUTOR] About to unserialize file: " << path_value << "\n";
         Rcpp::Rcerr.flush();
         try {
-          // Call compss_unserialize through Rcpp::Function - this will properly catch R errors
-          // This matches the original R executor behavior: RCOMPSs::compss_unserialize(path_value)
           log.open(log_file, std::ios::app);
           log << "[DEBUG EXECUTOR] Step 1: Calling compss_unserialize function" << std::endl;
           log.flush();
@@ -407,8 +396,6 @@ Rcpp::List ExecutorCore::buildFunctionArgs(const std::vector<std::string>& param
     for (int j = 0; j < n_kept; ++j) {
       filtered[j] = kept_vals[static_cast<size_t>(j)];
     }
-    // Plain list() has no names; a zero-length "names" attribute breaks do.call in
-    // embedded R for zero-argument tasks (e.g. gpu_blas_solver_task with only OUT return).
     if (n_kept > 0) {
       Rcpp::CharacterVector fnames(n_kept);
       for (int j = 0; j < n_kept; ++j) {
@@ -494,7 +481,6 @@ void ExecutorCore::bindGpus(const std::string& gpus, std::ofstream& job_out, std
 
   std::vector<int> gpu_mask_list(4, 0);
   if (gpus.find(',') != std::string::npos) {
-    // Multiple GPUs assigned - match Python's behavior exactly
     std::istringstream gpu_stream(gpus);
     std::string gpu_token;
     int i = 0;
@@ -505,7 +491,6 @@ void ExecutorCore::bindGpus(const std::string& gpus, std::ofstream& job_out, std
         }
         ++i;
       } catch (const std::exception&) {
-        // Ignore errors
       }
     }
   } else {
@@ -516,7 +501,6 @@ void ExecutorCore::bindGpus(const std::string& gpus, std::ofstream& job_out, std
         gpu_mask_list[gpu_id] = 1;
       }
     } catch (const std::exception&) {
-      // Ignore invalid GPU ID
     }
   }
   
@@ -531,7 +515,6 @@ void ExecutorCore::bindGpus(const std::string& gpus, std::ofstream& job_out, std
   int assigned_gpus = std::stoi(gpu_mask_str, nullptr, 2);
   
   // Emit manual event with GPU affinity type (inside_tasks_gpu_affinity_type = 9000160)
-  // Python: emit_manual_event(assigned_gpus, inside=True, gpu_affinity=True)
   Extrae_eventandcounters(9000160, assigned_gpus);
 
   job_out << "[C++ EXECUTOR] Assigning GPU affinity: " << gpus << "\n";
@@ -659,6 +642,8 @@ bool ExecutorCore::executeTask(const TaskMessage& message,
       std::cerr << "[C++ EXECUTOR] About to call function: " << message.func << "\n";
       std::cerr.flush();
 
+      // Embedded R: do.call(what, list(), envir) can fail for zero-argument tasks; invoke
+      // the closure directly (same as f() from the sourced module's global env).
       if (args.length() == 0) {
         job_out << "[C++ EXECUTOR] Zero-arg task: calling " << message.func << "() directly\n";
         job_out.flush();

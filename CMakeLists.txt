@@ -173,14 +173,16 @@ set(RCOMPSs_LIBS
 if (USE_CUDA)
     find_package(CUDAToolkit REQUIRED)
     list(APPEND RCOMPSs_LIBS
-      ${CUDAToolkit_LIBRARIES}
-      cublas
-      cusolver
+      CUDA::cublas
+      CUDA::cusolver
     )
     list(APPEND RCOMPSs_INCLUDE_DIRS
       ${CUDAToolkit_INCLUDE_DIRS}
     )
-    message(STATUS "CUDA libraries: ${CUDAToolkit_LIBRARIES}")
+    list(APPEND RCOMPSs_LIBRARY_DIRS
+      ${CUDAToolkit_LIBRARY_DIR}
+    )
+    message(STATUS "CUDA toolkit library dir: ${CUDAToolkit_LIBRARY_DIR}")
 endif()
 
 add_subdirectory(src)

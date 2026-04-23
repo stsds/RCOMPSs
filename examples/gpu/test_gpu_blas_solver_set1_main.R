@@ -30,20 +30,27 @@ cat("  runcompss --lang=r --resources=test_resources_gpu.xml test_gpu_blas_solve
 flush.console()
 
 main <- function() {
+  n_tasks <- 2
   cat("=== COMPSs GPU task: cuBLAS / cuSOLVER bindings (set 1) ===\n")
-  cat("Submitting gpu_blas_solver_task (DGEMM, DAXPY, DPOTRF)...\n")
+  cat(sprintf("Submitting %d gpu_blas_solver_task (DGEMM, DAXPY, DPOTRF) in parallel...\n", n_tasks))
   flush.console()
 
-  fut <- gpu_blas_solver_constrained()
-  out <- compss_wait_on(fut)
-
-  cat("Result:\n")
-  print(out)
-  if (!isTRUE(out$ok)) {
-    msg <- if (is.list(out) && length(out$error)) out$error else "task did not return ok=TRUE"
-    stop("gpu_blas_solver_task failed: ", msg)
+  futures <- vector("list", n_tasks)
+  for (i in seq_len(n_tasks)) {
+    futures[[i]] <- gpu_blas_solver_constrained()
   }
-  cat("All exposed cuBLAS/cuSOLVER R functions passed inside COMPSs task.\n")
+
+  for (i in seq_len(n_tasks)) {
+    out <- compss_wait_on(futures[[i]])
+    cat(sprintf("Task %d result:\n", i))
+    print(out)
+    if (!isTRUE(out$ok)) {
+      msg <- if (is.list(out) && length(out$error)) out$error else "task did not return ok=TRUE"
+      stop(sprintf("gpu_blas_solver_task %d failed: %s", i, msg))
+    }
+  }
+  cat("All tasks passed across multiple GPUs.\n")
+  
   invisible(TRUE)
 }
 

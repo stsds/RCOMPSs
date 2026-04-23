@@ -84,10 +84,10 @@ gpu_blas_solver_run_checks <- function() {
     stop("DGEMM alpha scaling failed: max abs diff ", max_abs_diff(C_alpha, 2.5 * C_ref))
   }
 
-  message("Running GPU stress DGEMM (3000x3000) x 10 ...")
+  N <- 8000
+  reps <- 50
+  message(sprintf("Running GPU stress DGEMM (%dx%d) x %d ...", N, N, reps))
   set.seed(123)
-  N <- 3000
-  reps <- 10
   A_big <- matrix(runif(N * N), nrow = N, ncol = N)
   B_big <- matrix(runif(N * N), nrow = N, ncol = N)
   for (i in seq_len(reps)) {

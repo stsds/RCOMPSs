@@ -8,7 +8,7 @@
         </Processor>
         <!-- GPU Processor -->
         <Processor Name="GPUProcessor">
-            <ComputingUnits>1</ComputingUnits>
+            <ComputingUnits>2</ComputingUnits>
             <Type>GPU</Type>
             <InternalMemorySize>0.01</InternalMemorySize>
         </Processor>
