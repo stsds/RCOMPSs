@@ -136,14 +136,25 @@ else()
   endif()
 endif()
 
-# Find dummy_extrae location (could be in source dir or installed location)
-if (EXISTS "${CMAKE_SOURCE_DIR}/dummy_extrae")
+# Find dummy_extrae location
+if (EXISTS "${CMAKE_SOURCE_DIR}/aux/dummy_extrae")
+  set(DUMMY_EXTRAE_DIR "${CMAKE_SOURCE_DIR}/aux/dummy_extrae")
+elseif (EXISTS "${CMAKE_SOURCE_DIR}/dummy_extrae")
   set(DUMMY_EXTRAE_DIR "${CMAKE_SOURCE_DIR}/dummy_extrae")
 elseif (EXISTS "${COMPSs_HOME}/Bindings/RCOMPSs/dummy_extrae")
   set(DUMMY_EXTRAE_DIR "${COMPSs_HOME}/Bindings/RCOMPSs/dummy_extrae")
 else()
-  message(WARNING "dummy_extrae not found, trying ${CMAKE_SOURCE_DIR}/dummy_extrae")
-  set(DUMMY_EXTRAE_DIR "${CMAKE_SOURCE_DIR}/dummy_extrae")
+  message(WARNING "dummy_extrae not found")
+  set(DUMMY_EXTRAE_DIR "${CMAKE_SOURCE_DIR}/aux/dummy_extrae")
+endif()
+
+# Build the dummy pttrace stub library from dummy_extrae sources
+if (EXISTS "${DUMMY_EXTRAE_DIR}/extrae.cc")
+  add_library(pttrace SHARED "${DUMMY_EXTRAE_DIR}/extrae.cc")
+  target_include_directories(pttrace PUBLIC "${DUMMY_EXTRAE_DIR}")
+  set_target_properties(pttrace PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+  )
 endif()
 
 # Set include directories
