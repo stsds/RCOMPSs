@@ -1481,9 +1481,6 @@ void rcompss_serialize(SEXP object, const std::string& filepath, const std::stri
     
     if (method_lower == "cpp") {
       // Use native C++ serializer
-    Rcpp::Rcerr << "[C++ SERIALIZE] Using native C++ serializer -> " << filepath << "\n";
-    std::cerr << "[C++ SERIALIZE] Using native C++ serializer -> " << filepath << "\n";
-    std::cerr.flush();
     RCOMPSs::core::Serialization::serializeSEXP(object, filepath);
     // Verify file was created with correct magic header
     std::ifstream verify(filepath, std::ios::binary);
@@ -1500,9 +1497,6 @@ void rcompss_serialize(SEXP object, const std::string& filepath, const std::stri
     } else if (method_lower == "qs") {
       // Replicate old R code: qs::qsave(object, file = filepath, preset = "uncompressed", nthreads = mthreads)
       write_debug_log("[DEBUG] rcompss_serialize: Using qs serializer -> " + filepath);
-      Rcpp::Rcerr << "[C++ SERIALIZE] Using qs serializer -> " << filepath << "\n";
-      std::cerr << "[C++ SERIALIZE] Using qs serializer -> " << filepath << "\n";
-      std::cerr.flush();
       
       // First ensure namespace is loaded
       Rcpp::Function requireNamespace_func("requireNamespace");
@@ -1756,9 +1750,6 @@ SEXP rcompss_unserialize(const std::string& filepath, int mthreads = 1)
     }
     // Replicate old R code: RMVL::mvl_open(filepath); RMVL::mvl2R(con$obj); RMVL::mvl_close(con)
     if (method == "RMVL") {
-      Rcpp::Rcerr << "[C++ SERIALIZE] Using legacy RMVL reader <- " << filepath << "\n";
-      std::cerr << "[C++ SERIALIZE] Using legacy RMVL reader <- " << filepath << "\n";
-      std::cerr.flush();
       // First ensure namespace is loaded
       Rcpp::Function requireNamespace_func("requireNamespace");
       bool ns_loaded = Rcpp::as<bool>(requireNamespace_func("RMVL", Rcpp::_["quietly"] = true));
