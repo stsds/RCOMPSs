@@ -34,7 +34,7 @@
 #endif
 using namespace Rcpp;
 
-#define DEBUG_MODE 1  // Enable debug output to verify constraints are sent
+#define DEBUG_MODE 0  // Enable debug output to verify constraints are sent
 
 // Printout for debugging
 // @param str_to_print String to print if DEBUG_MODE is 1

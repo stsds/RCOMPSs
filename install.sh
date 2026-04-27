@@ -197,10 +197,29 @@ install() {
 
   cd ${current_dir}
 
-  # Deploy the RCOMPSs executor
-  cp ${SCRIPT_DIR}/aux/executor.R ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
-  cp ${SCRIPT_DIR}/aux/piper_worker.R ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
-  cp ${SCRIPT_DIR}/aux/r_piper.sh ${compss_home}/Runtime/scripts/system/adaptors/nio/pipers/
+  # Build and deploy the C++ worker/executor binaries via cmake
+  local pipers_dir="${compss_home}/Runtime/scripts/system/adaptors/nio/pipers"
+  local cmake_build_dir="${SCRIPT_DIR}/cmake-build-install"
+  echo "INFO: Building C++ worker and executor binaries..."
+  rm -rf "${cmake_build_dir}"
+
+  local cmake_args=(
+    -DCMAKE_BUILD_TYPE=Release
+    -DRCOMPSs_GPU=OFF
+  )
+
+  cmake -S "${SCRIPT_DIR}" -B "${cmake_build_dir}" "${cmake_args[@]}"
+  cmake --build "${cmake_build_dir}" --target rcompss_worker rcompss_executor -j "$(nproc)"
+
+  cp "${cmake_build_dir}/aux/rcompss_worker"   "${pipers_dir}/"
+  cp "${cmake_build_dir}/aux/rcompss_executor"  "${pipers_dir}/"
+  chmod +x "${pipers_dir}/rcompss_worker" "${pipers_dir}/rcompss_executor"
+  echo "INFO: Deployed rcompss_worker and rcompss_executor to ${pipers_dir}/"
+
+  rm -rf "${cmake_build_dir}"
+
+  # Deploy the piper shell script
+  cp ${SCRIPT_DIR}/aux/r_piper.sh ${pipers_dir}/
 
   # Clean unnecessary files
   echo "INFO: Cleaning unnecessary files..."
