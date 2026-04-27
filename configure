@@ -48,3 +48,12 @@ cmake -S "${ABSOLUTE_PATH}" -B "${BUILD_DIR}" "${CMAKE_ARGS[@]}"
 
 cmake --build "${BUILD_DIR}" -j "$(nproc)"
 
+# Copy the built shared object into src/ so R CMD INSTALL can find it
+if [ -f "${BUILD_DIR}/src/RCOMPSs.so" ]; then
+  cp "${BUILD_DIR}/src/RCOMPSs.so" "${ABSOLUTE_PATH}/src/RCOMPSs.so"
+  echo "Copied RCOMPSs.so to src/"
+else
+  echo "ERROR: RCOMPSs.so not found in ${BUILD_DIR}/src/" >&2
+  exit 1
+fi
+
