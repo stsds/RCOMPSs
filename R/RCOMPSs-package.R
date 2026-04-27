@@ -390,7 +390,6 @@ task <- task_wrapper_impl
 # This fixes the "Expecting a single string value: [type=symbol; extent=1]" error
 process_task <- function(app_id, signature, on_failure, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames) {
   # DEBUG: Verify override is being called
-  cat("[DEBUG] process_task OVERRIDE called! signature type:", typeof(signature), "on_failure type:", typeof(on_failure), "\n", file = stderr())
   flush.console()
   
   # CRITICAL: Force evaluation IMMEDIATELY to break any symbol references
@@ -411,10 +410,6 @@ process_task <- function(app_id, signature, on_failure, time_out, priority, num_
   force(sig_str)
   force(on_fail_str)
   
-  # DEBUG: Verify the conversion
-  cat("[DEBUG] process_task override: sig_str type:", typeof(sig_str), "length:", length(sig_str), "value:", sig_str, "\n", file = stderr())
-  cat("[DEBUG] process_task override: on_fail_str type:", typeof(on_fail_str), "length:", length(on_fail_str), "value:", on_fail_str, "\n", file = stderr())
-  flush.console()
   
   # Verify they are character vectors of length 1
   if (!is.character(sig_str) || length(sig_str) != 1) {
@@ -461,10 +456,6 @@ rcompss_call_process_task <- function(app_id, signature, on_failure, time_out, p
                                      has_target, num_returns, values, names, compss_types, 
                                      compss_directions, compss_streams, compss_prefixes, 
                                      content_types, weights, keep_renames) {
-  # DEBUG: Verify this function is being called
-  cat("[DEBUG] rcompss_call_process_task CALLED! signature type:", typeof(signature), "value:", paste(signature, collapse="|"), "\n", file = stderr())
-  flush.console()
-  
   # CRITICAL: Force complete evaluation to break any symbol references
   # Use multiple evaluation steps to ensure we get actual character values
   sig_eval <- eval(substitute(signature), envir = parent.frame())
@@ -498,12 +489,6 @@ rcompss_call_process_task <- function(app_id, signature, on_failure, time_out, p
   # Force final evaluation
   force(sig_cv)
   force(on_fail_cv)
-  
-  # DEBUG: Verify conversion - check if it's actually a character vector
-  cat("[DEBUG] rcompss_call_process_task: sig_cv type:", typeof(sig_cv), "class:", class(sig_cv), "length:", length(sig_cv), "value:", sig_cv, "\n", file = stderr())
-  cat("[DEBUG] rcompss_call_process_task: on_fail_cv type:", typeof(on_fail_cv), "class:", class(on_fail_cv), "length:", length(on_fail_cv), "value:", on_fail_cv, "\n", file = stderr())
-  cat("[DEBUG] rcompss_call_process_task: sig_cv is.character:", is.character(sig_cv), "is.symbol:", is.symbol(sig_cv), "\n", file = stderr())
-  flush.console()
   
   # CRITICAL: Verify they are character vectors, not symbols
   if (!is.character(sig_cv)) {
@@ -721,22 +706,10 @@ rcompss_execute_decorated_task <- function(f, f_name, filename, return_value, re
       constraint_sig <- substr(constraint_sig, 1, 32)  # Limit length
     }
     register_marker <- paste0("registered_", f_name, ifelse(constraint_sig != "", paste0("_", constraint_sig), ""))
-    cat("[DEBUG] Registration marker:", register_marker, "\n", file = stderr())
-    cat("[DEBUG] Marker exists?", exists(register_marker, envir = globalenv()), "\n", file = stderr())
-    flush(stderr())
     
     if (!exists(register_marker, envir = globalenv())) {
       constraint_string <- ""
       impl_local <- "False"  # Default value
-      
-      # Debug: Always show what we found
-      cat("[DEBUG] Registering task:", f_name, "\n", file = stderr())
-      if (!is.null(constraints_attr)) {
-        cat("[DEBUG] constraints_attr length:", length(constraints_attr), "\n", file = stderr())
-        cat("[DEBUG] constraints_attr names:", paste(names(constraints_attr), collapse = ", "), "\n", file = stderr())
-      } else {
-        cat("[DEBUG] No constraints found (constraints_attr is NULL)\n", file = stderr())
-      }
       
       if (!is.null(constraints_attr) && length(constraints_attr) > 0) {
         
@@ -751,7 +724,6 @@ rcompss_execute_decorated_task <- function(f, f_name, filename, return_value, re
         }
         
         if (!is.null(is_local_key)) {
-          cat("[DEBUG] Found is_local constraint, extracting for ImplLocal\n", file = stderr())
           is_local_val <- constraints_attr[[is_local_key]]
           # Convert to COMPSs format: "True" or "False" (capitalized, as per ImplLocal convention)
           if (is.character(is_local_val)) {
@@ -765,27 +737,16 @@ rcompss_execute_decorated_task <- function(f, f_name, filename, return_value, re
           } else {
             impl_local <- "False"
           }
-          cat("[DEBUG] Setting ImplLocal to:", impl_local, "\n", file = stderr())
           # Remove isLocal/is_local from constraints before building constraint string
           constraints_attr <- constraints_attr[names(constraints_attr) != is_local_key]
-          cat("[DEBUG] Constraint names after removing isLocal:", paste(names(constraints_attr), collapse = ", "), "\n", file = stderr())
         }
         
         # Build constraint string from remaining constraints (excluding is_local)
         if (length(constraints_attr) > 0) {
           constraint_string <- rcompss_build_constraint_string(constraints_attr)
-          cat("[DEBUG] Generated constraint string (without isLocal):", constraint_string, "\n", file = stderr())
         } else {
-          cat("[DEBUG] No constraints remaining after removing isLocal\n", file = stderr())
         }
-      } else {
-        cat("[DEBUG] No constraints to process (constraints_attr is NULL or empty)\n", file = stderr())
       }
-      
-      cat("[DEBUG] Final constraint_string for", f_name, ":", ifelse(constraint_string == "", "(empty)", constraint_string), "\n", file = stderr())
-      cat("[DEBUG] ImplLocal for", f_name, ":", impl_local, "\n", file = stderr())
-      flush(stderr())  # Ensure debug output is visible
-     
       register_core_element(
         CESignature = f_name,
         ImplSignature = f_name,
@@ -817,8 +778,6 @@ rcompss_execute_decorated_task <- function(f, f_name, filename, return_value, re
     }
     
     # Call process_task
-    cat("[DEBUG] Calling process_task for", f_name, "with", length(proc_args_clean), "arguments\n", file = stderr())
-    flush(stderr())
     process_task(
       app_id = 0L,
       signature = f_name,
@@ -842,8 +801,6 @@ rcompss_execute_decorated_task <- function(f, f_name, filename, return_value, re
       weights = as.character(task_result$weights),
       keep_renames = task_result$keep_renames
     )
-    cat("[DEBUG] process_task returned for", f_name, "\n", file = stderr())
-    flush(stderr())
     
     # Return future object if return_value is TRUE
     if (return_value) {
