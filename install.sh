@@ -205,7 +205,7 @@ install() {
 
   local cmake_args=(
     -DCMAKE_BUILD_TYPE=Release
-    -DRCOMPSs_GPU=OFF
+    -DRCOMPSs_GPU=ON
   )
 
   cmake -S "${SCRIPT_DIR}" -B "${cmake_build_dir}" "${cmake_args[@]}"
