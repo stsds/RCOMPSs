@@ -23,6 +23,10 @@
 #include <sched.h>
 
 #include "extrae.h"
+#include <kernels/ContextManager.hpp>
+#ifdef USE_CUDA
+#include <cuda_runtime.h>
+#endif
 
 namespace rcompss {
 namespace executor {
@@ -829,6 +833,11 @@ int ExecutorCore::run() {
     Extrae_eventandcounters(9000100, 0);
     Extrae_eventandcounters(9090425, 0);
   }
+
+  rcompss::kernels::ContextManager::DestroyInstance();
+#ifdef USE_CUDA
+  cudaDeviceReset();
+#endif
 
   Extrae_eventandcounters(9000200, 0);
   Extrae_flush();
