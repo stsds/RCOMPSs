@@ -4,7 +4,6 @@ set(EXECUTOR_SOURCES
   ExecutorCore.cpp
   ${CMAKE_SOURCE_DIR}/src/kernels/ContextManager.cpp
   ${CMAKE_SOURCE_DIR}/src/kernels/RunContext.cpp
-  ${CMAKE_SOURCE_DIR}/src/kernels/MemoryHandler.cpp
 )
 
 add_executable(rcompss_executor ${EXECUTOR_SOURCES})
