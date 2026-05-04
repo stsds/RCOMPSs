@@ -1,153 +1,175 @@
-RCOMPSs
-=======
+# RCOMPSs
 
-What is RCOMPSs?
-----------------
+RCOMPSs is an R binding for the COMPSs task-based runtime. It lets you keep an R script as the application entry point, mark selected functions as tasks, and delegate dependency tracking, scheduling, and worker execution to COMPSs.
 
-RCOMPSs is a programming model designed to simplify the parallel execution of R code. It enables users to develop applications as standard R scripts while easily identifying specific functions as tasks. The underlying COMPSs runtime automatically manages task dependencies, builds a data dependency graph, and dynamically schedules tasks across distributed computing resources. This abstraction allows efficient and scalable execution with minimal changes to the original R code, freeing users from the complexities of parallelization and resource management.
+This repository contains more than the R package itself. It includes:
 
-Vision of RCOMPSs
------------------
+- the user-facing R API in `R/`
+- the native COMPSs bridge in `src/`
+- worker-side executor and piper scripts in `aux/`
+- sample and benchmark applications in `examples/`
 
-RCOMPSs is the result of a collaborative effort between the STSDS group at KAUST (King Abdullah University of Science and Technology) and the Barcelona Supercomputing Center (BSC), driven by a shared vision to bring scalable, high-performance computing capabilities to the R programming ecosystem. The project aims to empower R users with seamless access to parallel and distributed computing without the need for extensive code rewriting or expertise in parallel programming. By integrating the task-based programming model of COMPSs into R, RCOMPSs enables researchers and practitioners to accelerate their data analysis, machine learning, and scientific computing workloads efficiently across multicore, cluster, and cloud environments. Our long-term vision is to make large-scale parallel computing accessible to the broader R community, fostering innovation in fields such as computational statistics, machine learning, bioinformatics, and climate science.
+## What Is In The Package
 
-Installation
-------------
+From the source tree, the public interface is centered on these functions:
 
-RCOMPSs is installed  as part of the COMPSs source installation by adding the `--rcompss` to the `buildlocal` command.
+- `task()`: wraps an R function so calls are submitted to COMPSs instead of executed locally
+- `compss_start()`: starts the runtime and records the master working directory
+- `compss_wait_on()`: materializes task results on the master
+- `compss_barrier()`: waits for submitted tasks
+- `compss_stop()`: stops the runtime
+- `extrae_ini()`, `extrae_emit_event()`, `extrae_flu()`, `extrae_fin()`: optional tracing hooks
 
-Please, check the [COMPSs installation instructions](https://compss-doc.readthedocs.io/en/latest/Sections/01_Installation/02_Building_from_sources.html)
+Internally, the package uses:
 
-Examples
---------
+- `src/compssmodule.cpp` to call COMPSs runtime functions such as runtime start/stop, task submission, barriers, and file synchronization
+- `R/utils.R` to decorate R functions, map argument types, and serialize non-scalar values
+- `aux/executor.R`, `aux/piper_worker.R`, and `aux/r_piper.sh` to run R tasks on COMPSs workers
 
-**IMPORTANT:** Exporting an environment variable named `COMPSS_HOME` with the COMPSs installation path is mandatory. For example:
+## Execution Model
 
-```bash
-export COMPSS_HOME=/opt/COMPSs
+The source code shows this workflow:
+
+1. Call `compss_start()`.
+2. Wrap task functions with `task(f, "file.R", ...)`.
+3. Invoke the decorated functions to submit tasks.
+4. Use `compss_wait_on()` or `compss_barrier()` when synchronization is needed.
+5. Call `compss_stop()` when the application finishes.
+
+Important behavior visible in the implementation:
+
+- `compss_start()` must be called before `task()`, because `task()` expects `MASTER_WORKING_DIR` to exist.
+- The `filename` passed to `task()` is used to build the worker-side module path, and workers later `source()` that file before calling the task function.
+- Basic scalar types are passed directly. Non-scalar objects are serialized to files and submitted as COMPSs file parameters.
+- The code supports `RMVL` and `qs` serialization backends through the `ser_method` argument.
+
+## Minimal Example
+
+This is the pattern used in [`examples/addition/addition.R`](./examples/addition/addition.R):
+
+```r
+library(RCOMPSs)
+source("add.R")
+
+compss_start()
+
+add_task <- task(
+  add,
+  "add.R",
+  return_value = TRUE,
+  ser_method = c("RMVL", "RMVL")
+)
+
+x <- add_task(4, 5)
+y <- add_task(6, 7)
+z <- add_task(x, y)
+
+z <- compss_wait_on(z)
+print(z)
+
+compss_stop()
 ```
 
-### Addition
+The default task return type is a future-like object that stores the output file path. `compss_wait_on()` resolves either a single future, a list of futures, or a vector of future paths.
 
-The `addition` example shows a simple R application parallelized with RCOMPSs.
-It declares a task that adds two values, and then it is invoked with 4 inputs in order to get the accumulated value.
+## Installation Model
+
+This repository is structured as an R package, but it is not a standalone CRAN-style package. The installation flow is coupled to a COMPSs deployment.
+
+The `install.sh` script:
+
+- rewrites `src/Makevars` with COMPSs, Java, and tracing include/library paths
+- builds the package with `R CMD build`
+- installs it into a binding-local `user_libs` directory with `R CMD INSTALL`
+- deploys worker-side scripts into the COMPSs runtime piper adaptor directory
+- installs a dummy Extrae library when tracing is disabled
+
+The launch scripts in `examples/` expect `COMPSS_HOME` to point to a COMPSs installation and typically source `$COMPSS_HOME/compssenv` when present.
+
+```bash
+export COMPSS_HOME=/path/to/COMPSs
+```
+
+## Repository Layout
+
+```text
+R/                High-level R API and serialization logic
+src/              Rcpp bridge to COMPSs and Extrae
+aux/              Worker launchers, executors, dummy Extrae, sample XML files
+examples/         End-to-end applications, benchmarks, launcher scripts
+man/              Generated R documentation
+tests/            Minimal testthat scaffold
+install.sh        COMPSs-side installation entry point
+```
+
+## Examples
+
+The bundled examples fall into two groups: small API demonstrations and larger benchmark-style applications.
+
+### Small Demonstrations
+
+- `examples/addition`: the smallest end-to-end task example, including `run_addition_RCOMPSs.sh`
+- `examples/standardization`: a compact example that chains three tasks and mixes `RMVL` and `qs` serialization
+
+### Larger Applications
+
+- `examples/kmeans`: fragmented K-means with sequential and RCOMPSs launchers, plus comparison scripts and cluster launchers for MN5 and Shaheen
+- `examples/knn`: fragmented KNN classification with sequential and RCOMPSs launchers, plus comparison scripts and cluster launchers
+- `examples/linear_regression`: fragmented linear regression and prediction workflow with sequential and RCOMPSs launchers, plus comparison scripts and cluster launchers
+- `examples/MCMC`: multiple-chain MCMC example with comparison scripts for base parallelism, `future`, and RCOMPSs
+
+Typical entry points are:
 
 ```bash
 cd examples/addition
-./run_addition_RCOMPSs
+./run_addition_RCOMPSs.sh
 ```
-
-The output are two files (stdout and stderr) containing the output from the execution.
-
-### K-means
-
-K-means is a widely used unsupervised learning algorithm that aims to partition a given dataset into $k$ clusters by minimizing intra-cluster variance. Given a dataset $\{x_1, x_2, \dots, x_n\} \subset \mathbb{R}^d$, the goal is to assign each data point to the cluster with the nearest centroid, the mean position of all points in a cluster, representing its geometric center in the feature space, thereby grouping similar points and keeping clusters as compact as possible. Formally, K-means seeks to minimize the Within-each-Cluster-Sum-of-Squares (WCSS):
-```math
-\underset{C}{\text{arg min}} \sum_{i=1}^k \sum_{x \in C_i} \|x - \mu_i\|^2,
-```
-where $\mu_i = \frac{1}{|C_i|} \sum_{x \in C_i} x$ is the centroid of cluster $C_i$.
-
-Location:
 
 ```bash
 cd examples/kmeans
-```
-
-Sequential execution:
-
-```bash
 ./run_kmeans_R.sh
-```
-
-Parallel execution:
-
-```bash
 ./run_kmeans_RCOMPSs.sh
 ```
 
-Additionally, the `MN5_experiments` and `Shaheen_experiments` folders contain the scripts used to evaluate the Kmeans algorithm in both MN5 and Shaheen supercomputers.
-
-### KNN
-
-The K-Nearest Neighbors (KNN) classification algorithm is a supervised learning method for classification tasks. It is based on the principle that similar data points tend to be close to one another in the feature space. Let $\mathcal{D} = \{(x_1, y_1), (x_2, y_2), \dots, (x_n, y_n)\}$ denote a training dataset, where each $x_i \in \mathbb{R}^d$ is a feature vector and $y_i \in \mathcal{Y}$ is the corresponding label. Given a query point $x \in \mathbb{R}^d$, the algorithm computes the distance to all training points, typically using the Euclidean metric:
-```math
-d(x, x_i) = \|x - x_i\|.
-```
-It then selects the $k$ closest samples, $\mathcal{N}_k(x)$, and for classification tasks, assigns the most frequent label among them:
-```math
-\hat{y} = \arg\max_{y \in \mathcal{Y}} \sum_{i \in \mathcal{N}_k(x)} \mathbb{I}(y_i = y),
-```
-where $\mathbb{I}(\cdot)$ is the indicator function.
-
-Location:
-
 ```bash
 cd examples/knn
-```
-
-Sequential execution:
-
-```bash
 ./run_knn_R.sh
-```
-
-Parallel execution:
-
-```bash
 ./run_knn_RCOMPSs.sh
 ```
 
-Additionally, the `MN5_experiments` and `Shaheen_experiments` folders contain the scripts used to evaluate the KNN algorithm in both MN5 and Shaheen supercomputers.
-
-### Linear Regression
-
-Linear regression models the relationship between a dependent variable $y$ and a set of independent variables $x_1, x_2, \dots, x_p$. For a given observation $i$, the model is expressed as:
-```math
-y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \cdots + \beta_p x_{ip} + \varepsilon_i,
-```
-where $\beta_0$ is the intercept, $\beta_1, \dots, \beta_p$ are the regression coefficients, and $\varepsilon_i$ is the error term.
-
-In vector form, this becomes:
-```math
-y_i = \mathbf{x}_i^\top \boldsymbol{\beta} + \boldsymbol\varepsilon_i,
-```
-where $\mathbf{x}_i = [1, x_{i1}, x_{i2}, \dots, x_{ip}]^\top$ includes the intercept term, and $\boldsymbol{\beta} = [\beta_0, \beta_1, \dots, \beta_p]^\top$ is the parameter vector. To estimate $\boldsymbol{\beta}$, the method of least squares minimizes the residual sum of squares:
-```math
-\min_{\boldsymbol{\beta}} \sum_{i=1}^n (y_i - \mathbf{x}_i^\top \boldsymbol{\beta})^2.
-```
-
-Let $\mathbf{X} \in \mathbb{R}^{n \times (p+1)}$ be the design matrix and $\mathbf{y} \in \mathbb{R}^n$ the response vector. The closed-form least squares solution is:
-```math
-\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top \mathbf{X})^{-1} \mathbf{X}^\top \mathbf{y}.
-```
-
-Location:
-
 ```bash
 cd examples/linear_regression
-```
-
-Sequential execution:
-
-```bash
 ./run_linear_regression_R.sh
-```
-
-Parallel execution:
-
-```bash
 ./run_linear_regression_RCOMPSs.sh
 ```
 
-Additionally, the `MN5_experiments` and `Shaheen_experiments` folders contain the scripts used to evaluate the Linear Regression algorithm in both MN5 and Shaheen supercomputers.
+## Example Dependencies
 
-License
--------
+The binding declares `Rcpp`, `RMVL`, `foreach`, `parallel`, and `doParallel`. The source also uses `qs` as a serialization backend, and the installer provisions additional runtime dependencies for the worker scripts and examples.
 
-- BSD 3-Clause License
+Some examples require additional packages beyond the core binding. From the example sources, these include packages such as:
 
-Acknowledgement
----------------
+- `qs`
+- `caret`
+- `ggplot2`
+- `future`
+- `future.apply`
+- `furrr`
+- `mirai`
+- `bigmemory`
+- `proxy`
 
-- Computer, Electrical and Mathematical Sciences and Engineering (CEMSE) Division, King Abdullah University of Science and Technology (KAUST), Thuwal, Saudi Arabia.
-- Barcelona Supercomputing Center (BSC), Barcelona, Spain.
+## Notes From The Current Source
+
+- `task()` supports ordinary function signatures and a pure `...` signature, but explicitly rejects functions that mix named formals with `...`.
+- Return values are modeled as a single COMPSs output object per task call.
+- Worker execution is file-based: task arguments that are not simple scalars are serialized before submission and deserialized on the worker.
+- The worker implementation preloads `RCOMPSs` and uses a piper-based executor model under `aux/`.
+
+## License
+
+BSD 3-Clause License
+
+## Acknowledgements
+
+The repository headers and existing project materials identify the work as part of the STSDS group at KAUST, with COMPSs integration tied to the Barcelona Supercomputing Center.
