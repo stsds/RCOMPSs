@@ -20,6 +20,7 @@ fi
 #gcc -c -fPIC extrae.cc -o extrae.o
 #gcc extrae.o -shared -o libpthread.so
 # Compile in a sigle line
-gcc -shared -o libpthread.so -fPIC extrae.cc
+# gcc -shared -o libpthread.so -fPIC extrae.cc
+gcc -fPIC -shared extrae.cc -o libpttrace.so
 
 cd ${CURRENT_DIR}

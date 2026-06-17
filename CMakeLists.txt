@@ -11,6 +11,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Option to request GPU-enabled build. If ON but CUDA is missing, fail clearly.
 option(RCOMPSs_GPU "Build RCOMPSs with CUDA GPU support" ON)
+# Option to request Tracing-enabled build.
+set(RCOMPSs_TRACING $ENV{RCM_COMPSs_TRACING})
+message(STATUS "RCOMPSs_TRACING FINAL = ${RCOMPSs_TRACING}")
 
 include(CheckLanguage)
 check_language(CUDA)
@@ -115,26 +118,51 @@ else()
   endif()
 endif()
 
+message(STATUS "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}")
+message(STATUS "COMPSs_HOME = ${COMPSs_HOME}")
+message(STATUS "Include COMPSs = ${COMPSs_HOME}/Bindings/bindings-common/include")
+
 # Find Java installation
 if (DEFINED ENV{JAVA_HOME})
   set(JAVA_HOME "$ENV{JAVA_HOME}")
-else()
-  # Try common Java installation paths
-  find_path(JAVA_HOME_INCLUDE jni.h
-    PATHS
-      /usr/lib/jvm/java-*/include
-      /usr/lib/jvm/*/include
-      /usr/local/java/include
-      /opt/java/include
-    NO_DEFAULT_PATH
-  )
-  if (JAVA_HOME_INCLUDE)
-    get_filename_component(JAVA_HOME "${JAVA_HOME_INCLUDE}/.." ABSOLUTE)
-  else()
-    # Fallback to common default
-    set(JAVA_HOME "/usr/lib/jvm/java-17-openjdk-amd64")
-  endif()
 endif()
+
+# Try to locate libjvm properly instead of guessing directories
+find_library(JVM_LIBRARY
+  NAMES jvm
+  HINTS
+    "${JAVA_HOME}/lib/server"
+    "${JAVA_HOME}/jre/lib/amd64/server"
+    "${JAVA_HOME}/lib"
+    "${JAVA_HOME}/jre/lib"
+)
+if (NOT JVM_LIBRARY)
+  message(FATAL_ERROR "libjvm.so not found under JAVA_HOME=${JAVA_HOME}")
+endif()
+message(STATUS "Found libjvm: ${JVM_LIBRARY}")
+# Add directory for linker search (important)
+get_filename_component(JVM_DIR "${JVM_LIBRARY}" DIRECTORY)
+list(APPEND RCOMPSs_LIBRARY_DIRS "${JVM_DIR}")
+# IMPORTANT: ensure linker sees it explicitly
+list(APPEND R_LDLIBS_LIST "${JVM_LIBRARY}")
+# Ensure runtime linker can find libjvm during link-time (IMPORTANT FIX)
+get_filename_component(JVM_DIR "${JVM_LIBRARY}" DIRECTORY)
+# Add for linking stage (fixes undefined reference JNI_CreateJavaVM)
+link_directories(${JVM_DIR})
+# Also ensure runtime RPATH is correct
+if (CMAKE_INSTALL_RPATH)
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:${JVM_DIR}")
+else()
+  set(CMAKE_INSTALL_RPATH "${JVM_DIR}")
+endif()
+if (CMAKE_BUILD_RPATH)
+  set(CMAKE_BUILD_RPATH "${CMAKE_BUILD_RPATH}:${JVM_DIR}")
+else()
+  set(CMAKE_BUILD_RPATH "${JVM_DIR}")
+endif()
+# Extra safety for GCC linker
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath-link,${JVM_DIR}")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath-link,${JVM_DIR}")
 
 # Find dummy_extrae location
 if (EXISTS "${CMAKE_SOURCE_DIR}/aux/dummy_extrae")
@@ -172,13 +200,23 @@ set(RCOMPSs_INCLUDE_DIRS
 # Set library directories
 set(RCOMPSs_LIBRARY_DIRS
   "${COMPSs_HOME}/Bindings/bindings-common/lib"
-  "${DUMMY_EXTRAE_DIR}"
 )
 
 set(RCOMPSs_LIBS
   bindings_common
-  pttrace
 )
+
+if (RCOMPSs_TRACING)
+  message(STATUS "Using REAL Extrae")
+  list(APPEND RCOMPSs_INCLUDE_DIRS "${COMPSs_HOME}/Dependencies/extrae/include")
+  list(APPEND RCOMPSs_LIBRARY_DIRS "${COMPSs_HOME}/Dependencies/extrae/lib")
+  list(APPEND RCOMPSs_LIBS pttrace)
+else()
+  message(STATUS "Using DUMMY Extrae")
+  list(APPEND RCOMPSs_INCLUDE_DIRS "${DUMMY_EXTRAE_DIR}")
+  list(APPEND RCOMPSs_LIBRARY_DIRS "${DUMMY_EXTRAE_DIR}")
+  list(APPEND RCOMPSs_LIBS pttrace)
+endif()
 
 # Add CUDA libraries if CUDA is enabled
 if (USE_CUDA)
@@ -198,7 +236,10 @@ endif()
 
 add_subdirectory(src)
 
+include_directories(${RCOMPSs_INCLUDE_DIRS})
 target_include_directories(RCOMPSs PRIVATE ${RCOMPSs_INCLUDE_DIRS})
+target_include_directories(rcompss_worker PRIVATE ${RCOMPSs_INCLUDE_DIRS})
+target_include_directories(rcompss_executor PRIVATE ${RCOMPSs_INCLUDE_DIRS})
 target_compile_options(RCOMPSs PRIVATE ${R_CPPFLAGS_LIST} ${RCPP_CPPFLAGS_LIST})
 target_link_directories(RCOMPSs PRIVATE ${RCOMPSs_LIBRARY_DIRS})
 target_link_options(RCOMPSs PRIVATE ${R_LDFLAGS_LIST} ${RCPP_LDFLAGS_LIST})

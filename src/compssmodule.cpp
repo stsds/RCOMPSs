@@ -82,7 +82,7 @@ void start_runtime_interactive(
   if (JAVA_HOME.empty()) {
     perror("ERROR: 'JAVA_HOME' environment variable is not defined.");
   }
-  std::string uuid = "123456-" + to_string(rand());
+  std::string uuid = "123456-" + std::to_string(rand());
 
   std::string masterWorkingDir;
   const char* envMasterWd = std::getenv("COMPSS_MASTER_WORKING_DIR");
@@ -105,6 +105,7 @@ void start_runtime_interactive(
   }
 
   std::ofstream configFile(fileName);
+  configFile << "-Djdk.lang.Process.launchMechanism=fork\n";
   configFile << "-XX:+PerfDisableSharedMem\n";
   configFile << "-XX:-UsePerfData\n";
   configFile << "-XX:+UseG1GC\n";
@@ -176,6 +177,8 @@ void start_runtime_interactive(
   configFile << "-Dcompss.task.execution=compss\n";  // << task_execution << "\n";
   configFile << "-Dcompss.storage.conf=null\n";  // << storage_conf << "\n";
   configFile << "-Dcompss.tracing=" << boolToString(trace) << "\n";
+  configFile << "-Dcompss.tracing.extrae=" << boolToString(trace) << "\n";
+  configFile << "-Dcompss.tracing.monitor=false\n";
   configFile << "-Dcompss.tracing.task.dependencies=false\n";  // << boolToString(tracing_task_dependencies) << "\n";
   configFile << "-Dcompss.extrae.working_dir=null\n";  // << extrae_final_directory << "\n";
   configFile << "-Dcompss.extrae.file=null\n";  // << extrae_cfg << "\n";
@@ -193,6 +196,7 @@ void start_runtime_interactive(
   }
 
   log_debug("Start interactive runtime");
+  GS_set_JNI_runtime();
   GS_On();
 }
 
@@ -201,6 +205,7 @@ void start_runtime_interactive(
 void start_runtime()
 {
   log_debug("Start runtime");
+  GS_set_JNI_runtime();
   GS_On();
 }
 
