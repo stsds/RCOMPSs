@@ -75,19 +75,19 @@ int WorkerCore::run() {
   std::cout << "[C++ WORKER] Starting R Worker!" << std::endl;
 
   Extrae_init();
-  Extrae_eventandcounters(8000666, 1);
+  Extrae_eventandcounters(8000001, 1);
 
-  Extrae_eventandcounters(9090425, 1);
+  Extrae_eventandcounters(9000200, 1);
   spawnExecutors();
-  Extrae_eventandcounters(9090425, 0);
+  Extrae_eventandcounters(9000200, 0);
 
-  Extrae_eventandcounters(8000666, 0);
+  Extrae_eventandcounters(8000001, 0);
   auto now = std::chrono::system_clock::now();
   auto epoch_seconds =
       std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch())
           .count();
-  Extrae_eventandcounters(8000666, static_cast<unsigned>(epoch_seconds));
-  Extrae_eventandcounters(8000666, 0);
+  Extrae_eventandcounters(8000001, static_cast<unsigned>(epoch_seconds));
+  Extrae_eventandcounters(8000001, 0);
   Extrae_flush();
   Extrae_fini();
 

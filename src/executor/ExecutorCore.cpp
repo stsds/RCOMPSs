@@ -802,8 +802,8 @@ int ExecutorCore::run() {
   Extrae_init();
   Extrae_eventandcounters(9000200, 1);
   Extrae_eventandcounters(8001003, 8);
-  Extrae_eventandcounters(8001006, static_cast<unsigned>(executor_id_));
-  Extrae_eventandcounters(9090425, 3);
+  Extrae_eventandcounters(8001112, static_cast<unsigned>(executor_id_));
+  Extrae_eventandcounters(9000200, 3);
 
   initR();
 
@@ -811,7 +811,7 @@ int ExecutorCore::run() {
   std::ofstream output_fifo(output_fifo_path_, std::ios::out);
   output_fifo.flush();
 
-  Extrae_eventandcounters(9090425, 0);
+  Extrae_eventandcounters(9000200, 0);
   std::string line;
   while (std::getline(input_fifo, line)) {
     if (line.empty()) {
@@ -827,11 +827,11 @@ int ExecutorCore::run() {
       continue;
     }
 
-    Extrae_eventandcounters(9090425, 6);
+    Extrae_eventandcounters(9000200, 6);
     Extrae_eventandcounters(9000100, 4);
     executeTask(message, output_fifo);
     Extrae_eventandcounters(9000100, 0);
-    Extrae_eventandcounters(9090425, 0);
+    Extrae_eventandcounters(9000200, 0);
   }
 
   rcompss::kernels::ContextManager::DestroyInstance();
