@@ -2,181 +2,914 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <Rcpp.h>
-#include <extrae.h>
 
 using namespace Rcpp;
 
 #ifdef RCPP_USE_GLOBAL_ROSTREAM
-Rcpp::Rostream<true> &Rcpp::Rcout = Rcpp::Rcpp_cout_get();
-Rcpp::Rostream<false> &Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// rcompss_gpu_dgemm
+Rcpp::NumericMatrix rcompss_gpu_dgemm(Rcpp::NumericMatrix A, Rcpp::NumericMatrix B, bool transA, bool transB, double alpha, double beta);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dgemm(SEXP ASEXP, SEXP BSEXP, SEXP transASEXP, SEXP transBSEXP, SEXP alphaSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type B(BSEXP);
+    Rcpp::traits::input_parameter< bool >::type transA(transASEXP);
+    Rcpp::traits::input_parameter< bool >::type transB(transBSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dgemm(A, B, transA, transB, alpha, beta));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_daxpy
+Rcpp::NumericVector rcompss_gpu_daxpy(Rcpp::NumericVector x, Rcpp::NumericVector y, double alpha);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_daxpy(SEXP xSEXP, SEXP ySEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_daxpy(x, y, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dpotrf
+Rcpp::NumericMatrix rcompss_gpu_dpotrf(Rcpp::NumericMatrix A, bool upper);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dpotrf(SEXP ASEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dpotrf(A, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dgemv
+Rcpp::NumericVector rcompss_gpu_dgemv(Rcpp::NumericMatrix A, Rcpp::NumericVector x, bool trans, double alpha, double beta, Rcpp::Nullable<Rcpp::NumericVector> y0);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dgemv(SEXP ASEXP, SEXP xSEXP, SEXP transSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP y0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< bool >::type trans(transSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericVector> >::type y0(y0SEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dgemv(A, x, trans, alpha, beta, y0));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_ddot
+double rcompss_gpu_ddot(Rcpp::NumericVector x, Rcpp::NumericVector y);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_ddot(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_ddot(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dnrm2
+double rcompss_gpu_dnrm2(Rcpp::NumericVector x);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dnrm2(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dnrm2(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dscal
+Rcpp::NumericVector rcompss_gpu_dscal(Rcpp::NumericVector x, double alpha);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dscal(SEXP xSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dscal(x, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dtrmm
+Rcpp::NumericMatrix rcompss_gpu_dtrmm(Rcpp::NumericMatrix A, Rcpp::NumericMatrix B, std::string side, std::string uplo, std::string trans, std::string diag, double alpha);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dtrmm(SEXP ASEXP, SEXP BSEXP, SEXP sideSEXP, SEXP uploSEXP, SEXP transSEXP, SEXP diagSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type B(BSEXP);
+    Rcpp::traits::input_parameter< std::string >::type side(sideSEXP);
+    Rcpp::traits::input_parameter< std::string >::type uplo(uploSEXP);
+    Rcpp::traits::input_parameter< std::string >::type trans(transSEXP);
+    Rcpp::traits::input_parameter< std::string >::type diag(diagSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dtrmm(A, B, side, uplo, trans, diag, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dtrsm
+Rcpp::NumericMatrix rcompss_gpu_dtrsm(Rcpp::NumericMatrix A, Rcpp::NumericMatrix B, std::string side, std::string uplo, std::string trans, std::string diag, double alpha);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dtrsm(SEXP ASEXP, SEXP BSEXP, SEXP sideSEXP, SEXP uploSEXP, SEXP transSEXP, SEXP diagSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type B(BSEXP);
+    Rcpp::traits::input_parameter< std::string >::type side(sideSEXP);
+    Rcpp::traits::input_parameter< std::string >::type uplo(uploSEXP);
+    Rcpp::traits::input_parameter< std::string >::type trans(transSEXP);
+    Rcpp::traits::input_parameter< std::string >::type diag(diagSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dtrsm(A, B, side, uplo, trans, diag, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dsyrk
+Rcpp::NumericMatrix rcompss_gpu_dsyrk(Rcpp::NumericMatrix A, std::string uplo, std::string trans, double alpha, double beta, Rcpp::Nullable<Rcpp::NumericMatrix> C0);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dsyrk(SEXP ASEXP, SEXP uploSEXP, SEXP transSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP C0SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    Rcpp::traits::input_parameter< std::string >::type uplo(uploSEXP);
+    Rcpp::traits::input_parameter< std::string >::type trans(transSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type C0(C0SEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dsyrk(A, uplo, trans, alpha, beta, C0));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dgetrf
+Rcpp::List rcompss_gpu_dgetrf(Rcpp::NumericMatrix A);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dgetrf(SEXP ASEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type A(ASEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dgetrf(A));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dgetrs
+Rcpp::NumericMatrix rcompss_gpu_dgetrs(Rcpp::NumericMatrix LU, Rcpp::IntegerVector pivot, Rcpp::RObject B, bool trans);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dgetrs(SEXP LUSEXP, SEXP pivotSEXP, SEXP BSEXP, SEXP transSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type LU(LUSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type pivot(pivotSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RObject >::type B(BSEXP);
+    Rcpp::traits::input_parameter< bool >::type trans(transSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dgetrs(LU, pivot, B, trans));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_dpotrs
+Rcpp::NumericMatrix rcompss_gpu_dpotrs(Rcpp::NumericMatrix chol, Rcpp::RObject B, bool upper);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_dpotrs(SEXP cholSEXP, SEXP BSEXP, SEXP upperSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type chol(cholSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RObject >::type B(BSEXP);
+    Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_dpotrs(chol, B, upper));
+    return rcpp_result_gen;
+END_RCPP
+}
+// start_runtime_interactive
+void start_runtime_interactive(bool debug, bool graph, bool trace);
+RcppExport SEXP _RCOMPSs_start_runtime_interactive(SEXP debugSEXP, SEXP graphSEXP, SEXP traceSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
+    Rcpp::traits::input_parameter< bool >::type graph(graphSEXP);
+    Rcpp::traits::input_parameter< bool >::type trace(traceSEXP);
+    start_runtime_interactive(debug, graph, trace);
+    return R_NilValue;
+END_RCPP
+}
 // start_runtime
 void start_runtime();
-RcppExport SEXP _RCOMPSs_start_runtime()
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_start_runtime() {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     start_runtime();
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // stop_runtime
 void stop_runtime(int code);
-RcppExport SEXP _RCOMPSs_stop_runtime(SEXP codeSEXP)
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_stop_runtime(SEXP codeSEXP) {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter<int>::type code(codeSEXP);
+    Rcpp::traits::input_parameter< int >::type code(codeSEXP);
     stop_runtime(code);
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // register_core_element
 void register_core_element(std::string CESignature, std::string ImplSignature, std::string ImplConstraints, std::string ImplType, std::string ImplLocal, std::string ImplIO, CharacterVector prolog, CharacterVector epilog, CharacterVector container, CharacterVector typeArgs);
-RcppExport SEXP _RCOMPSs_register_core_element(SEXP CESignatureSEXP, SEXP ImplSignatureSEXP, SEXP ImplConstraintsSEXP, SEXP ImplTypeSEXP, SEXP ImplLocalSEXP, SEXP ImplIOSEXP, SEXP prologSEXP, SEXP epilogSEXP, SEXP containerSEXP, SEXP typeArgsSEXP)
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_register_core_element(SEXP CESignatureSEXP, SEXP ImplSignatureSEXP, SEXP ImplConstraintsSEXP, SEXP ImplTypeSEXP, SEXP ImplLocalSEXP, SEXP ImplIOSEXP, SEXP prologSEXP, SEXP epilogSEXP, SEXP containerSEXP, SEXP typeArgsSEXP) {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter<std::string>::type CESignature(CESignatureSEXP);
-    Rcpp::traits::input_parameter<std::string>::type ImplSignature(ImplSignatureSEXP);
-    Rcpp::traits::input_parameter<std::string>::type ImplConstraints(ImplConstraintsSEXP);
-    Rcpp::traits::input_parameter<std::string>::type ImplType(ImplTypeSEXP);
-    Rcpp::traits::input_parameter<std::string>::type ImplLocal(ImplLocalSEXP);
-    Rcpp::traits::input_parameter<std::string>::type ImplIO(ImplIOSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type prolog(prologSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type epilog(epilogSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type container(containerSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type typeArgs(typeArgsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type CESignature(CESignatureSEXP);
+    Rcpp::traits::input_parameter< std::string >::type ImplSignature(ImplSignatureSEXP);
+    Rcpp::traits::input_parameter< std::string >::type ImplConstraints(ImplConstraintsSEXP);
+    Rcpp::traits::input_parameter< std::string >::type ImplType(ImplTypeSEXP);
+    Rcpp::traits::input_parameter< std::string >::type ImplLocal(ImplLocalSEXP);
+    Rcpp::traits::input_parameter< std::string >::type ImplIO(ImplIOSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type prolog(prologSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type epilog(epilogSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type container(containerSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type typeArgs(typeArgsSEXP);
     register_core_element(CESignature, ImplSignature, ImplConstraints, ImplType, ImplLocal, ImplIO, prolog, epilog, container, typeArgs);
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // process_task
-void process_task(long int app_id, std::string signature, std::string on_failure, int time_out, int priority, int num_nodes, int reduce, int chunk_size, int replicated, int distributed, int has_target, int num_returns, List values, CharacterVector names, IntegerVector compss_types, IntegerVector compss_directions, IntegerVector compss_streams, CharacterVector compss_prefixes, CharacterVector content_types, CharacterVector weights, IntegerVector keep_renames);
-RcppExport SEXP _RCOMPSs_process_task(SEXP app_idSEXP, SEXP signatureSEXP, SEXP on_failureSEXP, SEXP time_outSEXP, SEXP prioritySEXP, SEXP num_nodesSEXP, SEXP reduceSEXP, SEXP chunk_sizeSEXP, SEXP replicatedSEXP, SEXP distributedSEXP, SEXP has_targetSEXP, SEXP num_returnsSEXP, SEXP valuesSEXP, SEXP namesSEXP, SEXP compss_typesSEXP, SEXP compss_directionsSEXP, SEXP compss_streamsSEXP, SEXP compss_prefixesSEXP, SEXP content_typesSEXP, SEXP weightsSEXP, SEXP keep_renamesSEXP)
-{
-    BEGIN_RCPP
+void process_task(long int app_id, SEXP signatureSEXP, SEXP on_failureSEXP, int time_out, int priority, int num_nodes, int reduce, int chunk_size, int replicated, int distributed, int has_target, int num_returns, List values, CharacterVector names, IntegerVector compss_types, IntegerVector compss_directions, IntegerVector compss_streams, CharacterVector compss_prefixes, CharacterVector content_types, CharacterVector weights, IntegerVector keep_renames);
+RcppExport SEXP _RCOMPSs_process_task(SEXP app_idSEXP, SEXP signatureSEXPSEXP, SEXP on_failureSEXPSEXP, SEXP time_outSEXP, SEXP prioritySEXP, SEXP num_nodesSEXP, SEXP reduceSEXP, SEXP chunk_sizeSEXP, SEXP replicatedSEXP, SEXP distributedSEXP, SEXP has_targetSEXP, SEXP num_returnsSEXP, SEXP valuesSEXP, SEXP namesSEXP, SEXP compss_typesSEXP, SEXP compss_directionsSEXP, SEXP compss_streamsSEXP, SEXP compss_prefixesSEXP, SEXP content_typesSEXP, SEXP weightsSEXP, SEXP keep_renamesSEXP) {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter<long int>::type app_id(app_idSEXP);
-    Rcpp::traits::input_parameter<std::string>::type signature(signatureSEXP);
-    Rcpp::traits::input_parameter<std::string>::type on_failure(on_failureSEXP);
-    Rcpp::traits::input_parameter<int>::type time_out(time_outSEXP);
-    Rcpp::traits::input_parameter<int>::type priority(prioritySEXP);
-    Rcpp::traits::input_parameter<int>::type num_nodes(num_nodesSEXP);
-    Rcpp::traits::input_parameter<int>::type reduce(reduceSEXP);
-    Rcpp::traits::input_parameter<int>::type chunk_size(chunk_sizeSEXP);
-    Rcpp::traits::input_parameter<int>::type replicated(replicatedSEXP);
-    Rcpp::traits::input_parameter<int>::type distributed(distributedSEXP);
-    Rcpp::traits::input_parameter<int>::type has_target(has_targetSEXP);
-    Rcpp::traits::input_parameter<int>::type num_returns(num_returnsSEXP);
-    Rcpp::traits::input_parameter<List>::type values(valuesSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type names(namesSEXP);
-    Rcpp::traits::input_parameter<IntegerVector>::type compss_types(compss_typesSEXP);
-    Rcpp::traits::input_parameter<IntegerVector>::type compss_directions(compss_directionsSEXP);
-    Rcpp::traits::input_parameter<IntegerVector>::type compss_streams(compss_streamsSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type compss_prefixes(compss_prefixesSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type content_types(content_typesSEXP);
-    Rcpp::traits::input_parameter<CharacterVector>::type weights(weightsSEXP);
-    Rcpp::traits::input_parameter<IntegerVector>::type keep_renames(keep_renamesSEXP);
-    process_task(app_id, signature, on_failure, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames);
+    Rcpp::traits::input_parameter< long int >::type app_id(app_idSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type signatureSEXP(signatureSEXPSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type on_failureSEXP(on_failureSEXPSEXP);
+    Rcpp::traits::input_parameter< int >::type time_out(time_outSEXP);
+    Rcpp::traits::input_parameter< int >::type priority(prioritySEXP);
+    Rcpp::traits::input_parameter< int >::type num_nodes(num_nodesSEXP);
+    Rcpp::traits::input_parameter< int >::type reduce(reduceSEXP);
+    Rcpp::traits::input_parameter< int >::type chunk_size(chunk_sizeSEXP);
+    Rcpp::traits::input_parameter< int >::type replicated(replicatedSEXP);
+    Rcpp::traits::input_parameter< int >::type distributed(distributedSEXP);
+    Rcpp::traits::input_parameter< int >::type has_target(has_targetSEXP);
+    Rcpp::traits::input_parameter< int >::type num_returns(num_returnsSEXP);
+    Rcpp::traits::input_parameter< List >::type values(valuesSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type names(namesSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type compss_types(compss_typesSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type compss_directions(compss_directionsSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type compss_streams(compss_streamsSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type compss_prefixes(compss_prefixesSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type content_types(content_typesSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< IntegerVector >::type keep_renames(keep_renamesSEXP);
+    process_task(app_id, signatureSEXP, on_failureSEXP, time_out, priority, num_nodes, reduce, chunk_size, replicated, distributed, has_target, num_returns, values, names, compss_types, compss_directions, compss_streams, compss_prefixes, content_types, weights, keep_renames);
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // barrier
 void barrier(long int app_id, bool no_more_tasks);
-RcppExport SEXP _RCOMPSs_barrier(SEXP app_idSEXP, SEXP no_more_tasksSEXP)
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_barrier(SEXP app_idSEXP, SEXP no_more_tasksSEXP) {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter<long int>::type app_id(app_idSEXP);
-    Rcpp::traits::input_parameter<bool>::type no_more_tasks(no_more_tasksSEXP);
+    Rcpp::traits::input_parameter< long int >::type app_id(app_idSEXP);
+    Rcpp::traits::input_parameter< bool >::type no_more_tasks(no_more_tasksSEXP);
     barrier(app_id, no_more_tasks);
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // Get_File
 void Get_File(long int app_id, std::string outputfileName);
-RcppExport SEXP _RCOMPSs_Get_File(SEXP app_idSEXP, SEXP outputfileNameSEXP)
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_Get_File(SEXP app_idSEXP, SEXP outputfileNameSEXP) {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter<long int>::type app_id(app_idSEXP);
-    Rcpp::traits::input_parameter<std::string>::type outputfileName(outputfileNameSEXP);
+    Rcpp::traits::input_parameter< long int >::type app_id(app_idSEXP);
+    Rcpp::traits::input_parameter< std::string >::type outputfileName(outputfileNameSEXP);
     Get_File(app_id, outputfileName);
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // Get_MasterWorkingDir
 Rcpp::CharacterVector Get_MasterWorkingDir();
-RcppExport SEXP _RCOMPSs_Get_MasterWorkingDir()
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_Get_MasterWorkingDir() {
+BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     rcpp_result_gen = Rcpp::wrap(Get_MasterWorkingDir());
     return rcpp_result_gen;
-    END_RCPP
+END_RCPP
 }
-// Extrae_eventandcounters
-void Extrae_event_and_counters(extrae_type_t group, extrae_value_t id);
-RcppExport SEXP _RCOMPSs_Extrae_event_and_counters(SEXP groupSEXP, SEXP idSEXP)
-{
-    BEGIN_RCPP
+// Extrae_event_and_counters
+void Extrae_event_and_counters(unsigned int group, unsigned int id);
+RcppExport SEXP _RCOMPSs_Extrae_event_and_counters(SEXP groupSEXP, SEXP idSEXP) {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter<extrae_type_t>::type group(groupSEXP);
-    Rcpp::traits::input_parameter<extrae_value_t>::type id(idSEXP);
-    Extrae_eventandcounters(group, id);
+    Rcpp::traits::input_parameter< unsigned int >::type group(groupSEXP);
+    Rcpp::traits::input_parameter< unsigned int >::type id(idSEXP);
+    Extrae_event_and_counters(group, id);
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // Extrae_ini
 void Extrae_ini();
-RcppExport SEXP _RCOMPSs_Extrae_ini()
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_Extrae_ini() {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Extrae_init();
+    Extrae_ini();
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
 // Extrae_flu
 void Extrae_flu();
-RcppExport SEXP _RCOMPSs_Extrae_flu()
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_Extrae_flu() {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Extrae_flush();
+    Extrae_flu();
     return R_NilValue;
-    END_RCPP
+END_RCPP
 }
-// Extrae_ini
+// Extrae_fin
 void Extrae_fin();
-RcppExport SEXP _RCOMPSs_Extrae_fin()
-{
-    BEGIN_RCPP
+RcppExport SEXP _RCOMPSs_Extrae_fin() {
+BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Extrae_fini();
+    Extrae_fin();
     return R_NilValue;
-    END_RCPP
+END_RCPP
+}
+// rcompss_generate_uid
+std::string rcompss_generate_uid();
+RcppExport SEXP _RCOMPSs_rcompss_generate_uid() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(rcompss_generate_uid());
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_par_type_mapping
+int rcompss_par_type_mapping(SEXP arg);
+RcppExport SEXP _RCOMPSs_rcompss_par_type_mapping(SEXP argSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type arg(argSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_par_type_mapping(arg));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_rep_integer
+Rcpp::IntegerVector rcompss_rep_integer(int value, int count);
+RcppExport SEXP _RCOMPSs_rcompss_rep_integer(SEXP valueSEXP, SEXP countSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type value(valueSEXP);
+    Rcpp::traits::input_parameter< int >::type count(countSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_rep_integer(value, count));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_rep_string
+Rcpp::CharacterVector rcompss_rep_string(const std::string& value, int count);
+RcppExport SEXP _RCOMPSs_rcompss_rep_string(SEXP valueSEXP, SEXP countSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type value(valueSEXP);
+    Rcpp::traits::input_parameter< int >::type count(countSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_rep_string(value, count));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_concat_integer
+Rcpp::IntegerVector rcompss_concat_integer(Rcpp::IntegerVector vec, int value);
+RcppExport SEXP _RCOMPSs_rcompss_concat_integer(SEXP vecSEXP, SEXP valueSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type vec(vecSEXP);
+    Rcpp::traits::input_parameter< int >::type value(valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_concat_integer(vec, value));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_concat_string
+Rcpp::CharacterVector rcompss_concat_string(Rcpp::CharacterVector vec, const std::string& value);
+RcppExport SEXP _RCOMPSs_rcompss_concat_string(SEXP vecSEXP, SEXP valueSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type vec(vecSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type value(valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_concat_string(vec, value));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_extract_serialization_method
+std::string rcompss_extract_serialization_method(const std::string& filepath);
+RcppExport SEXP _RCOMPSs_rcompss_extract_serialization_method(SEXP filepathSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filepath(filepathSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_extract_serialization_method(filepath));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_build_argument_filename
+std::string rcompss_build_argument_filename(const std::string& master_working_dir, const std::string& ser_method, const std::string& arg_name, int index, const std::string& uid);
+RcppExport SEXP _RCOMPSs_rcompss_build_argument_filename(SEXP master_working_dirSEXP, SEXP ser_methodSEXP, SEXP arg_nameSEXP, SEXP indexSEXP, SEXP uidSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type master_working_dir(master_working_dirSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type ser_method(ser_methodSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type arg_name(arg_nameSEXP);
+    Rcpp::traits::input_parameter< int >::type index(indexSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type uid(uidSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_build_argument_filename(master_working_dir, ser_method, arg_name, index, uid));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_build_return_value_filename
+std::string rcompss_build_return_value_filename(const std::string& master_working_dir, const std::string& ser_method, const std::string& uid);
+RcppExport SEXP _RCOMPSs_rcompss_build_return_value_filename(SEXP master_working_dirSEXP, SEXP ser_methodSEXP, SEXP uidSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type master_working_dir(master_working_dirSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type ser_method(ser_methodSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type uid(uidSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_build_return_value_filename(master_working_dir, ser_method, uid));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_is_basic_type
+bool rcompss_is_basic_type(SEXP arg);
+RcppExport SEXP _RCOMPSs_rcompss_is_basic_type(SEXP argSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type arg(argSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_is_basic_type(arg));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_is_future_object
+bool rcompss_is_future_object(SEXP obj);
+RcppExport SEXP _RCOMPSs_rcompss_is_future_object(SEXP objSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj(objSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_is_future_object(obj));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_is_future_object_path
+bool rcompss_is_future_object_path(SEXP obj);
+RcppExport SEXP _RCOMPSs_rcompss_is_future_object_path(SEXP objSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj(objSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_is_future_object_path(obj));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_is_list
+bool rcompss_is_list(SEXP obj);
+RcppExport SEXP _RCOMPSs_rcompss_is_list(SEXP objSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj(objSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_is_list(obj));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_build_variable_argument_names
+Rcpp::CharacterVector rcompss_build_variable_argument_names(const std::string& function_name, int count);
+RcppExport SEXP _RCOMPSs_rcompss_build_variable_argument_names(SEXP function_nameSEXP, SEXP countSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type function_name(function_nameSEXP);
+    Rcpp::traits::input_parameter< int >::type count(countSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_build_variable_argument_names(function_name, count));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_build_return_value_name
+std::string rcompss_build_return_value_name(const std::string& ser_method);
+RcppExport SEXP _RCOMPSs_rcompss_build_return_value_name(SEXP ser_methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type ser_method(ser_methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_build_return_value_name(ser_method));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_build_register_marker
+std::string rcompss_build_register_marker(const std::string& function_name);
+RcppExport SEXP _RCOMPSs_rcompss_build_register_marker(SEXP function_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type function_name(function_nameSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_build_register_marker(function_name));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_build_type_args_path
+std::string rcompss_build_type_args_path(const std::string& working_dir, const std::string& filename);
+RcppExport SEXP _RCOMPSs_rcompss_build_type_args_path(SEXP working_dirSEXP, SEXP filenameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type working_dir(working_dirSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type filename(filenameSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_build_type_args_path(working_dir, filename));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_build_constraint_string
+std::string rcompss_build_constraint_string(Rcpp::List constraints);
+RcppExport SEXP _RCOMPSs_rcompss_build_constraint_string(SEXP constraintsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type constraints(constraintsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_build_constraint_string(constraints));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_process_task_metadata
+Rcpp::List rcompss_process_task_metadata(int arguments_length, bool has_return_value);
+RcppExport SEXP _RCOMPSs_rcompss_process_task_metadata(SEXP arguments_lengthSEXP, SEXP has_return_valueSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type arguments_length(arguments_lengthSEXP);
+    Rcpp::traits::input_parameter< bool >::type has_return_value(has_return_valueSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_process_task_metadata(arguments_length, has_return_value));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_execute_task
+Rcpp::List rcompss_execute_task(const std::string& function_name, Rcpp::List arguments, int arguments_length, const std::string& master_working_dir, const std::string& filename, Rcpp::CharacterVector ser_method, bool return_value, const std::string& return_type);
+RcppExport SEXP _RCOMPSs_rcompss_execute_task(SEXP function_nameSEXP, SEXP argumentsSEXP, SEXP arguments_lengthSEXP, SEXP master_working_dirSEXP, SEXP filenameSEXP, SEXP ser_methodSEXP, SEXP return_valueSEXP, SEXP return_typeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type function_name(function_nameSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type arguments(argumentsSEXP);
+    Rcpp::traits::input_parameter< int >::type arguments_length(arguments_lengthSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type master_working_dir(master_working_dirSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type filename(filenameSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type ser_method(ser_methodSEXP);
+    Rcpp::traits::input_parameter< bool >::type return_value(return_valueSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type return_type(return_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_execute_task(function_name, arguments, arguments_length, master_working_dir, filename, ser_method, return_value, return_type));
+    return rcpp_result_gen;
+END_RCPP
+}
+// task
+Rcpp::Function task(SEXP f, const std::string& filename, bool return_value, const std::string& return_type, Rcpp::CharacterVector ser_method, bool info_only, bool DEBUG, const std::string& f_name);
+RcppExport SEXP _RCOMPSs_task(SEXP fSEXP, SEXP filenameSEXP, SEXP return_valueSEXP, SEXP return_typeSEXP, SEXP ser_methodSEXP, SEXP info_onlySEXP, SEXP DEBUGSEXP, SEXP f_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type f(fSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type filename(filenameSEXP);
+    Rcpp::traits::input_parameter< bool >::type return_value(return_valueSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type return_type(return_typeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type ser_method(ser_methodSEXP);
+    Rcpp::traits::input_parameter< bool >::type info_only(info_onlySEXP);
+    Rcpp::traits::input_parameter< bool >::type DEBUG(DEBUGSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type f_name(f_nameSEXP);
+    rcpp_result_gen = Rcpp::wrap(task(f, filename, return_value, return_type, ser_method, info_only, DEBUG, f_name));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_serialize
+void rcompss_serialize(SEXP object, const std::string& filepath, const std::string& ser_method, int mthreads);
+RcppExport SEXP _RCOMPSs_rcompss_serialize(SEXP objectSEXP, SEXP filepathSEXP, SEXP ser_methodSEXP, SEXP mthreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type object(objectSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type filepath(filepathSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type ser_method(ser_methodSEXP);
+    Rcpp::traits::input_parameter< int >::type mthreads(mthreadsSEXP);
+    rcompss_serialize(object, filepath, ser_method, mthreads);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_unserialize
+SEXP rcompss_unserialize(const std::string& filepath, int mthreads);
+RcppExport SEXP _RCOMPSs_rcompss_unserialize(SEXP filepathSEXP, SEXP mthreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const std::string& >::type filepath(filepathSEXP);
+    Rcpp::traits::input_parameter< int >::type mthreads(mthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_unserialize(filepath, mthreads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_wait_on
+SEXP rcompss_wait_on(SEXP future_obj, int mthreads, int nthreads);
+RcppExport SEXP _RCOMPSs_rcompss_wait_on(SEXP future_objSEXP, SEXP mthreadsSEXP, SEXP nthreadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type future_obj(future_objSEXP);
+    Rcpp::traits::input_parameter< int >::type mthreads(mthreadsSEXP);
+    Rcpp::traits::input_parameter< int >::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_wait_on(future_obj, mthreads, nthreads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_memory_roundtrip_double
+Rcpp::NumericVector rcompss_gpu_memory_roundtrip_double(Rcpp::NumericVector x);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_memory_roundtrip_double(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_memory_roundtrip_double(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_create_gpu_context
+void rcompss_create_gpu_context(std::string context_name);
+RcppExport SEXP _RCOMPSs_rcompss_create_gpu_context(SEXP context_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    rcompss_create_gpu_context(context_name);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_set_operation_placement
+void rcompss_set_operation_placement(std::string context_name, std::string placement);
+RcppExport SEXP _RCOMPSs_rcompss_set_operation_placement(SEXP context_nameSEXP, SEXP placementSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    Rcpp::traits::input_parameter< std::string >::type placement(placementSEXP);
+    rcompss_set_operation_placement(context_name, placement);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_get_operation_placement
+std::string rcompss_get_operation_placement(std::string context_name);
+RcppExport SEXP _RCOMPSs_rcompss_get_operation_placement(SEXP context_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_get_operation_placement(context_name));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_set_run_mode
+void rcompss_set_run_mode(std::string context_name, std::string run_mode);
+RcppExport SEXP _RCOMPSs_rcompss_set_run_mode(SEXP context_nameSEXP, SEXP run_modeSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    Rcpp::traits::input_parameter< std::string >::type run_mode(run_modeSEXP);
+    rcompss_set_run_mode(context_name, run_mode);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_get_run_mode
+std::string rcompss_get_run_mode(std::string context_name);
+RcppExport SEXP _RCOMPSs_rcompss_get_run_mode(SEXP context_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_get_run_mode(context_name));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_sync_context
+void rcompss_sync_context(std::string context_name);
+RcppExport SEXP _RCOMPSs_rcompss_sync_context(SEXP context_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    rcompss_sync_context(context_name);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_sync_all_contexts
+void rcompss_sync_all_contexts();
+RcppExport SEXP _RCOMPSs_rcompss_sync_all_contexts() {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcompss_sync_all_contexts();
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_get_num_contexts
+int rcompss_get_num_contexts();
+RcppExport SEXP _RCOMPSs_rcompss_get_num_contexts() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(rcompss_get_num_contexts());
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_set_operation_context
+void rcompss_set_operation_context(std::string context_name);
+RcppExport SEXP _RCOMPSs_rcompss_set_operation_context(SEXP context_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    rcompss_set_operation_context(context_name);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_delete_context
+void rcompss_delete_context(std::string context_name);
+RcppExport SEXP _RCOMPSs_rcompss_delete_context(SEXP context_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    rcompss_delete_context(context_name);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_get_all_context_names
+std::vector<std::string> rcompss_get_all_context_names();
+RcppExport SEXP _RCOMPSs_rcompss_get_all_context_names() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(rcompss_get_all_context_names());
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_finalize_context
+void rcompss_finalize_context(std::string context_name);
+RcppExport SEXP _RCOMPSs_rcompss_finalize_context(SEXP context_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< std::string >::type context_name(context_nameSEXP);
+    rcompss_finalize_context(context_name);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_gpu_alloc
+SEXP rcompss_gpu_alloc(int n);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_alloc(SEXP nSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n(nSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_alloc(n));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_copy_to_gpu
+void rcompss_copy_to_gpu(Rcpp::NumericVector r_vec, SEXP gpu_handle);
+RcppExport SEXP _RCOMPSs_rcompss_copy_to_gpu(SEXP r_vecSEXP, SEXP gpu_handleSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type r_vec(r_vecSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type gpu_handle(gpu_handleSEXP);
+    rcompss_copy_to_gpu(r_vec, gpu_handle);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_copy_from_gpu
+Rcpp::NumericVector rcompss_copy_from_gpu(SEXP gpu_handle);
+RcppExport SEXP _RCOMPSs_rcompss_copy_from_gpu(SEXP gpu_handleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type gpu_handle(gpu_handleSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_copy_from_gpu(gpu_handle));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_free
+void rcompss_gpu_free(SEXP gpu_handle);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_free(SEXP gpu_handleSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type gpu_handle(gpu_handleSEXP);
+    rcompss_gpu_free(gpu_handle);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_gpu_vector_add_kernel
+void rcompss_gpu_vector_add_kernel(SEXP d_a_handle, SEXP d_b_handle, SEXP d_result_handle);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_vector_add_kernel(SEXP d_a_handleSEXP, SEXP d_b_handleSEXP, SEXP d_result_handleSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type d_a_handle(d_a_handleSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type d_b_handle(d_b_handleSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type d_result_handle(d_result_handleSEXP);
+    rcompss_gpu_vector_add_kernel(d_a_handle, d_b_handle, d_result_handle);
+    return R_NilValue;
+END_RCPP
+}
+// rcompss_gpu_vector_add
+Rcpp::NumericVector rcompss_gpu_vector_add(Rcpp::NumericVector a, Rcpp::NumericVector b);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_vector_add(SEXP aSEXP, SEXP bSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type a(aSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type b(bSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_vector_add(a, b));
+    return rcpp_result_gen;
+END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_RCOMPSs_start_runtime", (DL_FUNC)&_RCOMPSs_start_runtime, 0},
-    {"_RCOMPSs_stop_runtime", (DL_FUNC)&_RCOMPSs_stop_runtime, 1},
-    {"_RCOMPSs_register_core_element", (DL_FUNC)&_RCOMPSs_register_core_element, 10},
-    {"_RCOMPSs_process_task", (DL_FUNC)&_RCOMPSs_process_task, 21},
-    {"_RCOMPSs_barrier", (DL_FUNC)&_RCOMPSs_barrier, 2},
-    {"_RCOMPSs_Get_File", (DL_FUNC)&_RCOMPSs_Get_File, 2},
-    {"_RCOMPSs_Get_MasterWorkingDir", (DL_FUNC)&_RCOMPSs_Get_MasterWorkingDir, 0},
-    {"_RCOMPSs_Extrae_event_and_counters", (DL_FUNC)&_RCOMPSs_Extrae_event_and_counters, 2},
-    {"_RCOMPSs_Extrae_ini", (DL_FUNC)&_RCOMPSs_Extrae_ini, 0},
-    {"_RCOMPSs_Extrae_flu", (DL_FUNC)&_RCOMPSs_Extrae_flu, 0},
-    {"_RCOMPSs_Extrae_fin", (DL_FUNC)&_RCOMPSs_Extrae_fin, 0},
-    {NULL, NULL, 0}};
+    {"_RCOMPSs_rcompss_gpu_dgemm", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgemm, 6},
+    {"_RCOMPSs_rcompss_gpu_daxpy", (DL_FUNC) &_RCOMPSs_rcompss_gpu_daxpy, 3},
+    {"_RCOMPSs_rcompss_gpu_dpotrf", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dpotrf, 2},
+    {"_RCOMPSs_rcompss_gpu_dgemv", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgemv, 6},
+    {"_RCOMPSs_rcompss_gpu_ddot", (DL_FUNC) &_RCOMPSs_rcompss_gpu_ddot, 2},
+    {"_RCOMPSs_rcompss_gpu_dnrm2", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dnrm2, 1},
+    {"_RCOMPSs_rcompss_gpu_dscal", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dscal, 2},
+    {"_RCOMPSs_rcompss_gpu_dtrmm", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dtrmm, 7},
+    {"_RCOMPSs_rcompss_gpu_dtrsm", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dtrsm, 7},
+    {"_RCOMPSs_rcompss_gpu_dsyrk", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dsyrk, 6},
+    {"_RCOMPSs_rcompss_gpu_dgetrf", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgetrf, 1},
+    {"_RCOMPSs_rcompss_gpu_dgetrs", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgetrs, 4},
+    {"_RCOMPSs_rcompss_gpu_dpotrs", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dpotrs, 3},
+    {"_RCOMPSs_start_runtime_interactive", (DL_FUNC) &_RCOMPSs_start_runtime_interactive, 3},
+    {"_RCOMPSs_start_runtime", (DL_FUNC) &_RCOMPSs_start_runtime, 0},
+    {"_RCOMPSs_stop_runtime", (DL_FUNC) &_RCOMPSs_stop_runtime, 1},
+    {"_RCOMPSs_register_core_element", (DL_FUNC) &_RCOMPSs_register_core_element, 10},
+    {"_RCOMPSs_process_task", (DL_FUNC) &_RCOMPSs_process_task, 21},
+    {"_RCOMPSs_barrier", (DL_FUNC) &_RCOMPSs_barrier, 2},
+    {"_RCOMPSs_Get_File", (DL_FUNC) &_RCOMPSs_Get_File, 2},
+    {"_RCOMPSs_Get_MasterWorkingDir", (DL_FUNC) &_RCOMPSs_Get_MasterWorkingDir, 0},
+    {"_RCOMPSs_Extrae_event_and_counters", (DL_FUNC) &_RCOMPSs_Extrae_event_and_counters, 2},
+    {"_RCOMPSs_Extrae_ini", (DL_FUNC) &_RCOMPSs_Extrae_ini, 0},
+    {"_RCOMPSs_Extrae_flu", (DL_FUNC) &_RCOMPSs_Extrae_flu, 0},
+    {"_RCOMPSs_Extrae_fin", (DL_FUNC) &_RCOMPSs_Extrae_fin, 0},
+    {"_RCOMPSs_rcompss_generate_uid", (DL_FUNC) &_RCOMPSs_rcompss_generate_uid, 0},
+    {"_RCOMPSs_rcompss_par_type_mapping", (DL_FUNC) &_RCOMPSs_rcompss_par_type_mapping, 1},
+    {"_RCOMPSs_rcompss_rep_integer", (DL_FUNC) &_RCOMPSs_rcompss_rep_integer, 2},
+    {"_RCOMPSs_rcompss_rep_string", (DL_FUNC) &_RCOMPSs_rcompss_rep_string, 2},
+    {"_RCOMPSs_rcompss_concat_integer", (DL_FUNC) &_RCOMPSs_rcompss_concat_integer, 2},
+    {"_RCOMPSs_rcompss_concat_string", (DL_FUNC) &_RCOMPSs_rcompss_concat_string, 2},
+    {"_RCOMPSs_rcompss_extract_serialization_method", (DL_FUNC) &_RCOMPSs_rcompss_extract_serialization_method, 1},
+    {"_RCOMPSs_rcompss_build_argument_filename", (DL_FUNC) &_RCOMPSs_rcompss_build_argument_filename, 5},
+    {"_RCOMPSs_rcompss_build_return_value_filename", (DL_FUNC) &_RCOMPSs_rcompss_build_return_value_filename, 3},
+    {"_RCOMPSs_rcompss_is_basic_type", (DL_FUNC) &_RCOMPSs_rcompss_is_basic_type, 1},
+    {"_RCOMPSs_rcompss_is_future_object", (DL_FUNC) &_RCOMPSs_rcompss_is_future_object, 1},
+    {"_RCOMPSs_rcompss_is_future_object_path", (DL_FUNC) &_RCOMPSs_rcompss_is_future_object_path, 1},
+    {"_RCOMPSs_rcompss_is_list", (DL_FUNC) &_RCOMPSs_rcompss_is_list, 1},
+    {"_RCOMPSs_rcompss_build_variable_argument_names", (DL_FUNC) &_RCOMPSs_rcompss_build_variable_argument_names, 2},
+    {"_RCOMPSs_rcompss_build_return_value_name", (DL_FUNC) &_RCOMPSs_rcompss_build_return_value_name, 1},
+    {"_RCOMPSs_rcompss_build_register_marker", (DL_FUNC) &_RCOMPSs_rcompss_build_register_marker, 1},
+    {"_RCOMPSs_rcompss_build_type_args_path", (DL_FUNC) &_RCOMPSs_rcompss_build_type_args_path, 2},
+    {"_RCOMPSs_rcompss_build_constraint_string", (DL_FUNC) &_RCOMPSs_rcompss_build_constraint_string, 1},
+    {"_RCOMPSs_rcompss_process_task_metadata", (DL_FUNC) &_RCOMPSs_rcompss_process_task_metadata, 2},
+    {"_RCOMPSs_rcompss_execute_task", (DL_FUNC) &_RCOMPSs_rcompss_execute_task, 8},
+    {"_RCOMPSs_task", (DL_FUNC) &_RCOMPSs_task, 8},
+    {"_RCOMPSs_rcompss_serialize", (DL_FUNC) &_RCOMPSs_rcompss_serialize, 4},
+    {"_RCOMPSs_rcompss_unserialize", (DL_FUNC) &_RCOMPSs_rcompss_unserialize, 2},
+    {"_RCOMPSs_rcompss_wait_on", (DL_FUNC) &_RCOMPSs_rcompss_wait_on, 3},
+    {"_RCOMPSs_rcompss_gpu_memory_roundtrip_double", (DL_FUNC) &_RCOMPSs_rcompss_gpu_memory_roundtrip_double, 1},
+    {"_RCOMPSs_rcompss_create_gpu_context", (DL_FUNC) &_RCOMPSs_rcompss_create_gpu_context, 1},
+    {"_RCOMPSs_rcompss_set_operation_placement", (DL_FUNC) &_RCOMPSs_rcompss_set_operation_placement, 2},
+    {"_RCOMPSs_rcompss_get_operation_placement", (DL_FUNC) &_RCOMPSs_rcompss_get_operation_placement, 1},
+    {"_RCOMPSs_rcompss_set_run_mode", (DL_FUNC) &_RCOMPSs_rcompss_set_run_mode, 2},
+    {"_RCOMPSs_rcompss_get_run_mode", (DL_FUNC) &_RCOMPSs_rcompss_get_run_mode, 1},
+    {"_RCOMPSs_rcompss_sync_context", (DL_FUNC) &_RCOMPSs_rcompss_sync_context, 1},
+    {"_RCOMPSs_rcompss_sync_all_contexts", (DL_FUNC) &_RCOMPSs_rcompss_sync_all_contexts, 0},
+    {"_RCOMPSs_rcompss_get_num_contexts", (DL_FUNC) &_RCOMPSs_rcompss_get_num_contexts, 0},
+    {"_RCOMPSs_rcompss_set_operation_context", (DL_FUNC) &_RCOMPSs_rcompss_set_operation_context, 1},
+    {"_RCOMPSs_rcompss_delete_context", (DL_FUNC) &_RCOMPSs_rcompss_delete_context, 1},
+    {"_RCOMPSs_rcompss_get_all_context_names", (DL_FUNC) &_RCOMPSs_rcompss_get_all_context_names, 0},
+    {"_RCOMPSs_rcompss_finalize_context", (DL_FUNC) &_RCOMPSs_rcompss_finalize_context, 1},
+    {"_RCOMPSs_rcompss_gpu_alloc", (DL_FUNC) &_RCOMPSs_rcompss_gpu_alloc, 1},
+    {"_RCOMPSs_rcompss_copy_to_gpu", (DL_FUNC) &_RCOMPSs_rcompss_copy_to_gpu, 2},
+    {"_RCOMPSs_rcompss_copy_from_gpu", (DL_FUNC) &_RCOMPSs_rcompss_copy_from_gpu, 1},
+    {"_RCOMPSs_rcompss_gpu_free", (DL_FUNC) &_RCOMPSs_rcompss_gpu_free, 1},
+    {"_RCOMPSs_rcompss_gpu_vector_add_kernel", (DL_FUNC) &_RCOMPSs_rcompss_gpu_vector_add_kernel, 3},
+    {"_RCOMPSs_rcompss_gpu_vector_add", (DL_FUNC) &_RCOMPSs_rcompss_gpu_vector_add, 2},
+    {NULL, NULL, 0}
+};
 
-RcppExport void R_init_RCOMPSs(DllInfo *dll)
-{
+RcppExport void R_init_RCOMPSs(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

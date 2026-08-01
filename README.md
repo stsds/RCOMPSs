@@ -9,14 +9,66 @@ RCOMPSs is a programming model designed to simplify the parallel execution of R 
 Vision of RCOMPSs
 -----------------
 
-RCOMPSs is the result of a collaborative effort between the STSDS group at KAUST (King Abdullah University of Science and Technology) and the Barcelona Supercomputing Center (BSC), driven by a shared vision to bring scalable, high-performance computing capabilities to the R programming ecosystem. The project aims to empower R users with seamless access to parallel and distributed computing without the need for extensive code rewriting or expertise in parallel programming. By integrating the task-based programming model of COMPSs into R, RCOMPSs enables researchers and practitioners to accelerate their data analysis, machine learning, and scientific computing workloads efficiently across multicore, cluster, and cloud environments. Our long-term vision is to make large-scale parallel computing accessible to the broader R community, fostering innovation in fields such as computational statistics, machine learning, bioinformatics, and climate science.
+RCOMPSs is the result of a collaborative effort between the STSDS group at KAUST (King Abdullah University of Science and Technology) , the Barcelona Supercomputing Center (BSC) and Brightskies, driven by a shared vision to bring scalable, high-performance computing capabilities to the R programming ecosystem. The project aims to empower R users with seamless access to parallel and distributed computing without the need for extensive code rewriting or expertise in parallel programming. By integrating the task-based programming model of COMPSs into R, RCOMPSs enables researchers and practitioners to accelerate their data analysis, machine learning, and scientific computing workloads efficiently across multicore, cluster, and cloud environments. Our long-term vision is to make large-scale parallel computing accessible to the broader R community, fostering innovation in fields such as computational statistics, machine learning, bioinformatics, and climate science.
 
 Installation
 ------------
 
-RCOMPSs is installed  as part of the COMPSs source installation by adding the `--rcompss` to the `buildlocal` command.
+RCOMPSs is installed as part of the COMPSs source installation by running the `install_rcompss.sh` script.
 
-Please, check the [COMPSs installation instructions](https://compss-doc.readthedocs.io/en/latest/Sections/01_Installation/02_Building_from_sources.html)
+### Prerequisites
+
+- A JDK must be available (`JAVA_HOME` set, or load a JDK module first).
+- Gradle is recommended (load a gradle module or install it).
+
+### Usage
+
+```bash
+./install_rcompss.sh [OPTIONS] [INSTALL_DIR]
+```
+
+`INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`).
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--help`, `-h` | Show the help message |
+| `--no-bashrc` | Don't modify `~/.bashrc` (print the env block instead) |
+| `--source-dir DIR` | Use an already-extracted COMPSs source directory instead of downloading the tarball |
+| `--r-libs DIR` | Path to the R user library directory (default: auto-detected from `~/R/`) |
+
+### What the script does
+
+1. Verifies `JAVA_HOME` and Gradle availability.
+2. Sets Extrae MPI headers.
+3. Downloads and extracts the COMPSs source (or uses the directory given via `--source-dir`).
+4. Runs the COMPSs installer with the R binding enabled.
+5. Applies the Ubuntu 22 JVM fix (`processReaperUseDefaultStackSize`).
+6. Sets up passwordless SSH to localhost.
+7. Disables the `.bashrc` interactive guard (required for SSH workers).
+8. Writes the RCOMPSs environment to `~/.bashrc` (unless `--no-bashrc` is passed).
+
+### Rebuilding RCOMPSs
+
+Whenever you need to rebuild, run the `install.sh` script with the target directory and the tracing flag:
+
+```bash
+./install.sh <target_dir> <tracing>
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `target_dir` | COMPSs R Binding installation directory (e.g., `$COMPSS_HOME/Bindings/RCOMPSs`) |
+| `tracing` | Whether to compile with Extrae tracing support (`true` or `false`) |
+
+For example:
+
+```bash
+./install.sh $COMPSS_HOME/Bindings/RCOMPSs false
+```
+
+This script recompiles the R binding, installs the required R packages, and redeploys the RCOMPSs executor into the COMPSs runtime.
 
 Examples
 --------
@@ -141,6 +193,27 @@ Parallel execution:
 
 Additionally, the `MN5_experiments` and `Shaheen_experiments` folders contain the scripts used to evaluate the Linear Regression algorithm in both MN5 and Shaheen supercomputers.
 
+### GPU (CUDA), cuBLAS, and cuSOLVER
+
+These scripts need a COMPSs installation with GPU support, `COMPSS_HOME` set (see above), and a machine where COMPSs can schedule GPU workers. CUDA must be loaded as a module (e.g., `module load cuda`) or installed in the system path. Resource definitions live in `examples/gpu/test_resources_gpu.xml`.
+
+Run GPU examples from that directory so the resource file resolves, or pass its absolute path to `--resources`.
+
+```bash
+cd examples/gpu
+runcompss --lang=r --resources=test_resources_gpu.xml --tracing test_gpu_blas_solver_set1_main.R
+```
+
+**cuBLAS / cuSOLVER smoke tests** (`examples/gpu/`) — each set has a driver `test_gpu_blas_solver_setN_main.R` and a self-contained task module `test_gpu_blas_solver_setN_functions.R` registered with `task(..., filename=...)`. Task modules must stay self-contained (do not `source()` other R files inside them; COMPSs workers load only the given module path).
+
+| Set | Driver | Covered R exports (high level) |
+|-----|--------|--------------------------------|
+| 1 | `test_gpu_blas_solver_set1_main.R` | DGEMM, DAXPY, DPOTRF (runs on 2 GPUs) |
+| 2 | `test_gpu_blas_solver_set2_main.R` | DGEMV, DDOT, DNRM2 |
+| 3 | `test_gpu_blas_solver_set3_main.R` | DSCAL, DTRMM, DTRSM |
+| 4 | `test_gpu_blas_solver_set4_main.R` | DSYRK, DGETRF, DGETRS |
+| 5 | `test_gpu_blas_solver_set5_main.R` | DPOTRS |
+
 License
 -------
 
@@ -151,3 +224,4 @@ Acknowledgement
 
 - Computer, Electrical and Mathematical Sciences and Engineering (CEMSE) Division, King Abdullah University of Science and Technology (KAUST), Thuwal, Saudi Arabia.
 - Barcelona Supercomputing Center (BSC), Barcelona, Spain.
+- Brightskies:  a digital transformation enabler and market leader.
