@@ -14,44 +14,135 @@ RCOMPSs is the result of a collaborative effort between the STSDS group at KAUST
 Installation
 ------------
 
-RCOMPSs is installed as part of the COMPSs source installation by running the `install_rcompss.sh` script.
+RCOMPSs is installed together with COMPSs. This repository provides
+`install_rcompss.sh`, which installs COMPSs from source with the R binding
+enabled.
+
+Before installing, review the script and choose an installation directory that
+you own. The default is `$HOME/COMPSs_installation`.
 
 ### Prerequisites
 
-- A JDK must be available (`JAVA_HOME` set, or load a JDK module first).
-- Gradle is recommended (load a gradle module or install it).
+- Linux environment with Bash, a C/C++ compiler, `make`, and standard build
+  tools (`autoconf`, `automake`, and `libtool`).
+- R and its development headers. Use the same R installation both to build and
+  to run RCOMPSs.
+- A JDK. Set `JAVA_HOME` or load the JDK module before invoking the installer.
+- Gradle is recommended. The installer reports whether it is available.
+- Network access when the COMPSs source archive or required R packages are not
+  already available locally.
 
-### Usage
+On systems that use environment modules, load the compiler, R, and JDK modules
+provided by your site. Names vary by system; for example:
+
+```bash
+module load gcc
+module load r
+module load openjdk
+```
+
+Confirm that the selected tools are the intended ones:
+
+```bash
+echo "$JAVA_HOME"
+R --version
+java -version
+gcc --version
+```
+
+### Install
 
 ```bash
 ./install_rcompss.sh [OPTIONS] [INSTALL_DIR]
 ```
 
-`INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`).
+For a standard installation, run:
+
+```bash
+./install_rcompss.sh "$HOME/COMPSs_installation"
+```
+
+To install from an existing COMPSs checkout or extracted source tree, avoid a
+second download with `--source-dir`:
+
+```bash
+./install_rcompss.sh \
+  --source-dir /path/to/COMPSs \
+  "$HOME/COMPSs_installation"
+```
+
+If your R user library is in a non-default location, pass it explicitly. This
+is particularly useful on shared systems with more than one R version:
+
+```bash
+./install_rcompss.sh \
+  --r-libs /path/to/R-library \
+  "$HOME/COMPSs_installation"
+```
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
 | `--help`, `-h` | Show the help message |
-| `--no-bashrc` | Don't modify `~/.bashrc` (print the env block instead) |
+| `--no-bashrc` | Do not append the RCOMPSs environment block to `~/.bashrc`; print it instead |
 | `--source-dir DIR` | Use an already-extracted COMPSs source directory instead of downloading the tarball |
-| `--r-libs DIR` | Path to the R user library directory (default: auto-detected from `~/R/`) |
+| `--r-libs DIR` | Path to the R user library directory; specify it when automatic detection selects the wrong R version |
 
-### What the script does
+### What the installer changes
 
-1. Verifies `JAVA_HOME` and Gradle availability.
-2. Sets Extrae MPI headers.
-3. Downloads and extracts the COMPSs source (or uses the directory given via `--source-dir`).
-4. Runs the COMPSs installer with the R binding enabled.
-5. Applies the Ubuntu 22 JVM fix (`processReaperUseDefaultStackSize`).
-6. Sets up passwordless SSH to localhost.
-7. Disables the `.bashrc` interactive guard (required for SSH workers).
-8. Writes the RCOMPSs environment to `~/.bashrc` (unless `--no-bashrc` is passed).
+The installer:
+
+1. Validates the JDK and checks for Gradle.
+2. Obtains the COMPSs source, unless `--source-dir` is supplied.
+3. Builds COMPSs with the R binding enabled.
+4. Applies the JVM compatibility setting needed on Ubuntu 22.
+5. Checks passwordless SSH access to `localhost`, which COMPSs requires for
+   local workers.
+6. Adds an environment block to `~/.bashrc`, unless `--no-bashrc` is used.
+
+The script can also disable the standard interactive-shell guard in `.bashrc`
+so that SSH worker sessions load the COMPSs environment. Back up any local
+shell customisation before installation and review the resulting changes.
+
+### Activate and verify
+
+Open a new terminal, or activate the environment in the current one:
+
+```bash
+source ~/.bashrc
+```
+
+`COMPSS_HOME` must point to the installation directory. Verify both the runtime
+environment and the R package:
+
+```bash
+echo "$COMPSS_HOME"
+test -x "$COMPSS_HOME/Runtime/scripts/user/runcompss"
+Rscript -e 'library(RCOMPSs); cat("RCOMPSs loaded successfully\n")'
+```
+
+If you opted out of `.bashrc` changes, export `COMPSS_HOME`, source
+`$COMPSS_HOME/compssenv`, and set `R_LIBS_USER` to include
+`$COMPSS_HOME/Bindings/RCOMPSs/user_libs` before starting R.
+
+### Troubleshooting
+
+- **R cannot find `RCOMPSs`** — Check `Rscript -e '.libPaths()'`. Ensure the
+  RCOMPSs user library is listed before other user libraries, and check
+  `~/.Renviron` because it can override `R_LIBS_USER` from `.bashrc`.
+- **JDK or JNI build errors** — Reload the JDK module, confirm `JAVA_HOME`, and
+  rebuild with the same compiler and JDK that will be used at runtime.
+- **Local worker startup fails** — Configure passwordless SSH to `localhost`;
+  test it with `ssh localhost true`.
+- **Tracing errors** — Tracing requires the Extrae tools supplied by your
+  system. If they are unavailable, build or run without tracing.
 
 ### Rebuilding RCOMPSs
 
-Whenever you need to rebuild, run the `install.sh` script with the target directory and the tracing flag:
+When rebuilding after changing the R binding source or changing R/JDK versions,
+run the binding installer from `COMPSs/Bindings/RCOMPSs` with the target
+directory and tracing flag:
 
 ```bash
 ./install.sh <target_dir> <tracing>
@@ -68,7 +159,9 @@ For example:
 ./install.sh $COMPSS_HOME/Bindings/RCOMPSs false
 ```
 
-This script recompiles the R binding, installs the required R packages, and redeploys the RCOMPSs executor into the COMPSs runtime.
+This recompiles the R binding, installs its required R packages, and redeploys
+the RCOMPSs executor into the COMPSs runtime. Use `true` only when Extrae
+tracing is available in the build and runtime environment.
 
 Examples
 --------
