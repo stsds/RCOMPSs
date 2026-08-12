@@ -76,6 +76,20 @@ The default task return type is a future-like object that stores the output file
 
 This repository is structured as an R package, but it is not a standalone CRAN-style package. The installation flow is coupled to a COMPSs deployment.
 
+### Prerequisites
+
+Install COMPSs before installing this binding. Its installation must provide:
+
+```text
+$COMPSS_HOME/Bindings/bindings-common/include
+$COMPSS_HOME/Bindings/bindings-common/lib
+$COMPSS_HOME/Runtime/scripts/system/adaptors/nio/pipers
+```
+
+The host also needs R with development headers, a C/C++ compiler, and a JDK. Set `JAVA_HOME` to that JDK.
+
+The installation target must be `$COMPSS_HOME/Bindings/RCOMPSs`. To install against a particular COMPSs version, set `COMPSS_HOME` to that version's installation directory.
+
 The `install.sh` script:
 
 - rewrites `src/Makevars` with COMPSs, Java, and tracing include/library paths
@@ -84,11 +98,69 @@ The `install.sh` script:
 - deploys worker-side scripts into the COMPSs runtime piper adaptor directory
 - installs a dummy Extrae library when tracing is disabled
 
-The launch scripts in `examples/` expect `COMPSS_HOME` to point to a COMPSs installation and typically source `$COMPSS_HOME/compssenv` when present.
+### Install
+
+From the repository root:
 
 ```bash
 export COMPSS_HOME=/path/to/COMPSs
+source "$COMPSS_HOME/compssenv"
+export JAVA_HOME=/path/to/jdk
+
+target_dir="$COMPSS_HOME/Bindings/RCOMPSs"
+R_LIBS_USER="$target_dir/user_libs" \
+  ./install.sh --compss-home "$COMPSS_HOME" "$target_dir" false
 ```
+
+The final argument enables (`true`) or disables (`false`) Extrae tracing. Use `false` unless the COMPSs installation includes Extrae development files.
+
+`--compss-home` makes the selected COMPSs version explicit. When it is omitted, the installer derives the COMPSs root from `target_dir` for backwards compatibility.
+
+To clone, build, and use a COMPSs branch or tag in one command, provide a new source directory and installation directory:
+
+```bash
+compss_source=/path/to/COMPSs-source
+compss_home=/path/to/COMPSs-install
+target_dir="$compss_home/Bindings/RCOMPSs"
+
+R_LIBS_USER="$target_dir/user_libs" \
+  ./install.sh --compss-home "$compss_home" \
+  --compss-source "$compss_source" \
+  --compss-version <tag-or-branch> \
+  "$target_dir" false
+```
+
+This uses the official `bsc-wdc/compss` repository, fetches its submodules, and runs COMPSs' `builders/buildlocal`. Use `--compss-repo <url>` to select a fork or mirror. The source and installation directories must not already exist.
+
+Before cloning, the installer checks for the source-build tools required by COMPSs, including `git`, `wget`, `mvn`, a JDK, compiler/autotools, and Python. It also checks RCOMPSs prerequisites (`R`, `Rscript`, a JDK, and a C/C++ build toolchain) for both installation paths. Missing requirements are reported together before downloading or building anything. The output gives package-manager-neutral guidance; install the corresponding capabilities using your distribution's package manager.
+
+The installer builds the package, installs its R dependencies into `$target_dir/user_libs`, deploys the worker scripts, and updates `src/Makevars` with the selected COMPSs and Java paths.
+
+### Runtime environment and verification
+
+Before running an RCOMPSs application:
+
+```bash
+source "$COMPSS_HOME/compssenv"
+export JAVA_HOME=/path/to/jdk
+export R_LIBS_USER="$COMPSS_HOME/Bindings/RCOMPSs/user_libs${R_LIBS_USER:+:$R_LIBS_USER}"
+export LD_LIBRARY_PATH="$JAVA_HOME/lib/server:$COMPSS_HOME/Bindings/bindings-common/lib:$COMPSS_HOME/Bindings/RCOMPSs/dummy_extrae${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+```
+
+If loading `RCOMPSs` reports a missing `GLIBCXX_*` symbol, start R with the newer `libstdc++.so.6` required by the COMPSs native libraries preloaded. Obtain it from the compiler toolchain used to build COMPSs, then set:
+
+```bash
+export LD_PRELOAD=/path/to/compatible/libstdc++.so.6${LD_PRELOAD:+:$LD_PRELOAD}
+```
+
+Verify the installation before running an example:
+
+```bash
+Rscript -e 'library(RCOMPSs); cat("RCOMPSs", as.character(packageVersion("RCOMPSs")), "loaded\\n")'
+runcompss --version
+```
+
+If package loading fails because of an incompatible personal R library, run the installer with `R_ENVIRON_USER=/dev/null` and `R_LIBS_USER` set to the binding's `user_libs` directory.
 
 ## Repository Layout
 

@@ -6,8 +6,9 @@
 #               Used by COMPSs to install the R language support within
 #               the COMPSs installation folder.
 # Parameters:
-#		target_dir  Target directory where to install the R binding
-#   tracing     Boolean to compile with Extrae
+#   --compss-home  COMPSs installation to use (optional)
+#   target_dir     Target directory where to install the R binding
+#   tracing        Boolean to compile with Extrae
 ######################################################################
 
 #---------------------------------------------------
@@ -15,6 +16,10 @@
 #---------------------------------------------------
 
 INCORRECT_TARGET_DIR="Error: No target directory"
+INCORRECT_PARAMETER="Error: Invalid parameter"
+INCORRECT_COMPSS_HOME="Error: Invalid COMPSs installation directory"
+INCORRECT_COMPSS_SOURCE="Error: Invalid COMPSs source directory"
+COMPSS_REPOSITORY="https://github.com/bsc-wdc/compss.git"
 
 #---------------------------------------------------
 # SET SCRIPT VARIABLES
@@ -31,8 +36,11 @@ show_opts() {
   cat <<EOT
 * Options:
     --help, -h                  Print this help message
-
     --opts                      Show available options
+    --compss-home <path>        COMPSs installation to use
+    --compss-source <path>      Clone and build COMPSs from source at this path
+    --compss-version <ref>      COMPSs branch or tag to clone
+    --compss-repo <url>         COMPSs repository URL (default: ${COMPSS_REPOSITORY})
 
 * Parameters:
     target_dir                  COMPSs' R Binding installation directory
@@ -45,7 +53,7 @@ usage() {
   exitValue=$1
 
   cat <<EOT
-Usage: $0 target_dir
+Usage: $0 [options] target_dir tracing
 EOT
   show_opts
   exit "$exitValue"
@@ -67,56 +75,174 @@ display_error() {
 }
 
 get_args() {
-  # Parse COMPSs' Binding Options
-  while getopts h-: flag; do
-    # Treat the argument
-    case "$flag" in
-    h)
-      # Display help
+  local positional_args=()
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+    -h|--help)
       usage 0
       ;;
-    -)
-      # Check more complex arguments
-      case "$OPTARG" in
-      help)
-        # Display help
-        usage 0
-        ;;
-      opts)
-        # Display help
-        show_opts
-        exit 0
-        ;;
-      *)
-        # Flag didn't match any pattern. End of COMPSs' R Binding flags
-        display_error "${INCORRECT_PARAMETER}"
-        break
-        ;;
-      esac
+    --opts)
+      show_opts
+      exit 0
+      ;;
+    --compss-home)
+      if [ $# -lt 2 ]; then
+        display_error "${INCORRECT_COMPSS_HOME}"
+      fi
+      compss_home=$2
+      shift 2
+      ;;
+    --compss-source)
+      if [ $# -lt 2 ]; then
+        display_error "${INCORRECT_COMPSS_SOURCE}"
+      fi
+      compss_source=$2
+      shift 2
+      ;;
+    --compss-version)
+      if [ $# -lt 2 ]; then
+        display_error "${INCORRECT_PARAMETER}: --compss-version requires a branch or tag"
+      fi
+      compss_version=$2
+      shift 2
+      ;;
+    --compss-repo)
+      if [ $# -lt 2 ]; then
+        display_error "${INCORRECT_PARAMETER}: --compss-repo requires a URL"
+      fi
+      compss_repository=$2
+      shift 2
+      ;;
+    --)
+      shift
+      positional_args+=("$@")
+      break
+      ;;
+    -*)
+      display_error "${INCORRECT_PARAMETER}: $1"
       ;;
     *)
-      # Flag didn't match any pattern. End of COMPSs flags
-      display_error "${INCORRECT_PARAMETER}"
-      break
+      positional_args+=("$1")
+      shift
       ;;
     esac
   done
-  # Shift option arguments
-  shift $((OPTIND - 1))
 
-  # Parse target directory location
-  if [ $# -gt 1 ]; then
-    target_dir=$1
-    tracing=$2
-  else
+  if [ ${#positional_args[@]} -ne 2 ]; then
     display_error "${INCORRECT_TARGET_DIR}"
+  fi
+
+  target_dir=${positional_args[0]}
+  tracing=${positional_args[1]}
+
+  if [ -z "${compss_home}" ]; then
+    compss_home="${target_dir}/../../"
+  fi
+  compss_home=${compss_home%/}
+
+  if [ -n "${compss_source}" ] && [ -z "${compss_version}" ]; then
+    display_error "${INCORRECT_PARAMETER}: --compss-source requires --compss-version"
+  fi
+  if [ -z "${compss_source}" ] && [ -n "${compss_version}" ]; then
+    display_error "${INCORRECT_PARAMETER}: --compss-version requires --compss-source"
+  fi
+  if [ -z "${compss_source}" ] && [ -n "${compss_repository}" ]; then
+    display_error "${INCORRECT_PARAMETER}: --compss-repo requires --compss-source"
+  fi
+}
+
+validate_compss_home() {
+  if [ ! -d "${compss_home}/Bindings/bindings-common/include" ] || \
+    [ ! -d "${compss_home}/Bindings/bindings-common/lib" ] || \
+    [ ! -d "${compss_home}/Runtime/scripts/system/adaptors/nio/pipers" ]; then
+    display_error "${INCORRECT_COMPSS_HOME}: ${compss_home}"
+  fi
+}
+
+clone_and_build_compss() {
+  precheck_compss_build_dependencies
+
+  if [ -e "${compss_source}" ]; then
+    display_error "${INCORRECT_COMPSS_SOURCE}: ${compss_source} already exists"
+  fi
+  if [ -e "${compss_home}" ]; then
+    display_error "${INCORRECT_COMPSS_HOME}: ${compss_home} already exists"
+  fi
+  if ! command_exists git; then
+    display_error "Error: git is required to clone COMPSs"
+  fi
+
+  local repository=${compss_repository:-${COMPSS_REPOSITORY}}
+  echo "INFO: Cloning COMPSs ${compss_version} from ${repository}"
+  git clone --branch "${compss_version}" --depth 1 --recurse-submodules "${repository}" "${compss_source}" || exit $?
+  (
+    cd "${compss_source}" || exit 1
+    ./submodules_get.sh && cd builders && ./buildlocal "${compss_home}"
+  ) || exit $?
+}
+
+precheck_compss_build_dependencies() {
+  local missing_dependencies=()
+  local required_command
+
+  for required_command in R Rscript git wget mvn java javac make gcc g++ autoreconf libtoolize python3; do
+    if ! command_exists "${required_command}"; then
+      missing_dependencies+=("${required_command}")
+    fi
+  done
+
+  if [ -z "${JAVA_HOME}" ]; then
+    missing_dependencies+=("JAVA_HOME (must point to a JDK)")
+  elif [ ! -x "${JAVA_HOME}/bin/java" ] || [ ! -x "${JAVA_HOME}/bin/javac" ]; then
+    missing_dependencies+=("JAVA_HOME/bin/java and JAVA_HOME/bin/javac")
+  fi
+
+  if [ ${#missing_dependencies[@]} -ne 0 ]; then
+    echo "ERROR: Cannot build COMPSs; install or configure these dependencies first:" >&2
+    printf '  - %s\n' "${missing_dependencies[@]}" >&2
+    show_dependency_guidance >&2
     exit 1
   fi
-  shift 1
+}
+
+precheck_rcompss_dependencies() {
+  local missing_dependencies=()
+  local required_command
+
+  for required_command in R Rscript make gcc g++ java javac; do
+    if ! command_exists "${required_command}"; then
+      missing_dependencies+=("${required_command}")
+    fi
+  done
+
+  if [ -z "${JAVA_HOME}" ]; then
+    missing_dependencies+=("JAVA_HOME (must point to a JDK)")
+  elif [ ! -x "${JAVA_HOME}/bin/java" ] || [ ! -x "${JAVA_HOME}/bin/javac" ]; then
+    missing_dependencies+=("JAVA_HOME/bin/java and JAVA_HOME/bin/javac")
+  fi
+
+  if [ ${#missing_dependencies[@]} -ne 0 ]; then
+    echo "ERROR: Cannot install RCOMPSs; install or configure these dependencies first:" >&2
+    printf '  - %s\n' "${missing_dependencies[@]}" >&2
+    show_dependency_guidance >&2
+    exit 1
+  fi
+}
+
+show_dependency_guidance() {
+  cat <<'EOT'
+Install the missing capabilities with your system's package manager. Package names vary by distribution; look for the R development package, a JDK, a C/C++ build toolchain, Maven, Autotools, Libtool, and the listed command-line tools. This script does not install system packages automatically.
+EOT
 }
 
 log_parameters() {
   echo "PARAMETERS:"
+  echo "- COMPSs home = ${compss_home}"
+  if [ -n "${compss_source}" ]; then
+    echo "- COMPSs source = ${compss_source}"
+    echo "- COMPSs version = ${compss_version}"
+  fi
   echo "- Target directory = ${target_dir}"
   echo "- Tracing = ${tracing}"
   sleep 5
@@ -137,7 +263,7 @@ clean() {
 install() {
   local target_directory=$1
   local tracing=$2
-  local compss_home="$1/../../"
+  local compss_home=$3
 
   echo "INFO: Installation parameters:"
   echo "      - Current script directory: ${SCRIPT_DIR}"
@@ -217,7 +343,7 @@ install_r_binding() {
   echo "INFO: Starting R binding installation"
 
   # Install
-  install "${target_dir}" "${tracing}"
+  install "${target_dir}" "${tracing}" "${compss_home}"
 
   echo "INFO: Finished R binding installation"
 }
@@ -227,6 +353,12 @@ install_r_binding() {
 #---------------------------------------------------
 
 get_args "$@"
+if [ -n "${compss_source}" ]; then
+  clone_and_build_compss
+else
+  precheck_rcompss_dependencies
+fi
+validate_compss_home
 log_parameters
 install_r_binding
 
