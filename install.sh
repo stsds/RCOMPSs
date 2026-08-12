@@ -256,6 +256,30 @@ command_exists() {
   type "$1" &>/dev/null
 }
 
+escape_sed_replacement() {
+  printf '%s' "$1" | sed 's/[\\&|]/\\&/g'
+}
+
+generate_makevars() {
+  local pkg_cppflags=$1
+  local pkg_libs=$2
+  local makevars_template="${SCRIPT_DIR}/src/Makevars.in"
+  local escaped_cppflags
+  local escaped_libs
+
+  if [ ! -f "${makevars_template}" ]; then
+    echo "ERROR: Missing Makevars template: ${makevars_template}" >&2
+    exit 1
+  fi
+
+  escaped_cppflags=$(escape_sed_replacement "${pkg_cppflags}")
+  escaped_libs=$(escape_sed_replacement "${pkg_libs}")
+  sed \
+    -e "s|@PKG_CPPFLAGS@|${escaped_cppflags}|" \
+    -e "s|@PKG_LIBS@|${escaped_libs}|" \
+    "${makevars_template}" > "${SCRIPT_DIR}/src/Makevars"
+}
+
 clean() {
   echo "Cleaning R-binding files"
 }
@@ -285,14 +309,12 @@ install() {
   pkg_libs="-L${compss_home}/Bindings/bindings-common/lib -lbindings_common"
   if [ "${tracing}" == "true" ]; then
     # Add extrae path
-    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Dependencies/extrae/include -pthread" >${SCRIPT_DIR}/src/Makevars
-    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Dependencies/extrae/lib -lpttrace" >>${SCRIPT_DIR}/src/Makevars
+    generate_makevars "${pkg_cppflags} -I${compss_home}/Dependencies/extrae/include -pthread" "${pkg_libs} -L${compss_home}/Dependencies/extrae/lib -lpttrace"
     export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/lib:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/include:$LD_LIBRARY_PATH
   else
     # Add dummy extrae path
-    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Bindings/RCOMPSs/dummy_extrae -pthread" >${SCRIPT_DIR}/src/Makevars
-    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Bindings/RCOMPSs/dummy_extrae -lpttrace" >>${SCRIPT_DIR}/src/Makevars
+    generate_makevars "${pkg_cppflags} -I${compss_home}/Bindings/RCOMPSs/dummy_extrae -pthread" "${pkg_libs} -L${compss_home}/Bindings/RCOMPSs/dummy_extrae -lpttrace"
     export LD_LIBRARY_PATH=${compss_home}/Bindings/RCOMPSs/dummy_extrae:$LD_LIBRARY_PATH
   fi
 

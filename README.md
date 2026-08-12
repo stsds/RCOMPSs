@@ -92,7 +92,7 @@ The installation target must be `$COMPSS_HOME/Bindings/RCOMPSs`. To install agai
 
 The `install.sh` script:
 
-- rewrites `src/Makevars` with COMPSs, Java, and tracing include/library paths
+- generates the ignored `src/Makevars` from `src/Makevars.in`, using the selected COMPSs, Java, and tracing paths
 - builds the package with `R CMD build`
 - installs it into a binding-local `user_libs` directory with `R CMD INSTALL`
 - deploys worker-side scripts into the COMPSs runtime piper adaptor directory
@@ -134,7 +134,7 @@ This uses the official `bsc-wdc/compss` repository, fetches its submodules, and 
 
 Before cloning, the installer checks for the source-build tools required by COMPSs, including `git`, `wget`, `mvn`, a JDK, compiler/autotools, and Python. It also checks RCOMPSs prerequisites (`R`, `Rscript`, a JDK, and a C/C++ build toolchain) for both installation paths. Missing requirements are reported together before downloading or building anything. The output gives package-manager-neutral guidance; install the corresponding capabilities using your distribution's package manager.
 
-The installer builds the package, installs its R dependencies into `$target_dir/user_libs`, deploys the worker scripts, and updates `src/Makevars` with the selected COMPSs and Java paths.
+The installer builds the package, installs its R dependencies into `$target_dir/user_libs`, deploys the worker scripts, and generates the machine-specific `src/Makevars` from the tracked `src/Makevars.in` template. Do not commit `src/Makevars`.
 
 ### Runtime environment and verification
 

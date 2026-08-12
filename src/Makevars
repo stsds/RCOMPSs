@@ -1,2 +1,0 @@
-PKG_CPPFLAGS=-I/home/abdullsm/COMPSs_installation/Bindings/bindings-common/include -I/usr/lib/jvm/java-17-openjdk-amd64/include -I/usr/lib/jvm/java-17-openjdk-amd64/include/linux -I/usr/lib/jvm/java-17-openjdk-amd64/jre/include -I/usr/lib/jvm/java-17-openjdk-amd64/jre/include/linux -I/home/abdullsm/COMPSs_installation/Bindings/RCOMPSs/dummy_extrae -pthread
-PKG_LIBS=-L/home/abdullsm/COMPSs_installation/Bindings/bindings-common/lib -lbindings_common -L/home/abdullsm/COMPSs_installation/Bindings/RCOMPSs/dummy_extrae -lpttrace
