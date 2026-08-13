@@ -29,6 +29,21 @@ RCOMPSs is installed as part of the COMPSs source installation by running the `i
 
 `INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`).
 
+### Selecting the COMPSs version
+
+Before running the installer, edit the `TARBALL_NAME` and `TARBALL_URL` variables near
+the start of `install_rcompss.sh`. They specify the COMPSs archive to download. For
+example, the default configuration is:
+
+```bash
+local TARBALL_NAME="COMPSs_3.3.3_Trunk.tar.gz"
+local TARBALL_URL="https://compss.bsc.es/~fconejer/${TARBALL_NAME}"
+```
+
+Set both values to the archive name and download URL for the COMPSs release you want
+to install. Alternatively, use `--source-dir DIR` to install from an already extracted
+COMPSs source directory without downloading an archive.
+
 ### Options
 
 | Option | Description |
