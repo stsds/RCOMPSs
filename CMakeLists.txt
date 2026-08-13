@@ -122,6 +122,22 @@ message(STATUS "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}")
 message(STATUS "COMPSs_HOME = ${COMPSs_HOME}")
 message(STATUS "Include COMPSs = ${COMPSs_HOME}/Bindings/bindings-common/include")
 
+# GS_set_JNI_runtime was added after the COMPSs 3.3 bindings-common API.
+# Probe both the declaration and the exported symbol so RCOMPSs can retain the
+# call while remaining buildable with the API shipped by COMPSs 3.3.
+include(CheckCXXSourceCompiles)
+set(_RCOMPSS_REQUIRED_INCLUDES "${CMAKE_REQUIRED_INCLUDES}")
+set(_RCOMPSS_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+set(CMAKE_REQUIRED_INCLUDES "${COMPSs_HOME}/Bindings/bindings-common/include")
+set(CMAKE_REQUIRED_LIBRARIES "${COMPSs_HOME}/Bindings/bindings-common/lib/libbindings_common.so")
+check_cxx_source_compiles(
+  "#include <GS_compss.h>
+   int main() { GS_set_JNI_runtime(); return 0; }"
+  RCOMPSS_HAS_GS_SET_JNI_RUNTIME
+)
+set(CMAKE_REQUIRED_INCLUDES "${_RCOMPSS_REQUIRED_INCLUDES}")
+set(CMAKE_REQUIRED_LIBRARIES "${_RCOMPSS_REQUIRED_LIBRARIES}")
+
 # Find Java installation
 if (DEFINED ENV{JAVA_HOME})
   set(JAVA_HOME "$ENV{JAVA_HOME}")
@@ -250,4 +266,3 @@ set_target_properties(RCOMPSs PROPERTIES
   OUTPUT_NAME "RCOMPSs"
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/src"
 )
-
