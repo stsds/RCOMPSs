@@ -18,13 +18,16 @@ RCOMPSs is installed as part of the COMPSs source installation by running the `i
 
 ### Prerequisites
 
-- A JDK must be available (`JAVA_HOME` set, or load a JDK module first).
-- Gradle is recommended (load a gradle module or install it).
+- A JDK must be available. Ensure that `JAVA_HOME` is set, or load an appropriate JDK module before installation.
+- RCOMPSs requires several R package dependencies. These dependencies will also be installed automatically during the RCOMPSs installation process:
+  - `Rcpp`, `RMVL`, `foreach`, `parallel` (included with base R), `doParallel`, `stringr`, `lobstr`, `proxy`, `lubridate`, `fields`, and `pryr`
+- Gradle is recommended. Load an available Gradle module or install Gradle before proceeding.
 
-### Usage
+
+### Install COMPSs runtime (Can be ignored if COMPSs is already installed)
 
 ```bash
-./install_rcompss.sh [OPTIONS] [INSTALL_DIR]
+./install_compss.sh [OPTIONS] [INSTALL_DIR]
 ```
 
 `INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`).
@@ -32,7 +35,7 @@ RCOMPSs is installed as part of the COMPSs source installation by running the `i
 ### Selecting the COMPSs version
 
 Before running the installer, edit the `TARBALL_NAME` and `TARBALL_URL` variables near
-the start of `install_rcompss.sh`. They specify the COMPSs archive to download. For
+the start of `install_compss.sh`. They specify the COMPSs archive to download. For
 example, the default configuration is:
 
 ```bash
@@ -64,7 +67,7 @@ COMPSs source directory without downloading an archive.
 7. Disables the `.bashrc` interactive guard (required for SSH workers).
 8. Writes the RCOMPSs environment to `~/.bashrc` (unless `--no-bashrc` is passed).
 
-### Rebuilding RCOMPSs
+### Building RCOMPSs
 
 Whenever you need to rebuild, run the `install.sh` script with the target directory and the tracing flag:
 
@@ -83,7 +86,7 @@ For example:
 ./install.sh $COMPSS_HOME/Bindings/RCOMPSs false
 ```
 
-This script recompiles the R binding, installs the required R packages, and redeploys the RCOMPSs executor into the COMPSs runtime.
+This script compiles the R binding, installs the required R packages, and redeploys the RCOMPSs executor into the COMPSs runtime.
 
 Examples
 --------
