@@ -30,7 +30,7 @@ RCOMPSs is installed as part of the COMPSs source installation by running the `i
 ./install_compss.sh [OPTIONS] [INSTALL_DIR]
 ```
 
-`INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`).
+`INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`) --- Please use absolute path.
 
 ### Selecting the COMPSs version
 
@@ -61,18 +61,16 @@ COMPSs source directory without downloading an archive.
 1. Verifies `JAVA_HOME` and Gradle availability.
 2. Sets Extrae MPI headers.
 3. Downloads and extracts the COMPSs source (or uses the directory given via `--source-dir`).
-4. Runs the COMPSs installer with the R binding enabled.
-5. Applies the Ubuntu 22 JVM fix (`processReaperUseDefaultStackSize`).
-6. Sets up passwordless SSH to localhost.
-7. Disables the `.bashrc` interactive guard (required for SSH workers).
-8. Writes the RCOMPSs environment to `~/.bashrc` (unless `--no-bashrc` is passed).
+4. Runs the COMPSs installer with support for the R bindings required by RCOMPSs.
+5. Sets up passwordless SSH to localhost.
+6. Writes the RCOMPSs environment to `~/.bashrc` (unless `--no-bashrc` is passed).
 
 ### Building RCOMPSs
 
-Whenever you need to rebuild, run the `install.sh` script with the target directory and the tracing flag:
+To install RCOMPSs, run the `install_rcompss.sh` script with the target directory and the tracing flag:
 
 ```bash
-./install.sh <target_dir> <tracing>
+./install_rcompss.sh <target_dir> <tracing>
 ```
 
 | Parameter | Description |
@@ -83,10 +81,10 @@ Whenever you need to rebuild, run the `install.sh` script with the target direct
 For example:
 
 ```bash
-./install.sh $COMPSS_HOME/Bindings/RCOMPSs false
+./install_rcompss.sh $COMPSS_HOME/Bindings/RCOMPSs false
 ```
 
-This script compiles the R binding, installs the required R packages, and redeploys the RCOMPSs executor into the COMPSs runtime.
+This script compiles the R binding, installs the required R packages, and deploys the RCOMPSs executor into the COMPSs runtime.
 
 Examples
 --------
@@ -104,7 +102,7 @@ It declares a task that adds two values, and then it is invoked with 4 inputs in
 
 ```bash
 cd examples/addition
-./run_addition_RCOMPSs
+./run_addition_RCOMPSs.sh
 ```
 
 The output are two files (stdout and stderr) containing the output from the execution.

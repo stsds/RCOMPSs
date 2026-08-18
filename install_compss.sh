@@ -311,7 +311,7 @@ export LD_LIBRARY_PATH=\${JAVA_HOME}/lib/server:\${LD_LIBRARY_PATH}
     info "Open a new terminal (or run 'source ~/.bashrc') to activate the environment."
   fi
   info "To verify, run:  runcompss --version"
-  info "To test, run:    cd ${SOURCE_DIR}/Bindings/RCOMPSs/examples/addition && runcompss --lang=r addition.R"
+  #info "To test, run:    cd ${SOURCE_DIR}/Bindings/RCOMPSs/examples/addition && runcompss --lang=r addition.R"
   echo ""
 }
 

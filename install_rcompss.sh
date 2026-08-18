@@ -183,6 +183,7 @@ install() {
   export LIBRARY_PATH=${compss_home}/Dependencies/extrae/lib:$LIBRARY_PATH
   export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
   export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/include:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/src:$LD_LIBRARY_PATH
   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/lib/amd64/server:${JAVA_HOME}/jre/lib/amd64/server
   # Update the paths on config_RCOMPSs.sh (for now we ignore path to libRblas.so  libRlapack.so
   current_dir=$(pwd)
