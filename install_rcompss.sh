@@ -105,9 +105,8 @@ get_args() {
   shift $((OPTIND - 1))
 
   # Parse target directory location
-  if [ $# -gt 1 ]; then
-    target_dir=$1
-    tracing=$2
+  if [ $# -gt 0 ]; then
+    tracing=$1
   else
     display_error "${INCORRECT_TARGET_DIR}"
     exit 1
@@ -117,7 +116,6 @@ get_args() {
 
 log_parameters() {
   echo "PARAMETERS:"
-  echo "- Target directory = ${target_dir}"
   echo "- Tracing = ${tracing}"
   sleep 5
 }
@@ -135,9 +133,9 @@ clean() {
 }
 
 install() {
-  local target_directory=$1
-  local tracing=$2
-  local compss_home="$1/../../"
+  local tracing=$1
+  local compss_home="$COMPSS_HOME"
+  local target_directory="$COMPSS_HOME/Bindings/RCOMPSs/"
 
   export COMPSS_HOME="${compss_home}"
 
@@ -145,7 +143,6 @@ install() {
   echo "      - Current script directory: ${SCRIPT_DIR}"
   echo "      - JAVA_HOME: ${JAVA_HOME}"
   echo "      - compss_home: ${compss_home}"
-  echo "      - Target directory: ${target_directory}"
   echo "      - Tracing: ${tracing}"
 
   # Do the installation
@@ -281,7 +278,7 @@ install_r_binding() {
   echo "INFO: Starting R binding installation"
 
   # Install
-  install "${target_dir}" "${tracing}"
+  install "${tracing}"
 
   echo "INFO: Finished R binding installation"
 }

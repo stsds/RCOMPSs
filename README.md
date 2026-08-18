@@ -70,21 +70,31 @@ COMPSs source directory without downloading an archive.
 To install RCOMPSs, run the `install_rcompss.sh` script with the target directory and the tracing flag:
 
 ```bash
-./install_rcompss.sh <target_dir> <tracing>
+./install_rcompss.sh <tracing>
 ```
+
 
 | Parameter | Description |
 |-----------|-------------|
-| `target_dir` | COMPSs R Binding installation directory (e.g., `$COMPSS_HOME/Bindings/RCOMPSs`) |
 | `tracing` | Whether to compile with Extrae tracing support (`true` or `false`) |
 
 For example:
 
 ```bash
-./install_rcompss.sh $COMPSS_HOME/Bindings/RCOMPSs false
+./install_rcompss.sh false
 ```
 
 This script compiles the R binding, installs the required R packages, and deploys the RCOMPSs executor into the COMPSs runtime.
+
+
+### Troubleshooting `libiconv`
+
+If the linker reports that `libiconv` cannot be found, set the `LIBICONV_ROOT` environment variable to the libiconv installation directory and rerun the installer:
+
+```bash
+export LIBICONV_ROOT=/path/to/libiconv
+./install_rcompss.sh  <tracing>
+
 
 Examples
 --------

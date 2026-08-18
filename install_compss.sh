@@ -247,7 +247,7 @@ main() {
   local COMPSS_HOME="${INSTALL_DIR%/}"
 
   if [ -z "${R_LIBS_SYSTEM}" ]; then
-    R_LIBS_SYSTEM=$(ls -1d "${HOME}"/R/x86_64-pc-linux-gnu-library/*/ 2>/dev/null | head -1)
+    R_LIBS_SYSTEM=$(R --vanilla --slave -e 'cat(.libPaths()[1])')
     R_LIBS_SYSTEM="${R_LIBS_SYSTEM%/}"
   fi
 
@@ -260,6 +260,7 @@ main() {
   info "R user library path: ${R_LIBS_SYSTEM}"
 
   local ENV_BLOCK="${RCOMPSS_MARKER} ──────────────────────────────────────────────
+
 export JAVA_HOME=${JAVA_HOME}
 
 export COMPSS_HOME=${COMPSS_HOME}
@@ -267,9 +268,17 @@ source \${COMPSS_HOME}/compssenv
 
 export R_LIBS_USER=${R_LIBS_SYSTEM}
 export R_LIBS_USER=\${COMPSS_HOME}/Bindings/RCOMPSs/user_libs:\${R_LIBS_USER}
+export R_LIBS=${COMPSS_HOME}/Bindings/RCOMPSs/user_libs:\${R_LIBS}
 
 export LD_LIBRARY_PATH=\${COMPSS_HOME}/Bindings/bindings-common/lib:\${LD_LIBRARY_PATH:-}
 export LD_LIBRARY_PATH=\${JAVA_HOME}/lib/server:\${LD_LIBRARY_PATH}
+
+export LIBRARY_PATH=\${LIBICONV_ROOT}/lib:\${LIBRARY_PATH}
+export CPATH=\${LIBICONV_ROOT}/include:\${CPATH}
+export LDFLAGS=\"-L\$LIBICONV_ROOT/lib \${LDFLAGS}\"
+export CPPFLAGS=\"-I\$LIBICONV_ROOT/include \${CPPFLAGS}\"
+
+export LD_LIBRARY_PATH=\${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae:\${LD_LIBRARY_PATH}
 # ─────────────────────────────────────────────────────────────────────"
 
   if [ "${MODIFY_BASHRC}" = true ]; then
