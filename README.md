@@ -18,16 +18,34 @@ RCOMPSs is installed as part of the COMPSs source installation by running the `i
 
 ### Prerequisites
 
-- A JDK must be available (`JAVA_HOME` set, or load a JDK module first).
-- Gradle is recommended (load a gradle module or install it).
+- A JDK must be available. Ensure that `JAVA_HOME` is set, or load an appropriate JDK module before installation.
+- RCOMPSs requires several R package dependencies. These dependencies will also be installed automatically during the RCOMPSs installation process:
+  - `Rcpp`, `RMVL`, `foreach`, `parallel` (included with base R), `doParallel`, `stringr`, `lobstr`, `proxy`, `lubridate`, `fields`, and `pryr`
+- Gradle is recommended. Load an available Gradle module or install Gradle before proceeding.
 
-### Usage
+
+### Install COMPSs runtime (Can be ignored if COMPSs is already installed)
 
 ```bash
-./install_rcompss.sh [OPTIONS] [INSTALL_DIR]
+./install_compss.sh [OPTIONS] [INSTALL_DIR]
 ```
 
-`INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`).
+`INSTALL_DIR` is where COMPSs will be installed (default: `$HOME/COMPSs_installation`) --- Please use absolute path.
+
+### Selecting the COMPSs version
+
+Before running the installer, edit the `TARBALL_NAME` and `TARBALL_URL` variables near
+the start of `install_compss.sh`. They specify the COMPSs archive to download. For
+example, the default configuration is:
+
+```bash
+local TARBALL_NAME="COMPSs_3.3.3_Trunk.tar.gz"
+local TARBALL_URL="https://compss.bsc.es/~fconejer/${TARBALL_NAME}"
+```
+
+Set both values to the archive name and download URL for the COMPSs release you want
+to install. Alternatively, use `--source-dir DIR` to install from an already extracted
+COMPSs source directory without downloading an archive.
 
 ### Options
 
@@ -43,32 +61,40 @@ RCOMPSs is installed as part of the COMPSs source installation by running the `i
 1. Verifies `JAVA_HOME` and Gradle availability.
 2. Sets Extrae MPI headers.
 3. Downloads and extracts the COMPSs source (or uses the directory given via `--source-dir`).
-4. Runs the COMPSs installer with the R binding enabled.
-5. Applies the Ubuntu 22 JVM fix (`processReaperUseDefaultStackSize`).
-6. Sets up passwordless SSH to localhost.
-7. Disables the `.bashrc` interactive guard (required for SSH workers).
-8. Writes the RCOMPSs environment to `~/.bashrc` (unless `--no-bashrc` is passed).
+4. Runs the COMPSs installer with support for the R bindings required by RCOMPSs.
+5. Sets up passwordless SSH to localhost.
+6. Writes the RCOMPSs environment to `~/.bashrc` (unless `--no-bashrc` is passed).
 
-### Rebuilding RCOMPSs
+### Building RCOMPSs
 
-Whenever you need to rebuild, run the `install.sh` script with the target directory and the tracing flag:
+To install RCOMPSs, run the `install_rcompss.sh` script with the target directory and the tracing flag:
 
 ```bash
-./install.sh <target_dir> <tracing>
+./install_rcompss.sh <tracing>
 ```
+
 
 | Parameter | Description |
 |-----------|-------------|
-| `target_dir` | COMPSs R Binding installation directory (e.g., `$COMPSS_HOME/Bindings/RCOMPSs`) |
 | `tracing` | Whether to compile with Extrae tracing support (`true` or `false`) |
 
 For example:
 
 ```bash
-./install.sh $COMPSS_HOME/Bindings/RCOMPSs false
+./install_rcompss.sh false
 ```
 
-This script recompiles the R binding, installs the required R packages, and redeploys the RCOMPSs executor into the COMPSs runtime.
+This script compiles the R binding, installs the required R packages, and deploys the RCOMPSs executor into the COMPSs runtime.
+
+
+### Troubleshooting: `libiconv`
+
+If the linker reports that `libiconv` cannot be found, set the `LIBICONV_ROOT` environment variable to the libiconv installation directory and rerun the installer:
+
+```bash
+export LIBICONV_ROOT=/path/to/libiconv
+./install_rcompss.sh  <tracing>
+```
 
 Examples
 --------
@@ -86,7 +112,7 @@ It declares a task that adds two values, and then it is invoked with 4 inputs in
 
 ```bash
 cd examples/addition
-./run_addition_RCOMPSs
+./run_addition_RCOMPSs.sh
 ```
 
 The output are two files (stdout and stderr) containing the output from the execution.

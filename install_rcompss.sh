@@ -1,318 +1,297 @@
 #!/usr/bin/env bash
 
-###############################################################################
-# install_rcompss.sh — Automated RCOMPSs installation for Ubuntu 22
-#
-# Usage:
-#   ./install_rcompss.sh [OPTIONS] [INSTALL_DIR]
-#
-# Options:
-#   --help, -h           Show this help message
-#   --no-bashrc          Don't modify ~/.bashrc (print env block instead)
-#   --source-dir DIR     Use an already-extracted COMPSs source directory
-#                        instead of downloading the tarball
-#   --r-libs DIR         Path to R user library directory
-#                        (default: auto-detected from ~/R/)
-#
-# Arguments:
-#   INSTALL_DIR   Where COMPSs will be installed
-#                 (default: $HOME/COMPSs_installation)
-#
-# Prerequisites:
-#   - A JDK must be available (JAVA_HOME set, or load a JDK module first)
-#   - Gradle is recommended (load a gradle module or install it)
-#
-# Steps performed:
-#   1. Verify JAVA_HOME and Gradle
-#   2. Set Extrae MPI headers
-#   3. Download & extract COMPSs (or use --source-dir)
-#   4. Run COMPSs install with R binding enabled
-#   5. Apply Ubuntu 22 JVM fix (processReaperUseDefaultStackSize)
-#   6. Setup passwordless SSH to localhost
-#   7. Disable .bashrc interactive guard (required for SSH workers)
-#   8. Write RCOMPSs environment to .bashrc (unless --no-bashrc)
-###############################################################################
+#####################################################################
+# Name:         install.sh
+# Description:  COMPSs' R binding building script.
+#               Used by COMPSs to install the R language support within
+#               the COMPSs installation folder.
+# Parameters:
+#		target_dir  Target directory where to install the R binding
+#   tracing     Boolean to compile with Extrae
+######################################################################
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+#---------------------------------------------------
+# SCRIPT CONSTANTS DECLARATION
+#---------------------------------------------------
 
-info()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
-warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-fail()  { echo -e "${RED}[FAIL]${NC}  $*"; }
-step()  { echo -e "\n${CYAN}=== Step $1: $2 ===${NC}"; }
+INCORRECT_TARGET_DIR="Error: No target directory"
 
-main() {
+#---------------------------------------------------
+# SET SCRIPT VARIABLES
+#---------------------------------------------------
 
-  local TARBALL_NAME="COMPSs_3.3.3_Trunk.tar.gz"
-  local TARBALL_URL="https://compss.bsc.es/~fconejer/${TARBALL_NAME}"
-  local SCRIPT_DIR
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BINDING_DIR="$(dirname "${SCRIPT_DIR}")"
 
-  local INSTALL_DIR=""
-  local MODIFY_BASHRC=true
-  local SOURCE_DIR=""
-  local R_LIBS_SYSTEM=""
+#---------------------------------------------------
+# FUNCTIONS DECLARATION
+#---------------------------------------------------
 
-  #############################################################################
-  # Parse arguments
-  #############################################################################
-  while [[ $# -gt 0 ]]; do
-    case "$1" in
-      --help|-h)
-        sed -n '4,/^###/{ /^###/d; s/^# \{0,1\}//; p }' "${BASH_SOURCE[0]}"
-        return 0
-        ;;
-      --no-bashrc)    MODIFY_BASHRC=false; shift ;;
-      --source-dir)   SOURCE_DIR="$2"; shift 2 ;;
-      --source-dir=*) SOURCE_DIR="${1#*=}"; shift ;;
-      --r-libs)       R_LIBS_SYSTEM="$2"; shift 2 ;;
-      --r-libs=*)     R_LIBS_SYSTEM="${1#*=}"; shift ;;
-      -*)             fail "Unknown option: $1. Use --help for usage."; return 1 ;;
-      *)
-        if [ -z "${INSTALL_DIR}" ]; then
-          INSTALL_DIR="$1"
-        else
-          fail "Unexpected argument: $1. Use --help for usage."; return 1
-        fi
-        shift
-        ;;
-    esac
-  done
+show_opts() {
+  cat <<EOT
+* Options:
+    --help, -h                  Print this help message
 
-  INSTALL_DIR="${INSTALL_DIR:-${HOME}/COMPSs_installation}"
-  local BASHRC="${HOME}/.bashrc"
-  local RCOMPSS_MARKER="# ── RCOMPSs environment"
+    --opts                      Show available options
 
-  info "Installation target: ${INSTALL_DIR}"
-  info "Modify .bashrc:      ${MODIFY_BASHRC}"
-  [ -n "${SOURCE_DIR}" ] && info "Source directory:     ${SOURCE_DIR}"
+* Parameters:
+    target_dir                  COMPSs' R Binding installation directory
+    tracing                     If compile with Extrae (true|false)
 
-  #############################################################################
-  # Step 1: Verify JAVA_HOME and Gradle
-  #############################################################################
-  step 1 "Checking prerequisites"
-
-  if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME}/bin/java" ]; then
-    fail "JAVA_HOME is not set or does not point to a valid JDK."
-    fail "Please load a JDK module or export JAVA_HOME before running this script."
-    fail "  Example:  module load openjdk/11   (check 'module avail' for your system)"
-    fail "  Example:  export JAVA_HOME=/path/to/jdk"
-    return 1
-  fi
-  info "JAVA_HOME=${JAVA_HOME}"
-  export JAVA_HOME
-
-  if command -v gradle &>/dev/null; then
-    info "Gradle: $(gradle --version 2>/dev/null | grep '^Gradle ' | head -1)"
-  else
-    warn "Gradle not found."
-    warn "  Example:  module load gradle   (check 'module avail' for your system)"
-  fi
-
-  #############################################################################
-  # Step 2: Set MPI headers for Extrae
-  #############################################################################
-  step 2 "Setting Extrae MPI headers"
-
-  export EXTRAE_MPI_HEADERS=/usr/include/x86_64-linux-gnu/mpi
-  info "EXTRAE_MPI_HEADERS=${EXTRAE_MPI_HEADERS}"
-
-  #############################################################################
-  # Step 3: Obtain COMPSs source
-  #############################################################################
-  step 3 "Obtaining COMPSs source"
-
-  if [ -n "${SOURCE_DIR}" ]; then
-    if [ ! -d "${SOURCE_DIR}" ]; then
-      fail "Source directory does not exist: ${SOURCE_DIR}"; return 1
-    fi
-    if [ ! -f "${SOURCE_DIR}/install" ]; then
-      fail "No 'install' script found in ${SOURCE_DIR}. Is this a COMPSs source dir?"; return 1
-    fi
-    info "Using existing source directory: ${SOURCE_DIR}"
-  else
-    local TARBALL=""
-    local loc
-    for loc in "${SCRIPT_DIR}/${TARBALL_NAME}" "${HOME}/${TARBALL_NAME}"; do
-      if [ -f "${loc}" ]; then
-        TARBALL="${loc}"
-        info "Tarball found at ${TARBALL}"
-        break
-      fi
-    done
-
-    if [ -z "${TARBALL}" ]; then
-      TARBALL="${SCRIPT_DIR}/${TARBALL_NAME}"
-      info "Downloading ${TARBALL_URL} ..."
-      wget -q --show-progress "${TARBALL_URL}" -O "${TARBALL}"
-    fi
-
-    info "Extracting tarball into ${SCRIPT_DIR} ..."
-    tar xzf "${TARBALL}" -C "${SCRIPT_DIR}"
-
-    SOURCE_DIR="${SCRIPT_DIR}/COMPSs"
-    if [ ! -d "${SOURCE_DIR}" ]; then
-      fail "Could not find COMPSs directory in ${SCRIPT_DIR}"; return 1
-    fi
-    info "Source directory: ${SOURCE_DIR}"
-  fi
-
-  #############################################################################
-  # Step 4: Install COMPSs (R binding only)
-  #############################################################################
-  step 4 "Installing COMPSs"
-
-  cd "${SOURCE_DIR}"
-  info "Running: ./install --no-c-binding --no-python-binding --r-binding ${INSTALL_DIR}"
-  ./install --no-c-binding --no-python-binding --r-binding "${INSTALL_DIR}"
-  info "COMPSs installed successfully."
-
-  #############################################################################
-  # Step 5: Apply Ubuntu 22 JVM fix
-  #############################################################################
-  step 5 "Applying Ubuntu 22 JVM fix"
-
-  local SETUP_SH="${INSTALL_DIR}/Runtime/scripts/system/runtime/compss_setup.sh"
-  local JVM_FIX='-Djdk.lang.processReaperUseDefaultStackSize=true'
-
-  if [ ! -f "${SETUP_SH}" ]; then
-    warn "compss_setup.sh not found at ${SETUP_SH}; skipping JVM fix."
-  else
-    if grep -q "processReaperUseDefaultStackSize" "${SETUP_SH}"; then
-      info "JVM fix already present in compss_setup.sh, skipping."
-    else
-      info "Applying JVM fix to compss_setup.sh ..."
-      sed -i "/-XX:ThreadPriorityPolicy=0/a\\${JVM_FIX}" "${SETUP_SH}"
-      if grep -q "processReaperUseDefaultStackSize" "${SETUP_SH}"; then
-        info "JVM fix applied successfully."
-      else
-        warn "Could not apply JVM fix automatically. Please add the following"
-        warn "line to ${SETUP_SH} inside the JVM options block:"
-        warn "  ${JVM_FIX}"
-      fi
-    fi
-  fi
-
-  #############################################################################
-  # Step 6: Check passwordless SSH to localhost
-  #############################################################################
-  step 6 "Checking passwordless SSH to localhost"
-
-  if ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no localhost true 2>/dev/null; then
-    info "Passwordless SSH to localhost works."
-  else
-    warn "Passwordless SSH to localhost is NOT working."
-    warn "COMPSs requires passwordless SSH to start workers. To fix it:"
-    echo ""
-    info "  1. Create .ssh directory (if it doesn't exist):"
-    info "     mkdir -p ~/.ssh && chmod 700 ~/.ssh"
-    echo ""
-    info "  2. Generate a key (if you don't have one):"
-    info "     ssh-keygen -t ed25519 -N ''"
-    echo ""
-    info "  3. Authorize it:"
-    info "     cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys"
-    echo ""
-    info "  4. Fix permissions:"
-    info "     chmod 600 ~/.ssh/authorized_keys"
-    echo ""
-    info "  5. Test:"
-    info "     ssh localhost whoami"
-  fi
-
-  #############################################################################
-  # Step 7: Disable .bashrc interactive guard
-  #############################################################################
-  step 7 "Checking .bashrc interactive guard"
-
-  if [ -f "${BASHRC}" ]; then
-    if grep -q '^[[:space:]]*case \$- in' "${BASHRC}"; then
-      info "Commenting out the interactive-shell early-return block in .bashrc ..."
-      info "(This is required so SSH worker sessions can source the environment)"
-      sed -i '/^[[:space:]]*case \$- in/,/^[[:space:]]*esac/{s/^/#/}' "${BASHRC}"
-      info ".bashrc interactive guard disabled."
-    else
-      info "Interactive guard already disabled or not present."
-    fi
-  fi
-
-  #############################################################################
-  # Step 8: Write environment to .bashrc
-  #############################################################################
-  step 8 "Setting up RCOMPSs environment"
-
-  local COMPSS_HOME="${INSTALL_DIR%/}"
-
-  if [ -z "${R_LIBS_SYSTEM}" ]; then
-    R_LIBS_SYSTEM=$(ls -1d "${HOME}"/R/x86_64-pc-linux-gnu-library/*/ 2>/dev/null | head -1)
-    R_LIBS_SYSTEM="${R_LIBS_SYSTEM%/}"
-  fi
-
-  if [ -z "${R_LIBS_SYSTEM}" ]; then
-    fail "No R user library found. Use --r-libs to specify it."; return 1
-  fi
-  if [ ! -d "${R_LIBS_SYSTEM}" ]; then
-    fail "R library directory does not exist: ${R_LIBS_SYSTEM}"; return 1
-  fi
-  info "R user library path: ${R_LIBS_SYSTEM}"
-
-  local ENV_BLOCK="${RCOMPSS_MARKER} ──────────────────────────────────────────────
-export JAVA_HOME=${JAVA_HOME}
-
-export COMPSS_HOME=${COMPSS_HOME}
-source \${COMPSS_HOME}/compssenv
-
-export R_LIBS_USER=${R_LIBS_SYSTEM}
-export R_LIBS_USER=\${COMPSS_HOME}/Bindings/RCOMPSs/user_libs:\${R_LIBS_USER}
-
-export LD_LIBRARY_PATH=\${COMPSS_HOME}/Bindings/bindings-common/lib:\${LD_LIBRARY_PATH:-}
-export LD_LIBRARY_PATH=\${JAVA_HOME}/lib/server:\${LD_LIBRARY_PATH}
-# ─────────────────────────────────────────────────────────────────────"
-
-  if [ "${MODIFY_BASHRC}" = true ]; then
-    if [ -f "${BASHRC}" ] && grep -qF "${RCOMPSS_MARKER}" "${BASHRC}"; then
-      info "RCOMPSs environment block already in .bashrc, skipping."
-    else
-      echo "" >> "${BASHRC}"
-      echo "${ENV_BLOCK}" >> "${BASHRC}"
-      info "RCOMPSs environment added to ${BASHRC}"
-    fi
-  else
-    echo ""
-    info "Add the following lines to your .bashrc (or run them in your terminal):"
-    echo ""
-    echo "${ENV_BLOCK}"
-    echo ""
-  fi
-
-  #############################################################################
-  # Step 9: Set environment for this session
-  #############################################################################
-  info "Loading environment for current session..."
-  export COMPSS_HOME="${COMPSS_HOME}"
-  source "${COMPSS_HOME}/compssenv"
-  export R_LIBS_USER="${COMPSS_HOME}/Bindings/RCOMPSs/user_libs:${R_LIBS_SYSTEM}"
-  export LD_LIBRARY_PATH="${COMPSS_HOME}/Bindings/bindings-common/lib:${LD_LIBRARY_PATH:-}"
-  export LD_LIBRARY_PATH="${JAVA_HOME}/lib/server:${LD_LIBRARY_PATH}"
-
-  #############################################################################
-  # Done
-  #############################################################################
-  echo ""
-  echo -e "${GREEN}============================================${NC}"
-  echo -e "${GREEN}  RCOMPSs installation complete!${NC}"
-  echo -e "${GREEN}  COMPSS_HOME = ${COMPSS_HOME}${NC}"
-  echo -e "${GREEN}============================================${NC}"
-  echo ""
-  if [ "${MODIFY_BASHRC}" = true ]; then
-    info "Open a new terminal (or run 'source ~/.bashrc') to activate the environment."
-  fi
-  info "To verify, run:  runcompss --version"
-  info "To test, run:    cd ${SOURCE_DIR}/Bindings/RCOMPSs/examples/addition && runcompss --lang=r addition.R"
-  echo ""
+EOT
 }
 
-main "$@"
+usage() {
+  exitValue=$1
+
+  cat <<EOT
+Usage: $0 target_dir
+EOT
+  show_opts
+  exit "$exitValue"
+}
+
+# Displays arguments warnings
+display_warning() {
+  local warn_msg=$1
+  echo "$warn_msg"
+}
+
+# Displays parsing arguments errors
+display_error() {
+  local error_msg=$1
+  echo "$error_msg"
+
+  echo " "
+  usage 1
+}
+
+get_args() {
+  # Parse COMPSs' Binding Options
+  while getopts h-: flag; do
+    # Treat the argument
+    case "$flag" in
+    h)
+      # Display help
+      usage 0
+      ;;
+    -)
+      # Check more complex arguments
+      case "$OPTARG" in
+      help)
+        # Display help
+        usage 0
+        ;;
+      opts)
+        # Display help
+        show_opts
+        exit 0
+        ;;
+      *)
+        # Flag didn't match any pattern. End of COMPSs' R Binding flags
+        display_error "${INCORRECT_PARAMETER}"
+        break
+        ;;
+      esac
+      ;;
+    *)
+      # Flag didn't match any pattern. End of COMPSs flags
+      display_error "${INCORRECT_PARAMETER}"
+      break
+      ;;
+    esac
+  done
+  # Shift option arguments
+  shift $((OPTIND - 1))
+
+  # Parse target directory location
+  if [ $# -gt 0 ]; then
+    tracing=$1
+  else
+    display_error "${INCORRECT_TARGET_DIR}"
+    exit 1
+  fi
+  shift 1
+}
+
+log_parameters() {
+  echo "PARAMETERS:"
+  echo "- Tracing = ${tracing}"
+  sleep 5
+}
+
+#---------------------------------------------------
+# HELPER FUNCTIONS
+#---------------------------------------------------
+
+command_exists() {
+  type "$1" &>/dev/null
+}
+
+clean() {
+  echo "Cleaning R-binding files"
+}
+
+install() {
+  local tracing=$1
+  local compss_home="$COMPSS_HOME"
+  local target_directory="$COMPSS_HOME/Bindings/RCOMPSs/"
+
+  export COMPSS_HOME="${compss_home}"
+
+  echo "INFO: Installation parameters:"
+  echo "      - Current script directory: ${SCRIPT_DIR}"
+  echo "      - JAVA_HOME: ${JAVA_HOME}"
+  echo "      - compss_home: ${compss_home}"
+  echo "      - Tracing: ${tracing}"
+
+  # Do the installation
+  echo "INFO: Starting the installation... Please wait..."
+
+  # Deploy dummy extrae
+  mkdir -p ${compss_home}/Bindings/RCOMPSs
+  cp -r ${SCRIPT_DIR}/aux/dummy_extrae/ ${compss_home}/Bindings/RCOMPSs/.
+  # Compile dummy extrae
+  ${SCRIPT_DIR}/aux/dummy_extrae/./compile.sh
+  ${compss_home}/Bindings/RCOMPSs/dummy_extrae/./compile.sh
+
+  pkg_cppflags="-I${compss_home}/Bindings/bindings-common/include -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux -I${JAVA_HOME}/jre/include -I${JAVA_HOME}/jre/include/linux"
+  pkg_libs="-L${compss_home}/Bindings/bindings-common/lib -lbindings_common"
+
+  if [ "${tracing}" == "true" ]; then
+    # Add extrae path
+    TRACING_FLAG=ON
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Dependencies/extrae/include -pthread" > ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_CXXFLAGS=${pkg_cppflags} -I${compss_home}/Dependencies/extrae/include -pthread" >> ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Dependencies/extrae/lib -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=${compss_home}/Dependencies/extrae/include:$LD_LIBRARY_PATH
+  else
+    # Add dummy extrae path
+    TRACING_FLAG=OFF
+    echo "PKG_CPPFLAGS=${pkg_cppflags} -I${compss_home}/Bindings/RCOMPSs/dummy_extrae -pthread" > ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_CXXFLAGS=${pkg_cppflags} -I${compss_home}/Bindings/RCOMPSs/dummy_extrae -pthread" >> ${SCRIPT_DIR}/src/Makevars
+    echo "PKG_LIBS=${pkg_libs} -L${compss_home}/Bindings/RCOMPSs/dummy_extrae -lpttrace" >> ${SCRIPT_DIR}/src/Makevars
+    export LD_LIBRARY_PATH=${compss_home}/Bindings/RCOMPSs/dummy_extrae:$LD_LIBRARY_PATH
+  fi
+  export RCM_COMPSs_TRACING="${TRACING_FLAG}"
+  echo "INFO: TRACING_FLAG: ${TRACING_FLAG}"
+
+  export LIBRARY_PATH=${compss_home}/Dependencies/extrae/lib:$LIBRARY_PATH
+  export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/lib:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/include:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=${compss_home}/Bindings/bindings-common/src:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${JAVA_HOME}/lib/amd64/server:${JAVA_HOME}/jre/lib/amd64/server
+  # Update the paths on config_RCOMPSs.sh (for now we ignore path to libRblas.so  libRlapack.so
+  current_dir=$(pwd)
+  cd ..
+
+  # Install Rcpp, RMVL, pryr, proxy packages on R if not installed
+  target_r_directory="${target_directory}/user_libs"
+  mkdir -p ${target_r_directory}
+  # These libraries seem to be needed for these dependencies # sudo zypper search harfbuzz-devel fribidi-devel freetype2-devel # libharfbuzz-dev libfribidi-dev libfreetype-dev
+  #Rscript -e "install.packages(\"https://cran.r-project.org/src/contrib/Archive/lobstr/lobstr_1.1.3.tar.gz\", repos = NULL, type = \"source\", lib=\"${target_r_directory}\")"
+  Rscript -e "list.of.packages <- c(\"stringr\", \"lobstr\", \"Rcpp\", \"RMVL\", \"proxy\", \"lubridate\", \"doParallel\", \"foreach\", \"fields\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
+  Rscript -e "install.packages(\"https://cran.r-project.org/src/contrib/Archive/pryr/pryr_0.1.6.tar.gz\", repos = NULL, type = \"source\", lib=\"${target_r_directory}\")"
+  #  Rscript -e "
+  #options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/2022-10-04'))
+  #
+  #install.packages(
+  #  c('timechange', 'textshaping', 'lobstr', 'pryr', 'fields'),
+  #  dependencies = TRUE,
+  #  lib = '${target_r_directory}'
+  #)
+  #
+  #options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/2020-10-04'))
+  #install.packages(
+  #  'lubridate',
+  #  dependencies = TRUE,
+  #  lib = '${target_r_directory}'
+  #)
+  #
+  #list.of.packages <- c('Rcpp', 'RMVL', 'proxy', 'doParallel', 'foreach')
+  #new.packages <- setdiff(
+  #  list.of.packages,
+  #  installed.packages(lib.loc='${target_r_directory}')[,'Package']
+  #)
+  #
+  #if (length(new.packages))
+  #  install.packages(
+  #    new.packages,
+  #    repos = 'http://cran.r-project.org',
+  #    lib = '${target_r_directory}'
+  #  )
+  #"
+
+  export R_LIBS_USER=${target_r_directory}
+
+  # Build RCOMPSs
+  R CMD build RCOMPSs
+
+  # Install RCOMPSs
+  R CMD INSTALL -l ${target_r_directory} --no-test-load RCOMPSs_1.0.tar.gz
+  exitCode=$?
+  if [ $exitCode -ne 0 ]; then
+    echo "ERROR: Cannot install RCOMPSs"
+    exit $exitCode
+  fi
+
+  cd ${current_dir}
+
+  # Build and deploy the C++ worker/executor binaries via cmake
+  local pipers_dir="${compss_home}/Runtime/scripts/system/adaptors/nio/pipers"
+  local cmake_build_dir="${SCRIPT_DIR}/cmake-build-install"
+  echo "INFO: Building C++ worker and executor binaries..."
+  rm -rf "${cmake_build_dir}"
+
+  local cmake_args=(
+    -DCMAKE_BUILD_TYPE=Release
+    -DRCOMPSs_GPU=ON
+    -DRCOMPSs_TRACING:BOOL=${TRACING_FLAG}
+  )
+
+  cmake -S "${SCRIPT_DIR}" -B "${cmake_build_dir}" "${cmake_args[@]}"
+  cmake --build "${cmake_build_dir}" --target rcompss_worker rcompss_executor -j "$(nproc)"
+
+  cp "${cmake_build_dir}/aux/rcompss_worker"   "${pipers_dir}/"
+  cp "${cmake_build_dir}/aux/rcompss_executor"  "${pipers_dir}/"
+  chmod +x "${pipers_dir}/rcompss_worker" "${pipers_dir}/rcompss_executor"
+  echo "INFO: Deployed rcompss_worker and rcompss_executor to ${pipers_dir}/"
+
+  rm -rf "${cmake_build_dir}"
+
+  # Deploy the piper shell script
+  cp ${SCRIPT_DIR}/aux/r_piper.sh ${pipers_dir}/
+
+  # Clean unnecessary files
+  echo "INFO: Cleaning unnecessary files..."
+}
+
+#---------------------------------------------------
+# MAIN INSTALLATION FUNCTION
+#---------------------------------------------------
+
+install_r_binding() {
+  # Add trap for clean
+  trap clean EXIT
+
+  echo "INFO: Starting R binding installation"
+
+  # Install
+  install "${tracing}"
+
+  echo "INFO: Finished R binding installation"
+}
+
+#---------------------------------------------------
+# MAIN EXECUTION
+#---------------------------------------------------
+
+get_args "$@"
+log_parameters
+install_r_binding
+
+# END
+echo "INFO: SUCCESS: R binding installed"
+# Normal exit
+exit 0

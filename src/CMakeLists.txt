@@ -10,9 +10,12 @@ add_library(RCOMPSs SHARED
   RcppExports.cpp
 )
 
+if (NOT RCOMPSS_HAS_GS_SET_JNI_RUNTIME)
+  target_compile_definitions(RCOMPSs PRIVATE RCOMPSS_NEEDS_GS_SET_JNI_RUNTIME_COMPAT=1)
+endif()
+
 add_subdirectory(core)
 add_subdirectory(executor)
 add_subdirectory(worker)
 add_subdirectory(kernels)
 add_subdirectory(adapters)
-

@@ -32,6 +32,16 @@
 #ifdef USE_CUDA
 #include <kernels/cuda/CudaVectorKernels.hpp>
 #endif
+
+#if defined(RCOMPSS_NEEDS_GS_SET_JNI_RUNTIME_COMPAT)
+// COMPSs 3.3 selects JNI by default (unless GS_set_pipes is called), but does
+// not export the explicit selector added by later bindings-common versions.
+// Keep RCOMPSs's explicit call site source-compatible with both APIs.
+extern "C" void GS_set_JNI_runtime()
+{
+}
+#endif
+
 using namespace Rcpp;
 
 #define DEBUG_MODE 0  // Enable debug output to verify constraints are sent
