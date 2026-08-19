@@ -117,7 +117,53 @@ main() {
   #############################################################################
   step 2 "Setting Extrae MPI headers"
 
-  export EXTRAE_MPI_HEADERS=/usr/include/x86_64-linux-gnu/mpi
+  DEFAULT_EXTRAE_MPI_HEADERS=/usr/include/x86_64-linux-gnu/mpi
+  if [ -f "$DEFAULT_EXTRAE_MPI_HEADERS/mpi.h" ]; then
+    EXTRAE_MPI_HEADERS="$DEFAULT_EXTRAE_MPI_HEADERS"
+  else
+    EXTRAE_MPI_HEADERS=""
+
+    # Try to get the MPI headers from mpicc
+    if command -v mpicc >/dev/null 2>&1; then
+      # Open MPI
+      EXTRAE_MPI_HEADERS=$(
+        mpicc --showme:incdirs 2>/dev/null |
+        tr ' ' '\n' |
+        while read -r dir; do
+          [ -f "$dir/mpi.h" ] && { echo "$dir"; break; }
+        done
+      )
+
+      # MPICH / other MPI implementations
+      if [ -z "$EXTRAE_MPI_HEADERS" ]; then
+        EXTRAE_MPI_HEADERS=$(
+          mpicc -show 2>/dev/null |
+          grep -oE -- '-I[^ ]+' |
+          sed 's/^-I//' |
+          while read -r dir; do
+            [ -f "$dir/mpi.h" ] && { echo "$dir"; break; }
+          done
+        )
+      fi
+    fi
+
+    # Last resort: search common locations
+    if [ -z "$EXTRAE_MPI_HEADERS" ]; then
+      EXTRAE_MPI_HEADERS=$(
+        find /usr/include /usr/local/include /usr/lib /usr/lib64 \
+        -type f -name mpi.h -printf '%h\n' 2>/dev/null |
+        head -n 1
+      )
+    fi
+  fi
+
+  if [ -z "$EXTRAE_MPI_HEADERS" ] ||
+    [ ! -f "$EXTRAE_MPI_HEADERS/mpi.h" ]; then
+      echo "ERROR: MPI headers not found. Please install MPI headers."
+      exit 1
+  fi
+
+  export EXTRAE_MPI_HEADERS=${EXTRAE_MPI_HEADERS}
   info "EXTRAE_MPI_HEADERS=${EXTRAE_MPI_HEADERS}"
 
   #############################################################################

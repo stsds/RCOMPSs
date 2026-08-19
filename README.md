@@ -87,14 +87,14 @@ For example:
 This script compiles the R binding, installs the required R packages, and deploys the RCOMPSs executor into the COMPSs runtime.
 
 
-### Troubleshooting `libiconv`
+### Troubleshooting: `libiconv`
 
 If the linker reports that `libiconv` cannot be found, set the `LIBICONV_ROOT` environment variable to the libiconv installation directory and rerun the installer:
 
 ```bash
 export LIBICONV_ROOT=/path/to/libiconv
 ./install_rcompss.sh  <tracing>
-
+```
 
 Examples
 --------
