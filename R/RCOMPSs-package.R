@@ -757,7 +757,7 @@ rcompss_execute_decorated_task <- function(f, f_name, filename, return_value, re
         prolog = c("", "", "False"),
         epilog = c("", "", "False"),
         container = c("", "", ""),
-        typeArgs = c(type_args_path, f_name)
+        typeArgs = c("R", type_args_path, f_name)
       )
       assign(register_marker, TRUE, envir = globalenv())
     }
