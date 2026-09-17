@@ -25,8 +25,7 @@ RCOMPSs is installed on top of a COMPSs runtime. The recommended workflow is:
 ### Platform notes
 
 RCOMPSs is intended for Linux systems. The commands below are suitable for clean
-installation/portability tests on Ubuntu 22.04/24.04 and Red Hat Enterprise Linux
-8/9. Package names can differ slightly between distributions and repositories.
+installation and portability tests on Ubuntu 22.04/24.04.
 
 > **COMPSs version note:** RCOMPSs relies on the Java and Gradle versions required
 > by the selected COMPSs release. Current COMPSs documentation uses OpenJDK 21 and
@@ -41,7 +40,10 @@ RCOMPSs also requires several R packages; they are installed automatically by
 `install_rcompss.sh`:
 
 - `Rcpp`, `RMVL`, `foreach`, `parallel` (included with base R), `doParallel`,
-  `stringr`, `lobstr`, `proxy`, `lubridate`, `fields`, and `pryr`.
+  `stringr`, `lobstr`, `proxy`, `lubridate`, and `fields`.
+
+The installer downloads missing R packages from CRAN over HTTPS. Ensure that
+the installation host can reach `https://cloud.r-project.org`.
 
 #### Ubuntu 22.04 / 24.04
 
@@ -89,39 +91,24 @@ cmake --version
 mpicc --version
 ```
 
-#### Red Hat Enterprise Linux 8 / 9
+### Configure localhost SSH
 
-On RHEL, enable the repositories required for development packages on your
-system, then install the corresponding dependencies. A typical setup is:
-
-```bash
-sudo dnf groupinstall -y "Development Tools"
-sudo dnf install -y \
-    ca-certificates git wget curl unzip \
-    cmake pkgconf-pkg-config \
-    libtool automake autoconf flex bison texinfo \
-    graphviz xdg-utils tcsh gcc-gfortran \
-    python3 python3-devel python3-pip \
-    boost-devel libxml2 libxml2-devel \
-    gmp-devel papi papi-devel \
-    openmpi openmpi-devel \
-    openssh-clients openssh-server \
-    R R-devel \
-    java-21-openjdk java-21-openjdk-devel
-```
-
-Depending on the RHEL repository configuration, some packages (especially R,
-PAPI, or development packages) may require additional enabled repositories.
-Use the package names available on the target RHEL 8/9 installation.
-
-Set the JDK location:
+COMPSs starts local workers through SSH. Configure and verify passwordless SSH
+*before* installing or validating COMPSs. On a normal host, ensure that the SSH
+service is running, then run:
 
 ```bash
-export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+test -f ~/.ssh/id_ed25519 || ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+ssh-keyscan -H localhost >> ~/.ssh/known_hosts
+ssh -o BatchMode=yes localhost true
 ```
 
-Install a Gradle version compatible with the selected COMPSs release and ensure
-that `gradle` is available in `PATH`.
+The final command must exit successfully. The COMPSs installer reports this
+condition but cannot start or configure your system SSH service for you.
 
 ### Install COMPSs runtime
 
@@ -222,6 +209,8 @@ RCOMPSs worker/executor, and deploys the required files into the COMPSs runtime.
 First verify that the R package can be loaded:
 
 ```bash
+export R_LIBS_USER=${COMPSS_HOME}/Bindings/RCOMPSs/user_libs:${R_LIBS_USER:-}
+export LD_LIBRARY_PATH=${COMPSS_HOME}/Bindings/RCOMPSs/dummy_extrae:${COMPSS_HOME}/Bindings/bindings-common/lib:${LD_LIBRARY_PATH:-}
 Rscript -e 'library(RCOMPSs); cat("RCOMPSs loaded successfully\n")'
 ```
 
@@ -251,38 +240,24 @@ A minimal Docker image normally does not contain `sudo`, systemd, SSH, R, Java,
 or development tools. Commands inside the default container are usually run as
 `root`, so omit `sudo` from the Ubuntu prerequisite commands above.
 
+Before installing Ubuntu packages in a non-interactive container, set:
+
+```bash
+export DEBIAN_FRONTEND=noninteractive
+export TZ=Etc/UTC
+```
+
+This prevents `tzdata` from pausing the package installation for timezone input.
+
 After installing `openssh-server`, start SSH manually because a minimal Docker
-container normally does not run systemd:
+container normally does not run systemd. Then apply the **Configure localhost
+SSH** commands above (omit `sudo`):
 
 ```bash
 mkdir -p /run/sshd
 /usr/sbin/sshd
 
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519
-cat ~/.ssh/id_ed25519.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-ssh-keyscan -H localhost >> ~/.ssh/known_hosts
-
-ssh -o BatchMode=yes localhost true
 ```
-
-The final command should return successfully without prompting for a password.
-This is needed because COMPSs launches local workers through SSH.
-
-For Red Hat-family container pre-testing, Red Hat Universal Base Images can be
-used:
-
-```bash
-docker run --rm -it registry.access.redhat.com/ubi8/ubi bash
-docker run --rm -it registry.access.redhat.com/ubi9/ubi bash
-```
-
-UBI 8/9 is useful for dependency and build compatibility testing, but it should
-not be reported as a full RHEL 8/9 validation. For a strict RHEL compatibility
-claim, repeat the final installation and validation on actual RHEL 8 and/or
-RHEL 9 systems or virtual machines.
 
 ### Troubleshooting: `libiconv`
 
