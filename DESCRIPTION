@@ -7,9 +7,9 @@ Author: Sohayla Abouzeid, Xiran Zhang
 Maintainer: Sohayla Abouzeid <sohayla.khaled@brightskiesinc.com>, Xiran Zhang <xiran.zhang@kaust.edu.sa>
 Description: RCOMPSs is a programming model that simplifies the parallel execution of R code. It allows users to write applications as standard R scripts, simply marking certain functions as tasks. The underlying COMPSs runtime then automatically manages dependencies between tasks, creates a data dependency graph, and dynamically schedules tasks across distributed resources. This enables efficient and scalable execution with minimal modifications to the original R code, abstracting away the complexities of parallelization.
 License: BSD3
-Imports: Rcpp, RMVL, foreach, parallel, doParallel
+Imports: Rcpp, RMVL
 LinkingTo: Rcpp
 RoxygenNote: 7.3.3
-Suggests: qs, testthat (>= 3.0.0)
+Suggests: qs, testthat (>= 3.0.0), proxy, fields, bigmemory, furrr, future, ggplot2, mirai
 Config/testthat/edition: 3
 Encoding: UTF-8

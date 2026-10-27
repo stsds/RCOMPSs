@@ -190,39 +190,9 @@ install() {
   target_r_directory="${target_directory}/user_libs"
   mkdir -p ${target_r_directory}
   # These libraries seem to be needed for these dependencies # sudo zypper search harfbuzz-devel fribidi-devel freetype2-devel # libharfbuzz-dev libfribidi-dev libfreetype-dev
-  #Rscript -e "install.packages(\"https://cran.r-project.org/src/contrib/Archive/lobstr/lobstr_1.1.3.tar.gz\", repos = NULL, type = \"source\", lib=\"${target_r_directory}\")"
-  Rscript -e "list.of.packages <- c(\"stringr\", \"lobstr\", \"Rcpp\", \"RMVL\", \"proxy\", \"lubridate\", \"doParallel\", \"foreach\", \"fields\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
-  Rscript -e "install.packages(\"https://cran.r-project.org/src/contrib/Archive/pryr/pryr_0.1.6.tar.gz\", repos = NULL, type = \"source\", lib=\"${target_r_directory}\")"
-  #  Rscript -e "
-  #options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/2022-10-04'))
-  #
-  #install.packages(
-  #  c('timechange', 'textshaping', 'lobstr', 'pryr', 'fields'),
-  #  dependencies = TRUE,
-  #  lib = '${target_r_directory}'
-  #)
-  #
-  #options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/2020-10-04'))
-  #install.packages(
-  #  'lubridate',
-  #  dependencies = TRUE,
-  #  lib = '${target_r_directory}'
-  #)
-  #
-  #list.of.packages <- c('Rcpp', 'RMVL', 'proxy', 'doParallel', 'foreach')
-  #new.packages <- setdiff(
-  #  list.of.packages,
-  #  installed.packages(lib.loc='${target_r_directory}')[,'Package']
-  #)
-  #
-  #if (length(new.packages))
-  #  install.packages(
-  #    new.packages,
-  #    repos = 'http://cran.r-project.org',
-  #    lib = '${target_r_directory}'
-  #  )
-  #"
-
+  Rscript -e "list.of.packages <- c(\"Rcpp\", \"RMVL\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"https://cloud.r-project.org\", lib=\"${target_r_directory}\")"
+  # Rscript -e "list.of.packages <- c(\"stringr\", \"lobstr\", \"Rcpp\", \"RMVL\", \"proxy\", \"lubridate\", \"doParallel\", \"foreach\", \"fields\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"https://cloud.r-project.org\", lib=\"${target_r_directory}\")"
+  # Rscript -e "install.packages(\"https://cran.r-project.org/src/contrib/Archive/pryr/pryr_0.1.6.tar.gz\", repos = NULL, type = \"source\", lib=\"${target_r_directory}\")"
   export R_LIBS_USER=${target_r_directory}
 
   # Build RCOMPSs
