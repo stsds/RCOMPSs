@@ -1,0 +1,15 @@
+d<-read.csv('results/comparison.csv')
+png('results/tiled-gemm-comparison.png',width=1800,height=850,res=160,type='cairo')
+par(mfrow=c(1,2),mar=c(5,5,4,1),oma=c(3,0,0,0))
+for(mode in c('CPU','GPU')) {
+ x<-d[d$mode==mode,];xx<-seq_len(nrow(x))
+ plot(xx-.07,x$rcompss_median_seconds,log='y',ylim=c(.015,30),xlim=c(.7,4.3),xaxt='n',type='b',pch=19,lwd=2,col='#b44943',xlab='',ylab='Operation time (seconds, log scale)',main=if(mode=='CPU')'CPU: 4 workers / cores' else 'GPU: 1 CPU + 1 Quadro GV100')
+ axis(1,at=xx,labels=paste0('N=',x$n,'\nb=',x$tile),cex.axis=.85)
+ grid(nx=NA,ny=NULL,col='#dddddd')
+ arrows(xx-.07,x$rcompss_min_seconds,xx-.07,x$rcompss_max_seconds,angle=90,code=3,length=.04,col='#b44943')
+ lines(xx+.07,x$parsec_median_seconds,type='b',pch=17,lwd=2,col='#238477')
+ arrows(xx+.07,x$parsec_min_seconds,xx+.07,x$parsec_max_seconds,angle=90,code=3,length=.04,col='#238477')
+ legend('topleft',c('RCOMPSs tiled GEMM','PaRSEC / DPLASMA'),col=c('#b44943','#238477'),pch=c(19,17),lty=1,bty='n',cex=.8)
+}
+mtext('Median of 3 measured runs; whiskers show min/max. Warm-up excluded. Lower is faster.',side=1,line=1,cex=.85,outer=TRUE)
+dev.off()
