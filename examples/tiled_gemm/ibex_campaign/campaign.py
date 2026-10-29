@@ -130,6 +130,8 @@ def main():
                                        '--format=csv,noheader'],text=True)
     if len(inventory.splitlines())!=4 or any('A100' not in x for x in inventory.splitlines()):
         raise RuntimeError('Expected a four-A100 node')
+    models={(fields[0].strip(),fields[2].strip()) for fields in csv.reader(inventory.splitlines())}
+    if len(models)!=1:raise RuntimeError('GPU models or memory capacities do not match')
     allocation=dict(cpus=CPUS,gpu_mask=ALLOC,node=os.uname().nodename,inventory=inventory)
     allocation_file=ROOT/'allocation.json'
     if allocation_file.exists() and json.loads(allocation_file.read_text())!=allocation:
