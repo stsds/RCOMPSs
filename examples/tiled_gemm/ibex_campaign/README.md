@@ -46,7 +46,9 @@ This adapter is explicit artifact code; do not claim that changing
 CUDA_VISIBLE_DEVICES automatically rebinds a persistent CUDA context. Three
 rounds of concurrent tasks must demonstrate distinct PCI buses on all4 GPUs.
 Every production RCOMPSs case also records CPU affinity and observed devices.
-PaRSEC device statistics must show kernels on every requested GPU.
+PaRSEC statistics must list every configured GPU. Kernel-active counts, including
+zero-use devices on small problems, are retained and annotated rather than
+discarded.
 
 ## Capacity and memory
 
@@ -59,11 +61,13 @@ bounded-output task workflow is a third regime and can exceed the full-resident
 boundary. Size points bracket the measured three-matrix allocation point, capped
 below65536 until larger master-matrix integration is separately checked.
 
-measure.py samples every0.5s. Host memory is simultaneous summed PSS over uniquely
+measure.py samples host PSS every0.5s and GPU memory through NVML at a50ms
+target interval, plus query overhead. Host memory is simultaneous summed PSS over uniquely
 case-tagged master/workers (including SSH-launched workers); shared pages are not
 counted once per process as summed RSS would do. An actual COMPSs CPU smoke test
 confirmed worker inclusion. GPU memory sums matching process memory per device;
-peak aggregate is the simultaneous sum, not the sum of independent device peaks.
+peak aggregate is the simultaneous sum, not the sum of independent device peaks. The GPU allocation requires the NVML backend; CLI
+fallback is used only for CPU instrumentation smoke tests without a driver.
 Contexts, workspace and PaRSEC cache reservations are included. A lower GPU
 allocation is not proof of lower live-data memory complexity or fewer transfers;
 it can represent a different caching policy and performance tradeoff. Sampling
@@ -82,8 +86,9 @@ can miss short-lived peaks.
    ambiguous across cluster nodes. No SSH security checks are disabled.
 5. GPU binding, correctness, allocation probes and independent calibration gate
    the campaign. Any failed process or incorrect device count stops it. Successful
-   case metadata is checkpointed; a rerun skips only successful processes and
-   repeats validation checks.
+   case metadata is checkpointed and code-hashed; a rerun skips only successful processes and
+   repeats validation checks. Changed measurement code requires preserving and
+   archiving prior cases rather than silently combining versions.
 6. Trial0 is excluded;3 measured repetitions alternate runtime order. GPU-count
    and size order are fixed, not randomized. Report min/max as variability, not
    confidence intervals. Do not interpret small differences as significant.

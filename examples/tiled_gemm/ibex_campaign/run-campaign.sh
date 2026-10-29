@@ -9,6 +9,8 @@ export PARSEC_GEMM=$HOME/exageostat_parsec_2025/exageostat-dev-gb24-gpu/build/hi
 export PKG_CPPFLAGS="-I$CUDA_HOME/include"
 export PKG_LIBS="-L$CUDA_HOME/lib64 -Wl,-rpath,$CUDA_HOME/lib64 -lcudart"
 export CAMPAIGN_GPUS=$CUDA_VISIBLE_DEVICES
+export CAMPAIGN_REQUIRE_NVML=1
+python3 -c 'import pynvml as nv;nv.nvmlInit();assert nv.nvmlDeviceGetCount()==4;nv.nvmlShutdown()'
 test "${SLURM_JOB_NUM_NODES:-0}" = 1
 ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 "$(hostname)" true
 sha256sum inputs.cpp tasks.R benchmark.R campaign.py measure.py \

@@ -11,8 +11,11 @@ no Ubuntu R package binary is used by the Ibex campaign.
 `env.sh` loads R4.6.1/GNU12.2, Java19, CUDA12.4.1 and CMake3.28.4. The R module
 also loads its Java25 dependency; JAVA_HOME/PATH for COMPSs are then set by the
 Java19 module. Do not unload Java25 after loading R: module dependency handling
-would unload R itself. This arrangement passed native package load and complete
+would unload R itself. env.sh pins JAVA_HOME and prepends the Java19 binary path explicitly after module
+loads to avoid dependency-order ambiguity. This arrangement passed native package load and complete
 CPU COMPSs submission/transfer/assembly smoke tests.
+
+Install the NVML Python wrapper with `python3 -m pip install --target "$CAMPAIGN_ROOT/python" nvidia-ml-py==13.615.71`. The allocation requires NVML and samples GPU process memory without repeatedly spawning nvidia-smi. Host PSS remains sampled at0.5s; GPU queries target50ms.
 
 Installed R dependencies from CRAN into the isolated library:
 Rcpp, RMVL, foreach, doParallel, testthat and their dependencies.

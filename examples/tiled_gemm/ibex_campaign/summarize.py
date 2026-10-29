@@ -9,6 +9,7 @@ for folder in (root/'results').iterdir():
     if int(trial)==0:continue
     data=json.loads((folder/'measurement.json').read_text())
     if data['returncode']!=0:raise RuntimeError('Failed case '+folder.name)
+    data['active_gpus']=len(json.loads((folder/'gpu-usage.json').read_text())['active']) if runtime=='parsec' else int(g)
     groups.setdefault((study,runtime,int(n),int(g),int(c)),[]).append(data)
 rows=[]
 for key,samples in sorted(groups.items()):
@@ -18,6 +19,8 @@ for key,samples in sorted(groups.items()):
         values=[s[metric] for s in samples]
         row.update({metric:statistics.median(values),metric+'_min':min(values),metric+'_max':max(values)})
     row['max_device_peak_bytes']=statistics.median(max(s['gpu_peak_bytes'].values(),default=0) for s in samples)
+    row['active_gpus_min']=min(s['active_gpus'] for s in samples)
+    row['active_gpus_max']=max(s['active_gpus'] for s in samples)
     row['repetitions']=3;rows.append(row)
 with (root/'summary.csv').open('w') as f:
     w=csv.DictWriter(f,fieldnames=rows[0],lineterminator='\n');w.writeheader();w.writerows(rows)

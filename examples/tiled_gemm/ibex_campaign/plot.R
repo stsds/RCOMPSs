@@ -17,6 +17,9 @@ pdf(file.path(out,"ibex_gemm_scaling.pdf"),width=7.1,height=3.2);style()
 plot(range(z$n),range(z$wall_seconds_min,z$wall_seconds_max),type="n",log="y",
      xlab="Matrix dimension N (FP64, square)",ylab="Fresh-process completion time (s)")
 series(z,"n","wall_seconds",errors=TRUE)
+under<-z[z$active_gpus_min<z$gpus,]
+if(nrow(under))text(under$n,under$wall_seconds,
+  labels=paste0(under$active_gpus_min,"-",under$active_gpus_max,"/",under$gpus),pos=3,cex=.55)
 limits<-read.csv(file.path(root,"results","allocation-probe","limits.csv"))
 resident_tested<-max(limits$n[limits$mode=="three_resident_matrices"&limits$success])
 abline(v=resident_tested,lty=3,col="gray50")
@@ -30,12 +33,14 @@ pdf(file.path(out,"ibex_gemm_cpu_threads.pdf"),width=7.1,height=3.2);par(mfrow=c
 for(g in c(0,1)){
  v<-z[z$gpus==g,]
  plot(range(v$cpus),range(v$wall_seconds_min,v$wall_seconds_max),type="n",log="xy",xaxt="n",
-      xlab="Allocated physical CPU cores",ylab="Completion time (s)",main=if(g==0)"CPU only"else"One A100 + CPUs")
+      xlab="Allocated physical CPU cores",ylab="Completion time (s)",main=if(g==0)"CPU only"else"One A100 available + CPUs")
  axis(1,at=sort(unique(v$cpus)),labels=sort(unique(v$cpus)),cex.axis=.75)
  for(runtime in c("rcompss","parsec")){
   w<-v[v$runtime==runtime,];w<-w[order(w$cpus),]
   lines(w$cpus,w$wall_seconds,type="b",col=colors[runtime],pch=if(runtime=="rcompss")16 else 17)
   arrows(w$cpus,w$wall_seconds_min,w$cpus,w$wall_seconds_max,code=3,angle=90,length=.025,col=colors[runtime])
+  under<-w[w$active_gpus_min<w$gpus,]
+  if(nrow(under))text(under$cpus,under$wall_seconds,labels=paste0(under$active_gpus_min,"/",under$gpus),pos=3,cex=.6)
  }
  legend("topright",c("RCOMPSs","PaRSEC"),col=colors,pch=c(16,17),bty="n",cex=.75)
 }
@@ -51,4 +56,4 @@ for(metric in c("host_peak_pss_bytes","gpu_peak_total_bytes")){
    pch=as.vector(rbind(shapes,shapes-15)),lty=rep(line,each=2),cex=.6,bty="n",ncol=2)
 }
 dev.off()
-writeLines("Measured medians; whiskers show minimum/maximum of3 runs. Memory sampled every0.5s. Host PSS sums case-tagged master/workers, avoiding RSS shared-page double counting. GPU peak is simultaneous per-case summed process GPU memory; no arithmetic sum of separate device peaks. Fresh-process timing includes runtime startup, generation, complete output and shutdown. PaRSEC and RCOMPSs use different layouts and input generators. See campaign methodology for validation and task partitioning.",file.path(out,"CAPTIONS.txt"))
+writeLines("Measured medians; whiskers show minimum/maximum of3 runs. Host PSS sampled every0.5s; GPU memory targets50ms through NVML (plus query overhead). Host PSS sums case-tagged master/workers, avoiding RSS shared-page double counting. GPU peak is simultaneous per-case summed process GPU memory; no arithmetic sum of separate device peaks. Fresh-process timing includes runtime startup, generation, complete output and shutdown. PaRSEC and RCOMPSs use different layouts and input generators. See campaign methodology for validation and task partitioning.",file.path(out,"CAPTIONS.txt"))

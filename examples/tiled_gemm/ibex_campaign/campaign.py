@@ -3,7 +3,7 @@
 
 Fail closed on binding/correctness errors. Resume skips only successful cases.
 """
-import csv, json, os, pathlib, re, shlex, shutil, statistics, subprocess, sys
+import csv, hashlib, json, os, pathlib, re, shlex, shutil, socket, statistics, subprocess, sys
 from xml.etree.ElementTree import Element,SubElement,ElementTree
 
 ROOT=pathlib.Path(os.environ['CAMPAIGN_ROOT']).resolve()
@@ -23,6 +23,8 @@ CPUS=CPUS[:REQUESTED]
 if len(CPUS)!=REQUESTED:raise RuntimeError('Allocation CPU mask is smaller than requested')
 ALLOC=os.environ.get('CUDA_VISIBLE_DEVICES','').split(',')
 BASE=os.environ.copy();BASE['CAMPAIGN_GPUS']=','.join(ALLOC)
+BASE['CAMPAIGN_CODE_HASH']=hashlib.sha256(b''.join((ROOT/name).read_bytes() for name in
+    ['inputs.cpp','tasks.R','benchmark.R','campaign.py','measure.py','env.sh'])).hexdigest()
 BASE['PKG_CPPFLAGS']='-I'+BASE['CUDA_HOME']+'/include'
 BASE['PKG_LIBS']='-L'+BASE['CUDA_HOME']+'/lib64 -Wl,-rpath,'+BASE['CUDA_HOME']+'/lib64 -lcudart'
 PARSEC=os.environ['PARSEC_GEMM']
@@ -30,7 +32,17 @@ RESULTS=ROOT/'results';RESULTS.mkdir(exist_ok=True)
 
 def configure(folder,c,g,token):
     folder.mkdir(parents=True,exist_ok=True)
+    old=folder/'measurement.json'
+    if old.exists() and json.loads(old.read_text())['returncode']==0:return
     shutil.copy2(ROOT/'tasks.R',folder/'tasks.R')
+    sockets=[socket.socket() for _ in range(3)]
+    try:
+        for sock in sockets:sock.bind(('',0))
+        ports=[sock.getsockname()[1] for sock in sockets]
+    finally:
+        for sock in sockets:sock.close()
+    worker_min,worker_max=sorted(ports[1:])
+    (folder/'network.json').write_text(json.dumps(dict(master=ports[0],worker_min=worker_min,worker_max=worker_max)))
     script='source '+shlex.quote(str(ROOT/'env.sh'))+'\n'
     for k,v in dict(CAMPAIGN_ROOT=str(ROOT),CAMPAIGN_GPUS=','.join(ALLOC),CAMPAIGN_CASE=token,
                     PKG_CPPFLAGS=BASE['PKG_CPPFLAGS'],PKG_LIBS=BASE['PKG_LIBS'],
@@ -52,14 +64,18 @@ def configure(folder,c,g,token):
         SubElement(p,'Type').text='GPU'
     adaptor=SubElement(SubElement(node,'Adaptors'),'Adaptor',Name='es.bsc.compss.nio.master.NIOAdaptor')
     SubElement(SubElement(adaptor,'SubmissionSystem'),'Interactive')
-    ports=SubElement(adaptor,'Ports');SubElement(ports,'MinPort').text='44131';SubElement(ports,'MaxPort').text='44132'
+    port_xml=SubElement(adaptor,'Ports')
+    SubElement(port_xml,'MinPort').text=str(worker_min);SubElement(port_xml,'MaxPort').text=str(worker_max)
     disk=SubElement(SubElement(node,'SharedDisks'),'AttachedDisk',Name='IbexHome')
     SubElement(disk,'MountPoint').text=str(pathlib.Path.home())+'/'
     ElementTree(resources).write(folder/'resources.xml')
 
 def measure(folder,token,command,env):
     meta=folder/'measurement.json'
-    if meta.exists() and json.loads(meta.read_text())['returncode']==0:return
+    if meta.exists() and json.loads(meta.read_text())['returncode']==0:
+        if json.loads(meta.read_text()).get('code_hash')!=env['CAMPAIGN_CODE_HASH']:
+            raise RuntimeError('Scripts changed; preserve and archive old cases before rerunning')
+        return
     with (folder/'stdout.log').open('w') as log:
         result=subprocess.run([sys.executable,str(ROOT/'measure.py'),'--output',str(folder/'measurement'),
              '--token',token,'--']+command,cwd=folder,env=env,stdout=log,stderr=subprocess.STDOUT)
@@ -75,6 +91,8 @@ def rcase(name,n,c,g,mode='hybrid',rates=None):
        '--project='+str(folder/'project.xml'),'--resources='+str(folder/'resources.xml'),
        '--cpu_affinity='+'/'.join(map(str,CPUS[:c])),
        '--gpu_affinity='+('/'.join(map(str,range(g))) if g else 'disabled'),str(ROOT/'benchmark.R')]
+    network=folder/'network.json'
+    if network.exists():command.insert(-1,'--master_port='+str(json.loads(network.read_text())['master']))
     if name.startswith('smoke') or mode=='probe':command.insert(-1,'--keep_workingdir')
     measure(folder,name,command,env)
     if mode not in ['probe'] and not (folder/'timing.csv').exists():
@@ -91,11 +109,15 @@ def pcase(name,n,c,g):
        '-T','2048','-c',str(c),'-g',str(g),'--nruns','1','-v=3','--',
        '--mca','device_show_statistics','1','--mca','bind_threads','0']
     measure(folder,name,command,env)
+    active=set();reported=set()
     if g:
         text=(folder/'stdout.log').read_text()
-        active={int(device) for kernels,device in re.findall(
-            r'\|\s*Dev\s+\d+\s*\|\s*(\d+).*cuda\((\d+)',text,re.I) if int(kernels)>0}
-        if len(active)!=g:raise RuntimeError('PaRSEC did not execute kernels on all requested GPUs: '+name)
+        observed=re.findall(r'\|\s*Dev\s+\d+\s*\|\s*(\d+).*cuda\((\d+)',text,re.I)
+        reported={int(device) for kernels,device in observed}
+        active={int(device) for kernels,device in observed if int(kernels)>0}
+        if len(reported)!=g:raise RuntimeError('PaRSEC did not discover all configured GPUs: '+name)
+    (folder/'gpu-usage.json').write_text(json.dumps(dict(configured=g,reported=sorted(reported),
+                                                       active=sorted(active)),indent=2))
 
 def main():
     if len(ALLOC)<4 or any(not x for x in ALLOC):
