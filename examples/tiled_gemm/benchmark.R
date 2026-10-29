@@ -22,6 +22,9 @@ main <- function() {
    z1 <- tiled_gemm(A,B,C,d[4],0,1,update)
    stopifnot(identical(z1$C,C))
    cat("CORRECT",mode,"default alpha/beta and alpha=0 beta=1\n")
+   grouped <- tiled_gemm(A,B,C,d[4],.51,-.42,update,column_group=2L,row_group=2L)
+   stopifnot(max(abs(grouped$C-ref)) < 1e-12)
+   cat("CORRECT",mode,"grouped rectangular edge tiles\n")
   }
  }
  cases <- read.csv(Sys.getenv("GEMM_CASES", "cases.csv"))
@@ -30,13 +33,16 @@ main <- function() {
   n <- cases$n[q]; tile <- cases$tile[q]
   A <- matrix(runif(n*n)-.5,n,n);B <- matrix(runif(n*n)-.5,n,n);C <- matrix(runif(n*n)-.5,n,n)
   ref <- .51*(A%*%B)-.42*C
+  # Merge columns only when enough output-row tasks remain for the allocation.
+  group <- if (mode == "GPU" || ceiling(n/tile) >= 4L) ceiling(n/tile) else 1L
+  rows_per_task <- if (mode == "GPU") ceiling(n/tile) else 1L
   for (trial in 0:3) {
    gc()
-   z <- tiled_gemm(A,B,C,tile,.51,-.42,update)
+   z <- tiled_gemm(A,B,C,tile,.51,-.42,update,column_group=group,row_group=rows_per_task)
    error <- sqrt(sum((z$C-ref)^2))/sqrt(sum(ref^2))
    stopifnot(error < 1e-12)
    row <- data.frame(runtime="RCOMPSs",mode=mode,n=n,tile=tile,trial=trial,
-                     seconds=z$seconds,submission_seconds=z$submission_seconds,
+                     column_group=group,row_group=rows_per_task,seconds=z$seconds,submission_seconds=z$submission_seconds,
                      tasks=z$tasks,gflops=2*n^3/z$seconds/1e9,relative_error=error)
    print(row);rows[[length(rows)+1L]] <- row
    write.csv(do.call(rbind,rows),output,row.names=FALSE)

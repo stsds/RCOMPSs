@@ -1,21 +1,17 @@
-# One task performs one tile update; C may be a future from the previous k step.
-tile_gemm_cpu <- function(A, B, C, alpha, beta) {
-  stopifnot(is.matrix(A), is.matrix(B), is.matrix(C),
-            ncol(A) == nrow(B), nrow(C) == nrow(A), ncol(C) == ncol(B))
-  alpha * (A %*% B) + beta * C
+# One task reduces all k tile pairs for one output tile.
+tile_gemm_cpu_reduce <- function(A, B, C, alpha, beta) {
+  RCOMPSs::rcompss_gemm_tile_reduce(A, B, C, alpha, beta, gpu = FALSE)
 }
 
-tile_gemm_gpu <- function(A, B, C, alpha, beta) {
-  stopifnot(is.matrix(A), is.matrix(B), is.matrix(C),
-            ncol(A) == nrow(B), nrow(C) == nrow(A), ncol(C) == ncol(B))
-  # Context is cached inside each worker; inputs/results remain ordinary R tiles.
-  name <- "tiled_gemm"
+tile_gemm_gpu_reduce <- function(A, B, C, alpha, beta) {
+  name <- "tiled_gemm_reduce"
   if (!name %in% RCOMPSs::RCOMPSs.GetAllContextNames()) {
     RCOMPSs::RCOMPSs.CreateRunContext(name)
     RCOMPSs::RCOMPSs.SetOperationPlacement(name, "GPU")
-    RCOMPSs::RCOMPSs.SetRunMode(name, "sync")
+    RCOMPSs::RCOMPSs.SetRunMode(name, "async")
   }
   RCOMPSs::RCOMPSs.SetOperationContext(name)
-  # Current GPU binding supports beta=0 only. Accumulation is on the host.
-  RCOMPSs::rcompss_gpu_dgemm(A, B, alpha = alpha) + beta * C
+  # The native reduction synchronizes before returning; C stays on the GPU
+  # across k updates, while A/B buffers are allocated once and reused.
+  RCOMPSs::rcompss_gemm_tile_reduce(A, B, C, alpha, beta, gpu = TRUE)
 }

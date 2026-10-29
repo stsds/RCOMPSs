@@ -85,6 +85,14 @@ rcompss_gpu_dpotrs <- function(chol, B, upper = TRUE) {
     .Call(`_RCOMPSs_rcompss_gpu_dpotrs`, chol, B, upper)
 }
 
+#' Reduce pairs of matrix tiles into one output tile.
+#' Keeps the output on the GPU across k updates and reuses input buffers.
+#' CPU mode updates C directly with BLAS, without intermediate R products.
+#' Inputs and C0 are not modified; partial and rectangular tiles are supported.
+rcompss_gemm_tile_reduce <- function(A, B, C0, alpha = 1.0, beta = 0.0, gpu = FALSE) {
+    .Call(`_RCOMPSs_rcompss_gemm_tile_reduce`, A, B, C0, alpha, beta, gpu)
+}
+
 #' Serialize R object to file (C++ implementation)
 #' 
 #' This C++ function supports three serialization methods:

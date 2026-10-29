@@ -190,6 +190,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcompss_gemm_tile_reduce
+Rcpp::NumericMatrix rcompss_gemm_tile_reduce(Rcpp::List A, Rcpp::List B, Rcpp::NumericMatrix C0, double alpha, double beta, bool gpu);
+RcppExport SEXP _RCOMPSs_rcompss_gemm_tile_reduce(SEXP ASEXP, SEXP BSEXP, SEXP C0SEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gpuSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type A(ASEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type B(BSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type C0(C0SEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< bool >::type gpu(gpuSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gemm_tile_reduce(A, B, C0, alpha, beta, gpu));
+    return rcpp_result_gen;
+END_RCPP
+}
 // start_runtime_interactive
 void start_runtime_interactive(bool debug, bool graph, bool trace);
 RcppExport SEXP _RCOMPSs_start_runtime_interactive(SEXP debugSEXP, SEXP graphSEXP, SEXP traceSEXP) {
@@ -851,6 +867,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RCOMPSs_rcompss_gpu_dgetrf", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgetrf, 1},
     {"_RCOMPSs_rcompss_gpu_dgetrs", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgetrs, 4},
     {"_RCOMPSs_rcompss_gpu_dpotrs", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dpotrs, 3},
+    {"_RCOMPSs_rcompss_gemm_tile_reduce", (DL_FUNC) &_RCOMPSs_rcompss_gemm_tile_reduce, 6},
     {"_RCOMPSs_start_runtime_interactive", (DL_FUNC) &_RCOMPSs_start_runtime_interactive, 3},
     {"_RCOMPSs_start_runtime", (DL_FUNC) &_RCOMPSs_start_runtime, 0},
     {"_RCOMPSs_stop_runtime", (DL_FUNC) &_RCOMPSs_stop_runtime, 1},
