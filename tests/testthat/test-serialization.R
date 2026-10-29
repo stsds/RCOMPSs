@@ -28,6 +28,13 @@ test_that("C++ serialization preserves empty and higher-dimensional arrays", {
   for (x in objects) expect_identical(cpp_roundtrip(x), x)
 })
 
+test_that("list arrays do not acquire synthesized names attributes", {
+  x <- array(as.list(1:3), 3L, dimnames = list(axis = c("a", "b", "c")))
+  expect_identical(cpp_roundtrip(x), x)
+  attr(x, "names") <- c("one", "two", "three")
+  expect_identical(cpp_roundtrip(x), x)
+})
+
 test_that("nested matrices retain shape without changing ordinary values", {
   x <- list(matrix = matrix(1:6, 2L), nested = list(array(1:8, c(2L, 2L, 2L))),
             vector = c(1, NA_real_, Inf), string = c("a", NA_character_),
