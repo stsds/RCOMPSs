@@ -11,8 +11,8 @@ namespace core {
 namespace {
 
 constexpr std::uint32_t kMagic = 0x52535343;  // "RCSS"
-// v1: lists had no names attribute on disk. v2: VECSXP may include names (same length as list).
-constexpr std::uint32_t kVersion = 2;
+// v1: unnamed lists. v2: list names. v3: arrays retain dim and dimnames.
+constexpr std::uint32_t kVersion = 3;
 constexpr std::uint32_t kMinReadVersion = 1;
 
 enum class ValueType : std::uint32_t {
@@ -21,7 +21,8 @@ enum class ValueType : std::uint32_t {
   kInteger = 2,
   kReal = 3,
   kString = 4,
-  kList = 5
+  kList = 5,
+  kArray = 6
 };
 
 void writeBytes(std::ofstream& out, const void* data, std::size_t size) {
@@ -93,7 +94,20 @@ SEXP readString(std::ifstream& in, int& protect_count) {
 void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version);
 SEXP readSEXP(std::ifstream& in, int& protect_count, std::uint32_t format_version);
 
+void writeValue(std::ofstream& out, SEXP object, std::uint32_t format_version);
+
 void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version) {
+  SEXP dims = Rf_getAttrib(object, R_DimSymbol);
+  if (dims != R_NilValue) {
+    writeU32(out, static_cast<std::uint32_t>(ValueType::kArray));
+    writeSEXP(out, dims, format_version);
+    writeSEXP(out, Rf_getAttrib(object, R_DimNamesSymbol), format_version);
+  }
+  // Write the underlying value without wrapping the same array again.
+  writeValue(out, object, format_version);
+}
+
+void writeValue(std::ofstream& out, SEXP object, std::uint32_t format_version) {
   if (object == R_NilValue) {
     writeU32(out, static_cast<std::uint32_t>(ValueType::kNil));
     return;
@@ -168,6 +182,17 @@ void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version) {
 SEXP readSEXP(std::ifstream& in, int& protect_count, std::uint32_t format_version) {
   auto type = static_cast<ValueType>(readU32(in));
   switch (type) {
+    case ValueType::kArray: {
+      if (format_version < 3) {
+        throw std::runtime_error("Array encoding requires serialization version 3");
+      }
+      SEXP dims = readSEXP(in, protect_count, format_version);
+      SEXP dimnames = readSEXP(in, protect_count, format_version);
+      SEXP value = readSEXP(in, protect_count, format_version);
+      Rf_setAttrib(value, R_DimSymbol, dims);
+      Rf_setAttrib(value, R_DimNamesSymbol, dimnames);
+      return value;
+    }
     case ValueType::kNil:
       return R_NilValue;
     case ValueType::kLogical: {
