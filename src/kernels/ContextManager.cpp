@@ -21,9 +21,6 @@ ContextManager::GetInstance() {
         mpInstance = new ContextManager();
         mpInstance->mContexts["default"] = new RunContext();
         mpInstance->mpCurrentContext = mpInstance->mContexts["default"];
-#ifdef USE_CUDA
-        mpInstance->mpGPUContext = new RunContext(gpu::GPU, RunMode::SYNC);
-#endif
     }
     return *mpInstance;
 }
@@ -143,7 +140,7 @@ ContextManager::GetGPUContext() {
         ContextManager::GetInstance();
     }
     if (mpInstance->mpGPUContext == nullptr) {
-        throw std::runtime_error("No current GPU operation context available");
+        mpInstance->mpGPUContext = new RunContext(gpu::GPU, RunMode::SYNC);
     }
     return mpInstance->mpGPUContext;
 #else
