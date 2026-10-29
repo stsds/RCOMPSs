@@ -105,8 +105,9 @@ ContextManager::GetOperationContext() {
 
 RunContext *
 ContextManager::CreateRunContext(const std::string &aRunContextName) {
+    auto &manager = GetInstance();
     auto run_context = new RunContext();
-    mpInstance->mContexts[aRunContextName] = run_context;
+    manager.mContexts[aRunContextName] = run_context;
     return run_context;
 }
 
