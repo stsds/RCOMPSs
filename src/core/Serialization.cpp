@@ -1,5 +1,7 @@
 #include "core/Serialization.hpp"
 
+#include <Rversion.h>
+
 #include <cstdint>
 #include <fstream>
 #include <stdexcept>
@@ -11,8 +13,8 @@ namespace core {
 namespace {
 
 constexpr std::uint32_t kMagic = 0x52535343;  // "RCSS"
-// v1: lists had no names attribute on disk. v2: VECSXP may include names (same length as list).
-constexpr std::uint32_t kVersion = 2;
+// v1: unnamed lists. v2: list names. v3: arrays retain dim and dimnames.
+constexpr std::uint32_t kVersion = 3;
 constexpr std::uint32_t kMinReadVersion = 1;
 
 enum class ValueType : std::uint32_t {
@@ -21,7 +23,8 @@ enum class ValueType : std::uint32_t {
   kInteger = 2,
   kReal = 3,
   kString = 4,
-  kList = 5
+  kList = 5,
+  kArray = 6
 };
 
 void writeBytes(std::ofstream& out, const void* data, std::size_t size) {
@@ -93,7 +96,20 @@ SEXP readString(std::ifstream& in, int& protect_count) {
 void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version);
 SEXP readSEXP(std::ifstream& in, int& protect_count, std::uint32_t format_version);
 
+void writeValue(std::ofstream& out, SEXP object, std::uint32_t format_version);
+
 void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version) {
+  SEXP dims = Rf_getAttrib(object, R_DimSymbol);
+  if (dims != R_NilValue) {
+    writeU32(out, static_cast<std::uint32_t>(ValueType::kArray));
+    writeSEXP(out, dims, format_version);
+    writeSEXP(out, Rf_getAttrib(object, R_DimNamesSymbol), format_version);
+  }
+  // Write the underlying value without wrapping the same array again.
+  writeValue(out, object, format_version);
+}
+
+void writeValue(std::ofstream& out, SEXP object, std::uint32_t format_version) {
   if (object == R_NilValue) {
     writeU32(out, static_cast<std::uint32_t>(ValueType::kNil));
     return;
@@ -143,7 +159,27 @@ void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version) {
       R_xlen_t len = XLENGTH(object);
       writeU32(out, static_cast<std::uint32_t>(len));
       if (format_version >= 2) {
-        SEXP nms = Rf_getAttrib(object, R_NamesSymbol);
+        // getAttrib(names) aliases dimnames for one-dimensional arrays.
+        // Encode only a real names attribute; the array wrapper carries dimnames.
+        SEXP nms = R_NilValue;
+#if R_VERSION >= R_Version(4, 6, 0)
+        SEXP attributes = PROTECT(R_getAttributes(object));
+        SEXP attribute_names = Rf_getAttrib(attributes, R_NamesSymbol);
+        for (R_xlen_t i = 0; attributes != R_NilValue && i < XLENGTH(attributes); ++i) {
+          if (Rf_installChar(STRING_ELT(attribute_names, i)) == R_NamesSymbol) {
+            nms = VECTOR_ELT(attributes, i);
+            break;
+          }
+        }
+#else
+        SEXP attributes = PROTECT(ATTRIB(object));
+        for (SEXP attr = attributes; attr != R_NilValue; attr = CDR(attr)) {
+          if (TAG(attr) == R_NamesSymbol) {
+            nms = CAR(attr);
+            break;
+          }
+        }
+#endif
         const int has_names =
             (nms != R_NilValue && TYPEOF(nms) == STRSXP && XLENGTH(nms) == len) ? 1 : 0;
         writeU32(out, static_cast<std::uint32_t>(has_names));
@@ -152,6 +188,7 @@ void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version) {
             writeString(out, STRING_ELT(nms, i));
           }
         }
+        UNPROTECT(1);
       }
       for (R_xlen_t i = 0; i < len; ++i) {
         writeSEXP(out, VECTOR_ELT(object, i), format_version);
@@ -168,6 +205,17 @@ void writeSEXP(std::ofstream& out, SEXP object, std::uint32_t format_version) {
 SEXP readSEXP(std::ifstream& in, int& protect_count, std::uint32_t format_version) {
   auto type = static_cast<ValueType>(readU32(in));
   switch (type) {
+    case ValueType::kArray: {
+      if (format_version < 3) {
+        throw std::runtime_error("Array encoding requires serialization version 3");
+      }
+      SEXP dims = readSEXP(in, protect_count, format_version);
+      SEXP dimnames = readSEXP(in, protect_count, format_version);
+      SEXP value = readSEXP(in, protect_count, format_version);
+      Rf_setAttrib(value, R_DimSymbol, dims);
+      Rf_setAttrib(value, R_DimNamesSymbol, dimnames);
+      return value;
+    }
     case ValueType::kNil:
       return R_NilValue;
     case ValueType::kLogical: {
