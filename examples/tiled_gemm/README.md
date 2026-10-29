@@ -88,3 +88,24 @@ measures serialization of its input payload. Set `PROFILE_OUTPUT` to a CSV
 path before running it on a GPU host. Native-helper time excludes runtime
 startup, partitioning, task serialization/transfers and final R assembly; it
 must not be compared directly to end-to-end task time as a runtime speedup.
+
+### GPU-resident pipelines
+
+`resident_tasks.R` adds a GPU task that computes repeated updates
+`C <- 0.51 * A %*% B - 0.42 * C`. Its resident path uploads A, B and C once,
+executes tiled GEMMs, downloads the final C once, and explicitly releases all
+handles. The comparison path returns C to host memory after every update.
+`benchmark_resident.R` measures both paths through COMPSs, including task
+submission and input/output serialization, with alternating order, one warmup
+and three measured repetitions. It checks every result against an R reference.
+Use the same GPU-constrained worker and shared-data configuration as the tiled
+benchmark; install the package containing the resident API in both master and
+worker R library paths, and copy `resident_tasks.R` beside the benchmark script.
+
+The API requires an active GPU operation context. GPU handles are local to one
+worker process and cannot be passed between tasks. GEMM mutates its C handle;
+upload/download synchronize, while GEMM can queue work in an asynchronous
+context. All three full matrices must fit GPU memory (384 MiB for three 4096
+square FP64 matrices). This extension changes the RCOMPSs native binding and
+application API; it does not change COMPSs scheduling. Pipeline results should
+not be compared directly with the single-GEMM PaRSEC timings.

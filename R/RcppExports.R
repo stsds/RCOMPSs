@@ -85,6 +85,26 @@ rcompss_gpu_dpotrs <- function(chol, B, upper = TRUE) {
     .Call(`_RCOMPSs_rcompss_gpu_dpotrs`, chol, B, upper)
 }
 
+#' Upload an ordinary matrix and return a worker-local GPU matrix handle.
+rcompss_gpu_matrix_upload <- function(x) {
+    .Call(`_RCOMPSs_rcompss_gpu_matrix_upload`, x)
+}
+
+#' Update resident C in place using tiled cuBLAS GEMM; no matrix data returns to R.
+rcompss_gpu_matrix_gemm <- function(A, B, C, alpha = 1.0, beta = 0.0, tile = 512L) {
+    .Call(`_RCOMPSs_rcompss_gpu_matrix_gemm`, A, B, C, alpha, beta, tile)
+}
+
+#' Download a GPU matrix; synchronize before exposing values to R.
+rcompss_gpu_matrix_download <- function(x) {
+    .Call(`_RCOMPSs_rcompss_gpu_matrix_download`, x)
+}
+
+#' Release a GPU matrix explicitly. Calling twice on the same handle is safe.
+rcompss_gpu_matrix_release <- function(x) {
+    invisible(.Call(`_RCOMPSs_rcompss_gpu_matrix_release`, x))
+}
+
 #' Reduce pairs of matrix tiles into one output tile.
 #' Keeps the output on the GPU across k updates and reuses input buffers.
 #' CPU mode updates C directly with BLAS, without intermediate R products.

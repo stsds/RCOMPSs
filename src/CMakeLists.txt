@@ -8,6 +8,7 @@ add_library(RCOMPSs SHARED
   compssmodule.cpp
   RcppGpuLinalg.cpp
   RcppTiledGemm.cpp
+  RcppGpuMatrix.cpp
   RcppExports.cpp
 )
 

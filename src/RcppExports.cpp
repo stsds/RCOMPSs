@@ -190,6 +190,54 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcompss_gpu_matrix_upload
+SEXP rcompss_gpu_matrix_upload(Rcpp::NumericMatrix x);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_matrix_upload(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_matrix_upload(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_matrix_gemm
+SEXP rcompss_gpu_matrix_gemm(SEXP A, SEXP B, SEXP C, double alpha, double beta, int tile);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_matrix_gemm(SEXP ASEXP, SEXP BSEXP, SEXP CSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP tileSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type A(ASEXP);
+    Rcpp::traits::input_parameter< SEXP >::type B(BSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type C(CSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< int >::type tile(tileSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_matrix_gemm(A, B, C, alpha, beta, tile));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_matrix_download
+Rcpp::NumericMatrix rcompss_gpu_matrix_download(SEXP x);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_matrix_download(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcompss_gpu_matrix_download(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// rcompss_gpu_matrix_release
+void rcompss_gpu_matrix_release(SEXP x);
+RcppExport SEXP _RCOMPSs_rcompss_gpu_matrix_release(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
+    rcompss_gpu_matrix_release(x);
+    return R_NilValue;
+END_RCPP
+}
 // rcompss_gemm_tile_reduce
 Rcpp::NumericMatrix rcompss_gemm_tile_reduce(Rcpp::List A, Rcpp::List B, Rcpp::NumericMatrix C0, double alpha, double beta, bool gpu);
 RcppExport SEXP _RCOMPSs_rcompss_gemm_tile_reduce(SEXP ASEXP, SEXP BSEXP, SEXP C0SEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP gpuSEXP) {
@@ -867,6 +915,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_RCOMPSs_rcompss_gpu_dgetrf", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgetrf, 1},
     {"_RCOMPSs_rcompss_gpu_dgetrs", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dgetrs, 4},
     {"_RCOMPSs_rcompss_gpu_dpotrs", (DL_FUNC) &_RCOMPSs_rcompss_gpu_dpotrs, 3},
+    {"_RCOMPSs_rcompss_gpu_matrix_upload", (DL_FUNC) &_RCOMPSs_rcompss_gpu_matrix_upload, 1},
+    {"_RCOMPSs_rcompss_gpu_matrix_gemm", (DL_FUNC) &_RCOMPSs_rcompss_gpu_matrix_gemm, 6},
+    {"_RCOMPSs_rcompss_gpu_matrix_download", (DL_FUNC) &_RCOMPSs_rcompss_gpu_matrix_download, 1},
+    {"_RCOMPSs_rcompss_gpu_matrix_release", (DL_FUNC) &_RCOMPSs_rcompss_gpu_matrix_release, 1},
     {"_RCOMPSs_rcompss_gemm_tile_reduce", (DL_FUNC) &_RCOMPSs_rcompss_gemm_tile_reduce, 6},
     {"_RCOMPSs_start_runtime_interactive", (DL_FUNC) &_RCOMPSs_start_runtime_interactive, 3},
     {"_RCOMPSs_start_runtime", (DL_FUNC) &_RCOMPSs_start_runtime, 0},
