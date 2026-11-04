@@ -78,7 +78,7 @@ def measure(folder,token,command,env):
         return
     with (folder/'stdout.log').open('w') as log:
         result=subprocess.run([sys.executable,str(ROOT/'measure.py'),'--output',str(folder/'measurement'),
-             '--token',token,'--']+['timeout','1200']+command,cwd=folder,env=env,stdout=log,stderr=subprocess.STDOUT)
+             '--token',token,'--']+['timeout','3600']+command,cwd=folder,env=env,stdout=log,stderr=subprocess.STDOUT)
     if result.returncode:raise RuntimeError('Case failed; inspect '+str(folder/'stdout.log'))
 
 def rcase(name,n,c,g,mode='hybrid',rates=None):

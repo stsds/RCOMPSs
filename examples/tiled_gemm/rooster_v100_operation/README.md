@@ -32,3 +32,9 @@ Before driver: source env.sh, set CAMPAIGN_ROOT and CUDA PKG_CPPFLAGS/PKG_LIBS,
 Rscript prepare_helpers.R. Workers load a read-only precompiled helper library;
 no concurrent sourceCpp cache access. Run under flock campaign.lock. Do not
 launch a duplicate. COMPLETE/FIGURE_READY only after all planned successful runs.
+
+2026-11-04: 40K one-GPU warmup hit the1200s process cap (exit124), without
+task-retry evidence; peak host PSS39.6GB, not an observed allocation failure.
+Preserved the entire prior dataset under evidence/operation-cap1200. Raised
+process cap to3600s and rerun all sizes/gates/calibration under a fresh code
+hash. No measurements from the previous cap/version enter the final figure.
