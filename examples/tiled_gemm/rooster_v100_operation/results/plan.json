@@ -1,0 +1,24 @@
+{
+  "sizes": [
+    4096,
+    8192,
+    16384,
+    24576,
+    32768,
+    40000
+  ],
+  "gpus": [
+    1,
+    2
+  ],
+  "cores": 40,
+  "trials": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "primary": "GEMM operation on prepared host inputs through full host output; scheduling, packing and transfers included; validation excluded",
+  "mkl": "CPU-only 40 threads",
+  "validation": "full small R check; sampled R/MKL production checks; PaRSEC small numerical preflight only"
+}

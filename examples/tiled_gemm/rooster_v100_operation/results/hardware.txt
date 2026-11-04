@@ -1,0 +1,4 @@
+index, name, uuid, memory.total [MiB], driver_version
+0, Quadro RTX 4000, GPU-ce701a0b-5984-845b-b71b-e9aad8f662ab, 8192 MiB, 580.173.02
+1, Quadro GV100, GPU-737f3c7a-bf62-20b7-01f8-b3fb1a3c86f4, 32768 MiB, 580.173.02
+2, Quadro GV100, GPU-a7c40d19-eb27-1d13-257a-5949f98fc947, 32768 MiB, 580.173.02
