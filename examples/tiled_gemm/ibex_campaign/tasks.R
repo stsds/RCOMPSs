@@ -1,8 +1,9 @@
 campaign_helpers <- function() {
-  if (!exists("campaign_input", envir=.GlobalEnv, inherits=FALSE))
-    Rcpp::sourceCpp(file.path(Sys.getenv("CAMPAIGN_ROOT"),"inputs.cpp"),
-                    cacheDir=file.path(Sys.getenv("CAMPAIGN_ROOT"),"cpp-cache"),
-                    rebuild=FALSE, env=.GlobalEnv)
+  if (!exists("campaign_input", envir=.GlobalEnv, inherits=FALSE)) {
+    wrapper <- file.path(Sys.getenv("CAMPAIGN_ROOT"), "prepared_helpers.R")
+    stopifnot(file.exists(wrapper))
+    source(wrapper, local=.GlobalEnv)
+  }
 }
 
 campaign_block <- function(n,row,rows,col,cols,tile,gpu,probe=FALSE) {

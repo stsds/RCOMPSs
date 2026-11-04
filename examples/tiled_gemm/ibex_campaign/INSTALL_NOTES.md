@@ -51,3 +51,10 @@ Completed checks before submission readiness:
 - An independent64MiB allocation fixture was observed above60MiB PSS.
 
 GPU results and figure correctness remain untested until the queued job starts.
+
+2026-11-04: before the queued allocation starts, replace concurrent sourceCpp
+helper-cache access with prepare_helpers.R (one compile before workers launch).
+Workers load the generated read-only wrapper/library. Rooster exposed shared
+cache read/write races and task retries; its corrected 40-process concurrent
+load test, full small-output check, and two-GPU binding gate passed. Ibex still
+requires its allocation-local CUDA helper build and numerical/device gates.

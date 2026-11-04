@@ -13,7 +13,7 @@ export CAMPAIGN_REQUIRE_NVML=1
 python3 -c 'import pynvml as nv;nv.nvmlInit();assert nv.nvmlDeviceGetCount()==4;nv.nvmlShutdown()'
 test "${SLURM_JOB_NUM_NODES:-0}" = 1
 ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 "$(hostname)" true
-sha256sum inputs.cpp tasks.R benchmark.R campaign.py measure.py \
+sha256sum inputs.cpp tasks.R benchmark.R campaign.py measure.py prepare_helpers.R \
   "$R_LIBS_USER/RCOMPSs/libs/RCOMPSs.so" "$PARSEC_GEMM" \
   "$COMPSS_HOME/Runtime/scripts/system/adaptors/nio/pipers/rcompss_executor" > logs/artifact-sha256.txt
 java -version > logs/java-version.txt 2>&1
@@ -21,7 +21,7 @@ Rscript --vanilla -e 'print(sessionInfo());print(extSoftVersion())' > logs/R-ses
 nvidia-smi topo -m > logs/gpu-topology.txt
 ldd "$PARSEC_GEMM" > logs/parsec-node-ldd.log
 if grep -q 'not found' logs/parsec-node-ldd.log; then exit 3; fi
-Rscript --vanilla -e 'library(RCOMPSs);Rcpp::sourceCpp("inputs.cpp",cacheDir="cpp-cache",rebuild=FALSE)'
+Rscript --vanilla prepare_helpers.R
 CUDA_VISIBLE_DEVICES='' Rscript --vanilla -e 'library(RCOMPSs);testthat::test_dir("/home/abdullsm/software/RCOMPSs/tests/testthat",stop_on_failure=TRUE)' > logs/node-cpu-tests.log 2>&1
 RCOMPSs_TEST_GPU=true Rscript --vanilla -e 'library(RCOMPSs);testthat::test_dir("/home/abdullsm/software/RCOMPSs/tests/testthat",stop_on_failure=TRUE)' > logs/node-gpu-tests.log 2>&1
 # Four-GPU numerical preflight. Production-size PaRSEC output is not checked
