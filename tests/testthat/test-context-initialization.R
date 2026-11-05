@@ -1,13 +1,10 @@
 test_that("creating a context is safe as the first context API call", {
-  # CUDA builds currently initialize a GPU even for CPU contexts. Opt in only
-  # on hosts with a usable GPU, or when testing a CPU-only build.
-  skip_if(Sys.getenv("RCOMPSs_TEST_CONTEXTS") != "true",
-          "Set RCOMPSs_TEST_CONTEXTS=true on a supported context-test host")
   script <- tempfile(fileext = ".R")
   output <- tempfile(fileext = ".log")
   on.exit(unlink(c(script, output)))
   writeLines(c(
     sprintf(".libPaths(%s)", paste(deparse(.libPaths()), collapse = "")),
+    "Sys.setenv(CUDA_VISIBLE_DEVICES = '')",
     "library(RCOMPSs)",
     "RCOMPSs.CreateRunContext('first')",
     "stopifnot(setequal(RCOMPSs.GetAllContextNames(), c('default', 'first')))",
@@ -36,4 +33,26 @@ test_that("creating a context is safe as the first context API call", {
                       stdout = output, stderr = output)
     expect_equal(status, 0L, info = paste(readLines(output), collapse = "\n"))
   }
+})
+
+test_that("context queries work with no visible GPU", {
+  script <- tempfile(fileext = ".R")
+  output <- tempfile(fileext = ".log")
+  on.exit(unlink(c(script, output)))
+  writeLines(c(
+    sprintf(".libPaths(%s)", paste(deparse(.libPaths()), collapse = "")),
+    "Sys.setenv(CUDA_VISIBLE_DEVICES = '')",
+    "library(RCOMPSs)",
+    "stopifnot(identical(RCOMPSs.GetAllContextNames(), 'default'))",
+    "stopifnot(RCOMPSs.GetNumOfContexts() == 1)",
+    "stopifnot(RCOMPSs.GetOperationPlacement() == 'CPU')",
+    "RCOMPSs.SetOperationPlacement('CPU')",
+    "RCOMPSs.SetRunMode('async')",
+    "stopifnot(RCOMPSs.GetRunMode() == 'ASYNC')",
+    "RCOMPSs.SyncAll()"
+  ), script)
+  status <- system2(file.path(R.home("bin"), "Rscript"),
+                    c("--vanilla", shQuote(script)),
+                    stdout = output, stderr = output)
+  expect_equal(status, 0L, info = paste(readLines(output), collapse = "\n"))
 })

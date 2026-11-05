@@ -165,7 +165,7 @@ namespace kernels {
         /** Context used internally if any GPU context is needed, when the
          *  Current context is CPU
          **/
-        RunContext *mpGPUContext;
+        RunContext *mpGPUContext = nullptr;
 #endif
     };
 
