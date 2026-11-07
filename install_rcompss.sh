@@ -186,13 +186,10 @@ install() {
   current_dir=$(pwd)
   cd ..
 
-  # Install Rcpp, RMVL, pryr, proxy packages on R if not installed
+  # Install Rcpp, RMVL, and related packages on R if not installed.
   target_r_directory="${target_directory}/user_libs"
   mkdir -p ${target_r_directory}
-  # These libraries seem to be needed for these dependencies # sudo zypper search harfbuzz-devel fribidi-devel freetype2-devel # libharfbuzz-dev libfribidi-dev libfreetype-dev
-  #Rscript -e "install.packages(\"https://cran.r-project.org/src/contrib/Archive/lobstr/lobstr_1.1.3.tar.gz\", repos = NULL, type = \"source\", lib=\"${target_r_directory}\")"
-  Rscript -e "list.of.packages <- c(\"stringr\", \"lobstr\", \"Rcpp\", \"RMVL\", \"proxy\", \"lubridate\", \"doParallel\", \"foreach\", \"fields\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"http://cran.r-project.org\", lib=\"${target_r_directory}\")"
-  Rscript -e "install.packages(\"https://cran.r-project.org/src/contrib/Archive/pryr/pryr_0.1.6.tar.gz\", repos = NULL, type = \"source\", lib=\"${target_r_directory}\")"
+  Rscript -e "list.of.packages <- c(\"stringr\", \"lobstr\", \"Rcpp\", \"RMVL\", \"proxy\", \"lubridate\", \"doParallel\", \"foreach\", \"fields\"); new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]; if(length(new.packages)) install.packages(new.packages, repos=\"https://cloud.r-project.org\", lib=\"${target_r_directory}\")"
   #  Rscript -e "
   #options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/2022-10-04'))
   #
@@ -250,7 +247,8 @@ install() {
     -DRCOMPSs_TRACING:BOOL=${TRACING_FLAG}
   )
 
-  cmake -S "${SCRIPT_DIR}" -B "${cmake_build_dir}" "${cmake_args[@]}"
+  R_ENVIRON_USER=/dev/null R_LIBS_USER="${target_r_directory}" \
+    cmake -S "${SCRIPT_DIR}" -B "${cmake_build_dir}" "${cmake_args[@]}"
   cmake --build "${cmake_build_dir}" --target rcompss_worker rcompss_executor -j "$(nproc)"
 
   cp "${cmake_build_dir}/aux/rcompss_worker"   "${pipers_dir}/"
