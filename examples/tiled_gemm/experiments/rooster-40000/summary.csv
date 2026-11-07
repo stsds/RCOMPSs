@@ -1,0 +1,3 @@
+n,tile,rcompss_median,rcompss_min,rcompss_max,parsec_median,parsec_min,parsec_max
+40000,2048,44.89,40.689,45.982,28.26885,28.23444,28.48246
+40000,4096,44.506,43.091,44.5649999999999,26.71903,26.50819,26.91508

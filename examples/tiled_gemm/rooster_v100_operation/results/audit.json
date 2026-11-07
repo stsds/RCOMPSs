@@ -1,0 +1,19 @@
+{
+  "cases": {
+    "mkl": 24,
+    "parsec": 48,
+    "rcompss": 48
+  },
+  "code_hash": "49c4619b6902ada9f33ec0f7be9fdcdd9e72ef08ebaacc5b90553a5b92eaa997",
+  "max_R_sample_error": 2.0853334780784e-14,
+  "GPU_bus_sets": [
+    [
+      "0000:AF:00.0"
+    ],
+    [
+      "0000:AF:00.0",
+      "0000:D8:00.0"
+    ]
+  ],
+  "audit": "120 cases, warmup plus three measured repetitions; no retries; complete disjoint R output cover; configured GPUs participated; physical CPU masks <=39; small numerical/binding gates passed. PaRSEC production lacks independent numerical validation. PSS includes shared prepared inputs, not sum of process RSS."
+}

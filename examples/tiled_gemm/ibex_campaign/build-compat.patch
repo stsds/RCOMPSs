@@ -1,0 +1,20 @@
+--- a/src/RcppGpuLinalg.cpp
++++ b/src/RcppGpuLinalg.cpp
+@@ -347,7 +347,7 @@
+       if (!y0.isNotNull()) {
+         Rcpp::stop("DGEMV: beta is non-zero; provide y0 with length %d.", out_len);
+       }
+-      Rcpp::NumericVector y0v(y0);
++      Rcpp::NumericVector y0v(y0.get());
+       if (static_cast<int>(y0v.size()) != out_len) {
+         Rcpp::stop("DGEMV: y0 must have length %d (got %d).", out_len, static_cast<int>(y0v.size()));
+       }
+@@ -630,7 +630,7 @@
+       if (!C0.isNotNull()) {
+         Rcpp::stop("DSYRK: beta is non-zero; provide C0 (n×n).");
+       }
+-      Rcpp::NumericMatrix C0m(C0);
++      Rcpp::NumericMatrix C0m(C0.get());
+       if (C0m.nrow() != n || C0m.ncol() != n) {
+         Rcpp::stop("DSYRK: C0 must be %d×%d (got %d×%d).", n, n, C0m.nrow(), C0m.ncol());
+       }
